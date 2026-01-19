@@ -22,13 +22,11 @@ def register_commands(app: Flask):
     @click.argument('email')
     @click.option('--password', prompt=True, hide_input=True, confirmation_prompt=True,
                   help='Password for the user')
-    @click.option('--admin', is_flag=True, help='Create user as admin')
-    def create_user(username, email, password, admin):
+    def create_user(username, email, password):
         """Create a new user account.
         
         Usage:
             flask create-user <username> <email>
-            flask create-user <username> <email> --admin
         """
         # Check if user already exists
         existing_user = User.query.filter(
@@ -46,8 +44,7 @@ def register_commands(app: Flask):
         db.session.add(user)
         db.session.commit()
         
-        user_type = 'admin' if admin else 'regular'
-        click.echo(click.style(f'✓ Successfully created {user_type} user: {username} ({email})', fg='green'))
+        click.echo(click.style(f'✓ Successfully created user: {username} ({email})', fg='green'))
     
     @app.cli.command('create-admin')
     @click.argument('username')
@@ -96,13 +93,15 @@ def register_commands(app: Flask):
         
         for i in range(users):
             username = fake.user_name()
+            # Generate proper email address
             email = fake.email()
             
             # Ensure unique username and email
             counter = 1
+            original_username = username
             while User.query.filter((User.username == username) | (User.email == email)).first():
-                username = f"{fake.user_name()}{counter}"
-                email = f"{fake.user_name()}{counter}@{fake.domain_name()}"
+                username = f"{original_username}{counter}"
+                email = fake.email()
                 counter += 1
             
             user = User(username=username, email=email)
@@ -173,7 +172,7 @@ def register_commands(app: Flask):
         
         if num_users > 0:
             click.echo(click.style('\n=== Top Recipe Authors ===', fg='cyan', bold=True))
-            # Get users with most recipes
+            # Get users with most recipes (only users who have at least one recipe)
             users_with_counts = db.session.query(
                 User.username, 
                 db.func.count(Recipe.id).label('recipe_count')
@@ -181,5 +180,8 @@ def register_commands(app: Flask):
                 db.func.count(Recipe.id).desc()
             ).limit(5).all()
             
-            for username, count in users_with_counts:
-                click.echo(f'{username}: {count} recipe(s)')
+            if users_with_counts:
+                for username, count in users_with_counts:
+                    click.echo(f'{username}: {count} recipe(s)')
+            else:
+                click.echo('No recipes created yet.')
