@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ title }} - Recipe Site{% endblock %}
+{% block title %}{{ title }} - Recepten{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -29,7 +29,7 @@
                                 {% for error in form.description.errors %}{{ error }}{% endfor %}
                             </div>
                         {% endif %}
-                        <small class="form-text text-muted">A brief description of your recipe</small>
+                        <small class="form-text text-muted">Een korte beschrijving van je recept</small>
                     </div>
 
                     <div class="row">
@@ -76,28 +76,57 @@
                     
                     <div class="mb-3">
                         {{ form.ingredients.label(class="form-label") }}
-                        {{ form.ingredients(class="form-control" + (" is-invalid" if form.ingredients.errors else ""), rows="8") }}
+                        <div id="ingredients-list" class="list-group">
+                            {% for entry in form.ingredients.entries %}
+                            <div class="list-group-item ingredient-item d-flex gap-2 align-items-start" data-index="{{ loop.index0 }}">
+                                <div class="flex-grow-1">
+                                    <div class="row g-2">
+                                        <div class="col-8">
+                                            {{ entry.name_(class="form-control", placeholder='Ingrediënt') }}
+                                        </div>
+                                        <div class="col-2">
+                                            {{ entry.quantity(class="form-control", placeholder='Aantal') }}
+                                        </div>
+                                        <div class="col-2">
+                                            {{ entry.measurement(class="form-select") }}
+                                        </div>
+                                    </div>
+                                </div>                                
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
                         {% if form.ingredients.errors %}
-                            <div class="invalid-feedback">
+                            <div class="invalid-feedback d-block">
                                 {% for error in form.ingredients.errors %}{{ error }}{% endfor %}
                             </div>
                         {% endif %}
-                        <small class="form-text text-muted">{{ form.ingredients.description }}</small>
+                        <small class="form-text text-muted">Elke ingrediënt heeft naam, hoeveelheid en eenheid.</small>
                     </div>
                     
                     <div class="mb-3">
                         {{ form.instructions.label(class="form-label") }}
-                        {{ form.instructions(class="form-control" + (" is-invalid" if form.instructions.errors else ""), rows="10") }}
+                        <div id="instructions-list" class="list-group">
+                            {% for entry in form.instructions.entries %}
+                            <div class="list-group-item instruction-item d-flex gap-2 align-items-start" data-index="{{ loop.index0 }}">
+                                <div class="flex-grow-1">
+                                    {{ entry(class="form-control", placeholder='Step description') }}
+                                </div>
+                                
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
                         {% if form.instructions.errors %}
-                            <div class="invalid-feedback">
+                            <div class="invalid-feedback d-block">
                                 {% for error in form.instructions.errors %}{{ error }}{% endfor %}
                             </div>
                         {% endif %}
-                        <small class="form-text text-muted">{{ form.instructions.description }}</small>
+                        <small class="form-text text-muted">Elke stap is één handeling. Sleep om te herschikken.</small>
                     </div>
                     
                     <div class="d-flex justify-content-between">
-                        <a href="{{ url_for('recipes.list_recipes') }}" class="btn btn-secondary">Cancel</a>
+                        <a href="{{ url_for('recipes.list_recipes') }}" class="btn btn-secondary">Annuleren</a>
                         {{ form.submit(class="btn btn-primary") }}
                     </div>
                 </form>
@@ -105,4 +134,103 @@
         </div>
     </div>
 </div>
+
+{% block scripts %}
+<!-- Sortable for drag-and-drop -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+function reindexList(container) {
+    const items = Array.from(container.children).filter(c => c.classList && c.classList.contains('list-group-item'));
+    items.forEach((item, idx) => {
+        item.dataset.index = idx;
+        const inputs = item.querySelectorAll('input, select, textarea');
+        inputs.forEach(inp => {
+            if (!inp.name) return;
+            // handle names like 'ingredients-0-name_' and 'instructions-0'
+            inp.name = inp.name.replace(/-(\d+)-/, `-${idx}-`).replace(/-(\d+)$/, `-${idx}`);
+            if (inp.id) inp.id = inp.id.replace(/-(\d+)-/, `-${idx}-`).replace(/-(\d+)$/, `-${idx}`);
+        });
+    });
+}
+
+function ensureOneEmptyAtEnd(list, isIngredient=true) {
+    const items = Array.from(list.querySelectorAll('.list-group-item'));
+    // determine if there is at least one empty (by name only for ingredients, or by value for steps)
+    const emptyExists = items.some(it => {
+        if (isIngredient) {
+            const nameInput = it.querySelector('input[name*=\"name_\"]');
+            return nameInput && nameInput.value.trim() === '';
+        } else {
+            const inp = it.querySelector('input, textarea');
+            return inp && inp.value.trim() === '';
+        }
+    });
+    if (!emptyExists && items.length > 0) {
+        const last = items[items.length - 1];
+        const clone = last.cloneNode(true);
+        clone.querySelectorAll('input, textarea, select').forEach(i => i.value = '');
+        list.appendChild(clone);
+        reindexList(list);
+    }
+}
+
+function attachListHandlers(listSelector, itemSelector, isIngredient=true) {
+    const list = document.querySelector(listSelector);
+    if (!list) return;
+
+    new Sortable(list, { animation: 150, handle: '.list-group-item' });
+
+    // auto-add when typing in the last empty name field
+    list.addEventListener('input', function(e) {
+        const target = e.target;
+        // for ingredients, only watch name_ inputs; for steps, watch any input
+        if (isIngredient && !target.name.includes('name_')) return;
+        const items = Array.from(list.querySelectorAll(itemSelector));
+        const last = items[items.length - 1];
+        if (!last) return;
+        if (target.closest(itemSelector) === last && target.value.trim() !== '') {
+            const clone = last.cloneNode(true);
+            clone.querySelectorAll('input, textarea, select').forEach(i => i.value = '');
+            list.appendChild(clone);
+            reindexList(list);
+        }
+    });
+
+    // on blur, remove empty items if there are 2 or more empty items (keep exactly one)
+    list.addEventListener('focusout', function(e) {
+        const input = e.target;
+        if (!(input.matches('input, textarea, select'))) return;
+        setTimeout(()=>{
+            const items = Array.from(list.querySelectorAll(itemSelector));
+            // count empties (by name for ingredients, by value for steps)
+            const empties = items.filter(it => {
+                if (isIngredient) {
+                    const nameInput = it.querySelector('input[name*=\"name_\"]');
+                    return nameInput && nameInput.value.trim() === '';
+                } else {
+                    const inp = it.querySelector('input, textarea');
+                    return inp && inp.value.trim() === '';
+                }
+            });
+            const currentItem = input.closest(itemSelector);
+            if (!currentItem) return;
+            const currentIsEmpty = (isIngredient ? (currentItem.querySelector('input[name*=\"name_\"]').value.trim() === '') : (currentItem.querySelector('input, textarea').value.trim() === ''));
+            if (currentIsEmpty && empties.length >= 2) {
+                // remove the current empty item
+                currentItem.remove();
+                reindexList(list);
+            }
+        }, 120);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+    attachListHandlers('#ingredients-list', '.ingredient-item', true);
+    attachListHandlers('#instructions-list', '.instruction-item', false);
+    ensureOneEmptyAtEnd(document.querySelector('#ingredients-list'), true);
+    ensureOneEmptyAtEnd(document.querySelector('#instructions-list'), false);
+});
+</script>
+{% endblock %}
+
 {% endblock %}

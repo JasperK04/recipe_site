@@ -1,76 +1,138 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, TextAreaField, IntegerField, SelectField, SubmitField
-from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError, Optional
+from wtforms import (
+    FieldList,
+    FormField,
+    IntegerField,
+    PasswordField,
+    SelectField,
+    StringField,
+    SubmitField,
+    TextAreaField,
+)
+from wtforms import Form as NoCsrfForm
+from wtforms.validators import (
+    DataRequired,
+    Email,
+    EqualTo,
+    Length,
+    Optional,
+    ValidationError,
+)
+
 from app.models import User
 
 
 class RegistrationForm(FlaskForm):
     """User registration form."""
-    username = StringField('Username', validators=[
-        DataRequired(),
-        Length(min=3, max=80, message='Username must be between 3 and 80 characters.')
-    ])
-    email = StringField('Email', validators=[
-        DataRequired(),
-        Email(message='Please enter a valid email address.')
-    ])
-    password = PasswordField('Password', validators=[
-        DataRequired(),
-        Length(min=6, message='Password must be at least 6 characters long.')
-    ])
-    confirm_password = PasswordField('Confirm Password', validators=[
-        DataRequired(),
-        EqualTo('password', message='Passwords must match.')
-    ])
-    submit = SubmitField('Register')
-    
+
+    username = StringField(
+        "Gebruikersnaam",
+        validators=[
+            DataRequired(),
+            Length(
+                min=3, max=80, message="Gebruikersnaam moet tussen 3 en 80 tekens zijn."
+            ),
+        ],
+    )
+    email = StringField(
+        "E-mail",
+        validators=[DataRequired(), Email(message="Voer een geldig e-mailadres in.")],
+    )
+    password = PasswordField(
+        "Wachtwoord",
+        validators=[
+            DataRequired(),
+            Length(min=6, message="Wachtwoord moet minimaal 6 tekens lang zijn."),
+        ],
+    )
+    confirm_password = PasswordField(
+        "Bevestig wachtwoord",
+        validators=[
+            DataRequired(),
+            EqualTo("password", message="Wachtwoorden moeten overeenkomen."),
+        ],
+    )
+    submit = SubmitField("Registreren")
+
     def validate_username(self, username):
         """Check if username already exists."""
         user = User.query.filter_by(username=username.data).first()
         if user:
-            raise ValidationError('Username already taken. Please choose a different one.')
-    
+            raise ValidationError("Gebruikersnaam al in gebruik. Kies een andere.")
+
     def validate_email(self, email):
         """Check if email already exists."""
         user = User.query.filter_by(email=email.data).first()
         if user:
-            raise ValidationError('Email already registered. Please use a different one.')
+            raise ValidationError(
+                "E-mail al geregistreerd. Gebruik een ander e-mailadres."
+            )
 
 
 class LoginForm(FlaskForm):
     """User login form."""
-    username = StringField('Username', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    submit = SubmitField('Login')
+
+    username = StringField("Gebruikersnaam", validators=[DataRequired()])
+    password = PasswordField("Wachtwoord", validators=[DataRequired()])
+    submit = SubmitField("Inloggen")
 
 
 class RecipeForm(FlaskForm):
     """Form for adding/editing recipes."""
-    title = StringField('Recipe Title', validators=[
-        DataRequired(),
-        Length(max=200, message='Title must be less than 200 characters.')
-    ])
-    description = TextAreaField('Description', validators=[
-        Length(max=500, message='Description must be less than 500 characters.')
-    ])
-    ingredients = TextAreaField('Ingredients', validators=[
-        DataRequired(message='Please list the ingredients.')
-    ], description='List ingredients, one per line')
-    instructions = TextAreaField('Instructions', validators=[
-        DataRequired(message='Please provide cooking instructions.')
-    ], description='Step-by-step instructions')
-    prep_time = IntegerField('Prep Time (minutes)', validators=[Optional()])
-    cook_time = IntegerField('Cook Time (minutes)', validators=[Optional()])
-    servings = IntegerField('Servings', validators=[Optional()])
-    category = SelectField('Category', choices=[
-        ('', 'Select a category'),
-        ('appetizer', 'Appetizer'),
-        ('breakfast', 'Breakfast'),
-        ('lunch', 'Lunch'),
-        ('dinner', 'Dinner'),
-        ('dessert', 'Dessert'),
-        ('snack', 'Snack'),
-        ('beverage', 'Beverage'),
-        ('other', 'Other')
-    ])
-    submit = SubmitField('Save Recipe')
+
+    title = StringField(
+        "Titel",
+        validators=[
+            DataRequired(),
+            Length(max=200, message="Titel moet minder dan 200 tekens bevatten."),
+        ],
+    )
+    description = TextAreaField(
+        "Beschrijving",
+        validators=[
+            Length(max=500, message="Beschrijving moet minder dan 500 tekens zijn.")
+        ],
+    )
+
+    # Ingredients: a dynamic list of subforms (name, quantity, measurement)
+    class IngredientForm(NoCsrfForm):
+        name_ = StringField("Naam", validators=[Optional()])
+        quantity = StringField("Hoeveelheid", validators=[Optional()])
+        measurement = SelectField(
+            "Eenheid",
+            choices=[
+                ("g", "g"),
+                ("kg", "kg"),
+                ("ml", "ml"),
+                ("l", "l"),
+                ("el", "el"),
+                ("tl", "tl"),
+                ("stuks", "stuks"),
+            ],
+            validators=[Optional()],
+        )
+
+    ingredients = FieldList(FormField(IngredientForm), min_entries=1)
+
+    # Instructions: a dynamic list of single-line steps
+    instructions = FieldList(
+        StringField("Stap", validators=[Optional()]), min_entries=1
+    )
+    prep_time = IntegerField("Bereidingstijd (minuten)", validators=[])
+    cook_time = IntegerField("Kooktijd (minuten)", validators=[Optional()])
+    servings = IntegerField("Porties", validators=[Optional()])
+    category = SelectField(
+        "Categorie",
+        choices=[
+            ("", "Selecteer een categorie"),
+            ("Voorgerecht", "Voorgerecht"),
+            ("Ontbijt", "Ontbijt"),
+            ("Lunch", "Lunch"),
+            ("Diner", "Diner"),
+            ("Nagerecht", "Nagerecht"),
+            ("Snack", "Snack"),
+            ("Drank", "Drank"),
+            ("Overig", "Overig"),
+        ],
+    )
+    submit = SubmitField("Opslaan")

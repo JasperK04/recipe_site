@@ -1,26 +1,26 @@
 {% extends "base.html" %}
 
-{% block title %}Home - Recipe Site{% endblock %}
+{% block title %}Startpagina - Recepten{% endblock %}
 
 {% block content %}
 <div class="jumbotron bg-light p-5 rounded-3 mb-4">
-    <h1 class="display-4">Welcome to Recipe Site!</h1>
-    <p class="lead">Save, share, and discover delicious cooking recipes.</p>
+    <h1 class="display-4">Welkom bij Recepten!</h1>
+    <p class="lead">Sla op, deel en ontdek heerlijke kookrecepten.</p>
     <hr class="my-4">
-    <p>Create an account to start adding your favorite recipes or browse our collection.</p>
+    <p>Maak een account aan om je favoriete recepten toe te voegen of blader door onze collectie.</p>
     <div class="mt-4">
         {% if current_user.is_authenticated %}
             <a class="btn btn-primary btn-lg" href="{{ url_for('recipes.add_recipe') }}" role="button">
-                <i class="bi bi-plus-circle"></i> Add Your First Recipe
+                <i class="bi bi-plus-circle"></i> Voeg je eerste recept toe
             </a>
         {% else %}
-            <a class="btn btn-primary btn-lg me-2" href="{{ url_for('auth.register') }}" role="button">Get Started</a>
-            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('recipes.list_recipes') }}" role="button">Browse Recipes</a>
+            <a class="btn btn-primary btn-lg me-2" href="{{ url_for('auth.register') }}" role="button">Begin</a>
+            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('recipes.list_recipes') }}" role="button">Recepten bekijken</a>
         {% endif %}
     </div>
 </div>
 
-<h2 class="mb-4">Recent Recipes</h2>
+<h2 class="mb-4">Recente recepten</h2>
 {% if recipes %}
 <div class="row g-4">
     {% for recipe in recipes %}
@@ -51,21 +51,21 @@
                 {% endif %}
             </div>
             <div class="card-footer bg-transparent">
-                <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-primary w-100">View Recipe</a>
+                <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-primary w-100">Bekijk recept</a>
             </div>
         </div>
     </div>
     {% endfor %}
 </div>
 {% else %}
-<div class="alert alert-info">
-    <i class="bi bi-info-circle"></i> No recipes yet. Be the first to add one!
+                <div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Nog geen recepten. Wees de eerste om er een toe te voegen!
 </div>
 {% endif %}
 
 {% if recipes %}
 <div class="text-center mt-4">
-    <a href="{{ url_for('recipes.list_recipes') }}" class="btn btn-outline-primary">View All Recipes</a>
+    <a href="{{ url_for('recipes.list_recipes') }}" class="btn btn-outline-primary">Bekijk alle recepten</a>
 </div>
 {% endif %}
 {% endblock %}

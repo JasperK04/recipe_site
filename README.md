@@ -27,7 +27,7 @@ A Flask web application for managing and sharing cooking recipes. Save, organize
 ## Project Structure
 
 ```
-recepy_site/
+recipe_site/
 ├── app/
 │   ├── __init__.py          # Application factory
 │   ├── models.py            # Database models (User, Recipe)
@@ -206,17 +206,6 @@ recipes = Recipe.query.all()
 5. Static files: Add files to `app/static/`
 
 ## Deployment
-
-### Production Configuration
-
-1. Set `FLASK_ENV=production` in your `.env` file
-2. Use a strong `SECRET_KEY`
-3. Configure a production database (PostgreSQL recommended)
-4. Use a production WSGI server like Gunicorn:
-   ```bash
-   pip install gunicorn
-   gunicorn -w 4 -b 0.0.0.0:8000 run:app
-   ```
 
 ### Security Notes
 

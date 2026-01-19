@@ -22,6 +22,13 @@ def make_shell_context():
 
 
 if __name__ == '__main__':
+
+    with app.app_context():
+        try:
+            db.create_all()
+        except Exception as e:
+            print('Warning: failed to ensure database tables:', e)
+
     # Get debug mode from configuration, not hardcoded
     debug_mode = app.config.get('DEBUG', False)
     # For development, bind to localhost only for security

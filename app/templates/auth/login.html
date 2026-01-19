@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}Login - Recipe Site{% endblock %}
+{% block title %}Inloggen - Recepten{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-5">
         <div class="card shadow">
             <div class="card-body">
-                <h2 class="card-title text-center mb-4">Login</h2>
+                <h2 class="card-title text-center mb-4">Inloggen</h2>
                 <form method="POST" action="{{ url_for('auth.login') }}">
                     {{ form.hidden_tag() }}
                     
                     <div class="mb-3">
                         {{ form.username.label(class="form-label") }}
-                        {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else ""), placeholder="Enter your username") }}
+                        {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else ""), placeholder="Voer uw gebruikersnaam in") }}
                         {% if form.username.errors %}
                             <div class="invalid-feedback">
                                 {% for error in form.username.errors %}{{ error }}{% endfor %}
@@ -23,7 +23,7 @@
                     
                     <div class="mb-3">
                         {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), placeholder="Enter your password") }}
+                        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), placeholder="Voer uw wachtwoord in") }}
                         {% if form.password.errors %}
                             <div class="invalid-feedback">
                                 {% for error in form.password.errors %}{{ error }}{% endfor %}
@@ -38,7 +38,7 @@
                 
                 <hr class="my-4">
                 <p class="text-center mb-0">
-                    Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a>
+                    Nog geen account? <a href="{{ url_for('auth.register') }}">Registreer hier</a>
                 </p>
             </div>
         </div>
