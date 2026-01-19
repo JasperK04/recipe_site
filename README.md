@@ -19,8 +19,10 @@ A Flask web application for managing and sharing cooking recipes. Save, organize
 - **Flask-Session** - Server-side session storage
 - **Flask-SQLAlchemy** - Database ORM
 - **Flask-WTF** - Form handling and validation
+- **Flask-Migrate** - Database migrations
 - **SQLite** - Database (default, can be changed to PostgreSQL, MySQL, etc.)
 - **Bootstrap 5** - Frontend UI framework
+- **Faker** - Mock data generation for testing
 
 ## Project Structure
 
@@ -118,7 +120,70 @@ flask run
 
 ### Database Management
 
-Access the Flask shell to interact with the database:
+#### Database Migrations
+
+This project uses Flask-Migrate for database schema migrations. Here's how to use it:
+
+**Initialize migrations** (only needed once, already done):
+```bash
+flask db init
+```
+
+**Create a new migration** after changing models:
+```bash
+flask db migrate -m "Description of changes"
+```
+
+**Apply migrations** to the database:
+```bash
+flask db upgrade
+```
+
+**Rollback a migration**:
+```bash
+flask db downgrade
+```
+
+#### CLI Commands
+
+The application provides several CLI commands for database and user management:
+
+**Create a new user:**
+```bash
+flask create-user <username> <email>
+# You'll be prompted for password
+```
+
+**Create an admin user:**
+```bash
+flask create-admin <username> <email>
+# You'll be prompted for password
+```
+
+**Populate database with mock data:**
+```bash
+# Create 5 users and 20 recipes (default)
+flask seed-data
+
+# Create custom amounts
+flask seed-data --users 10 --recipes 50
+```
+*Note: Seeded users have default password: `password123`*
+
+**Display database statistics:**
+```bash
+flask db-stats
+```
+
+**Clear all data from database:**
+```bash
+flask clear-data
+# You'll be asked to confirm
+```
+
+#### Interactive Shell
+
+Access the Flask shell to interact with the database directly:
 
 ```bash
 flask shell
@@ -145,14 +210,6 @@ recipes = Recipe.query.all()
 3. Routes: Edit appropriate blueprint in `app/` directory
 4. Templates: Add/edit files in `app/templates/`
 5. Static files: Add files to `app/static/`
-
-### Database Migrations (Optional)
-
-For production use, consider using Flask-Migrate for database migrations:
-
-```bash
-pip install Flask-Migrate
-```
 
 ## Deployment
 
