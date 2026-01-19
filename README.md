@@ -52,7 +52,7 @@ recepy_site/
 │       └── js/
 ├── config.py                # Configuration settings
 ├── run.py                   # Application entry point
-├── requirements.txt         # Python dependencies
+├── pyproject.toml           # Python dependencies
 ├── .env.example            # Example environment variables
 └── README.md               # This file
 ```
@@ -61,8 +61,8 @@ recepy_site/
 
 ### Prerequisites
 
-- Python 3.8 or higher
-- pip (Python package installer)
+- Python 3.12 or higher
+- uv (Python package installer)
 
 ### Setup Instructions
 
@@ -74,16 +74,10 @@ recepy_site/
 
 2. **Create a virtual environment**
    ```bash
-   python -m venv venv
-   source venv/bin/activate
+   uv sync
    ```
 
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Configure environment variables**
+3. **Configure environment variables**
    ```bash
    cp .env.example .env
    ```
@@ -92,7 +86,7 @@ recepy_site/
    - `SECRET_KEY`: Generate a secure secret key
    - `DATABASE_URL`: (Optional)
 
-5. **Initialize the database**
+4. **Initialize the database**
    ```bash
    python run.py
    ```
