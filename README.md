@@ -68,14 +68,14 @@ recepy_site/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/JasperK04/recepy_site.git
-   cd recepy_site
+   git clone https://github.com/JasperK04/recipe_site.git
+   cd recipe_site
    ```
 
 2. **Create a virtual environment**
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source venv/bin/activate
    ```
 
 3. **Install dependencies**
@@ -90,7 +90,7 @@ recepy_site/
    
    Edit `.env` and update the following:
    - `SECRET_KEY`: Generate a secure secret key
-   - `DATABASE_URL`: (Optional) Use PostgreSQL or MySQL instead of SQLite
+   - `DATABASE_URL`: (Optional)
 
 5. **Initialize the database**
    ```bash
