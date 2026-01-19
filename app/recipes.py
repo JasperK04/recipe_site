@@ -48,15 +48,15 @@ def add_recipe():
     form = RecipeForm()
     if form.validate_on_submit():
         recipe = Recipe(
-            title=form.title.data,
-            description=form.description.data,
-            ingredients=form.ingredients.data,
-            instructions=form.instructions.data,
-            prep_time=form.prep_time.data,
-            cook_time=form.cook_time.data,
-            servings=form.servings.data,
-            category=form.category.data if form.category.data else None,
-            user_id=current_user.id
+            title=form.title.data, # type: ignore
+            description=form.description.data, # type: ignore
+            ingredients=form.ingredients.data, # type: ignore
+            instructions=form.instructions.data, # type: ignore
+            prep_time=form.prep_time.data, # type: ignore
+            cook_time=form.cook_time.data, # type: ignore
+            servings=form.servings.data, # type: ignore
+            category=form.category.data if form.category.data else None, # type: ignore
+            user_id=current_user.id # type: ignore
         )
         db.session.add(recipe)
         db.session.commit()
