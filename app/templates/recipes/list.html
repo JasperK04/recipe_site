@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}All Recipes - Recipe Site{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>All Recipes</h1>
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('recipes.add_recipe') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add Recipe
+    </a>
+    {% endif %}
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <form method="GET" action="{{ url_for('recipes.list_recipes') }}" class="d-flex">
+            <input type="text" name="search" class="form-control me-2" placeholder="Search recipes..." value="{{ search }}">
+            <button type="submit" class="btn btn-outline-primary">Search</button>
+        </form>
+    </div>
+    <div class="col-md-4">
+        <select class="form-select" onchange="window.location.href=this.value;">
+            <option value="{{ url_for('recipes.list_recipes') }}" {% if not category %}selected{% endif %}>All Categories</option>
+            <option value="{{ url_for('recipes.list_recipes', category='appetizer') }}" {% if category == 'appetizer' %}selected{% endif %}>Appetizer</option>
+            <option value="{{ url_for('recipes.list_recipes', category='breakfast') }}" {% if category == 'breakfast' %}selected{% endif %}>Breakfast</option>
+            <option value="{{ url_for('recipes.list_recipes', category='lunch') }}" {% if category == 'lunch' %}selected{% endif %}>Lunch</option>
+            <option value="{{ url_for('recipes.list_recipes', category='dinner') }}" {% if category == 'dinner' %}selected{% endif %}>Dinner</option>
+            <option value="{{ url_for('recipes.list_recipes', category='dessert') }}" {% if category == 'dessert' %}selected{% endif %}>Dessert</option>
+            <option value="{{ url_for('recipes.list_recipes', category='snack') }}" {% if category == 'snack' %}selected{% endif %}>Snack</option>
+            <option value="{{ url_for('recipes.list_recipes', category='beverage') }}" {% if category == 'beverage' %}selected{% endif %}>Beverage</option>
+            <option value="{{ url_for('recipes.list_recipes', category='other') }}" {% if category == 'other' %}selected{% endif %}>Other</option>
+        </select>
+    </div>
+</div>
+
+{% if recipes.items %}
+<div class="row g-4">
+    {% for recipe in recipes.items %}
+    <div class="col-md-4">
+        <div class="card recipe-card h-100">
+            <div class="card-body">
+                <h5 class="card-title">{{ recipe.title }}</h5>
+                {% if recipe.description %}
+                <p class="card-text text-muted">{{ recipe.description[:100] }}{% if recipe.description|length > 100 %}...{% endif %}</p>
+                {% endif %}
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="bi bi-person"></i> {{ recipe.author.username }}
+                    </small>
+                    {% if recipe.category %}
+                    <span class="badge bg-secondary">{{ recipe.category }}</span>
+                    {% endif %}
+                </div>
+                {% if recipe.prep_time or recipe.cook_time %}
+                <div class="mt-2">
+                    {% if recipe.prep_time %}
+                    <small class="text-muted"><i class="bi bi-clock"></i> Prep: {{ recipe.prep_time }}m</small>
+                    {% endif %}
+                    {% if recipe.cook_time %}
+                    <small class="text-muted ms-2"><i class="bi bi-fire"></i> Cook: {{ recipe.cook_time }}m</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-transparent">
+                <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-primary w-100">View Recipe</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if recipes.pages > 1 %}
+<nav aria-label="Recipe pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if recipes.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('recipes.list_recipes', page=recipes.prev_num, category=category, search=search) }}">Previous</a>
+        </li>
+        {% endif %}
+        
+        {% for page_num in recipes.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+            {% if page_num %}
+                <li class="page-item {% if page_num == recipes.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('recipes.list_recipes', page=page_num, category=category, search=search) }}">{{ page_num }}</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if recipes.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('recipes.list_recipes', page=recipes.next_num, category=category, search=search) }}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> No recipes found. {% if search or category %}Try adjusting your search or filter.{% else %}Be the first to add one!{% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}About - Recipe Site{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">About Recipe Site</h1>
+
+<div class="row">
+    <div class="col-lg-8">
+        <p class="lead">Recipe Site is your personal cookbook in the cloud.</p>
+        
+        <h3 class="mt-4">Features</h3>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Add and organize your favorite recipes</li>
+            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Edit and update recipes anytime</li>
+            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Browse recipes by category</li>
+            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Search for specific dishes</li>
+            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Track prep and cook times</li>
+            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Secure user authentication</li>
+        </ul>
+
+        <h3 class="mt-4">Getting Started</h3>
+        <ol>
+            <li><a href="{{ url_for('auth.register') }}">Create an account</a></li>
+            <li><a href="{{ url_for('auth.login') }}">Log in</a> to your account</li>
+            <li><a href="{{ url_for('recipes.add_recipe') }}">Add your first recipe</a></li>
+            <li>Start building your personal cookbook!</li>
+        </ol>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Technology Stack</h5>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-check"></i> Flask - Web Framework</li>
+                    <li><i class="bi bi-check"></i> SQLAlchemy - Database ORM</li>
+                    <li><i class="bi bi-check"></i> Flask-Login - Authentication</li>
+                    <li><i class="bi bi-check"></i> Flask-Session - Session Management</li>
+                    <li><i class="bi bi-check"></i> Bootstrap 5 - UI Framework</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

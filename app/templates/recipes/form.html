@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Recipe Site{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-body">
+                <h2 class="card-title mb-4">{{ title }}</h2>
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.title.label(class="form-label") }}
+                        {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else "")) }}
+                        {% if form.title.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.title.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="3") }}
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.description.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">A brief description of your recipe</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.category.label(class="form-label") }}
+                            {{ form.category(class="form-select" + (" is-invalid" if form.category.errors else "")) }}
+                            {% if form.category.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.category.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.servings.label(class="form-label") }}
+                            {{ form.servings(class="form-control" + (" is-invalid" if form.servings.errors else "")) }}
+                            {% if form.servings.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.servings.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.prep_time.label(class="form-label") }}
+                            {{ form.prep_time(class="form-control" + (" is-invalid" if form.prep_time.errors else "")) }}
+                            {% if form.prep_time.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.prep_time.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.cook_time.label(class="form-label") }}
+                            {{ form.cook_time(class="form-control" + (" is-invalid" if form.cook_time.errors else "")) }}
+                            {% if form.cook_time.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.cook_time.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.ingredients.label(class="form-label") }}
+                        {{ form.ingredients(class="form-control" + (" is-invalid" if form.ingredients.errors else ""), rows="8") }}
+                        {% if form.ingredients.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.ingredients.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">{{ form.ingredients.description }}</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.instructions.label(class="form-label") }}
+                        {{ form.instructions(class="form-control" + (" is-invalid" if form.instructions.errors else ""), rows="10") }}
+                        {% if form.instructions.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.instructions.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">{{ form.instructions.description }}</small>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('recipes.list_recipes') }}" class="btn btn-secondary">Cancel</a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
