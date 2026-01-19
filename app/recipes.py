@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from flask_login import login_required, current_user
+from sqlalchemy import or_
 from app import db
 from app.models import Recipe
 from app.forms import RecipeForm
@@ -20,7 +21,11 @@ def list_recipes():
         query = query.filter_by(category=category)
     
     if search:
-        query = query.filter(Recipe.title.contains(search) | Recipe.description.contains(search))
+        search_pattern = f'%{search}%'
+        query = query.filter(or_(
+            Recipe.title.ilike(search_pattern),
+            Recipe.description.ilike(search_pattern)
+        ))
     
     recipes = query.order_by(Recipe.created_at.desc()).paginate(
         page=page, per_page=12, error_out=False

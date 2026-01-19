@@ -22,4 +22,8 @@ def make_shell_context():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Get debug mode from configuration, not hardcoded
+    debug_mode = app.config.get('DEBUG', False)
+    # For development, bind to localhost only for security
+    host = '0.0.0.0' if debug_mode else '127.0.0.1'
+    app.run(debug=debug_mode, host=host, port=5000)
