@@ -32,9 +32,7 @@ def create_app(config_name="default"):
     login_manager.login_message = "Please log in to access this page."
 
     # Register blueprints
-    from app.auth import auth_bp
-    from app.main import main_bp
-    from app.recipes import recipes_bp
+    from app.routes import auth_bp, main_bp, recipes_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix="/auth")

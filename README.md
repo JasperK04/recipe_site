@@ -29,13 +29,15 @@ A Flask web application for managing and sharing cooking recipes. Save, organize
 ```
 recipe_site/
 ├── app/
-│   ├── __init__.py          # Application factory
-│   ├── models.py            # Database models (User, Recipe)
-│   ├── forms.py             # WTForms for validation
-│   ├── auth.py              # Authentication routes
-│   ├── recipes.py           # Recipe management routes
-│   ├── main.py              # Main routes (home, about)
-│   ├── templates/           # Jinja2 templates
+│   ├── __init__.py
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   ├── main.py
+│   │   └── recipes.py
+│   ├── models.py
+│   ├── forms.py
+│   ├── templates/
 │   │   ├── base.html
 │   │   ├── index.html
 │   │   ├── about.html
@@ -47,14 +49,14 @@ recipe_site/
 │   │       ├── view.html
 │   │       ├── form.html
 │   │       └── my_recipes.html
-│   └── static/              # Static files (CSS, JS)
+│   └── static/
 │       ├── css/
 │       └── js/
-├── config.py                # Configuration settings
-├── run.py                   # Application entry point
-├── pyproject.toml           # Python dependencies
-├── .env.example            # Example environment variables
-└── README.md               # This file
+├── config.py
+├── run.py
+├── pyproject.toml
+├── .env.example
+└── README.md
 ```
 
 ## Installation
