@@ -51,6 +51,26 @@
                         {% endif %}
                     </div>
                     
+                    <div class="mb-3">
+                        {{ form.kitchen_machines.label(class="form-label") }}
+                        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-2">
+                            {% for subfield in form.kitchen_machines %}
+                            <div class="col">
+                                <div class="form-check">
+                                    {{ subfield(class="form-check-input", id=subfield.id) }}
+                                    <label class="form-check-label" for="{{ subfield.id }}">{{ subfield.label.text }}</label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <small class="form-text text-muted">Selecteer de keukenapparatuur die je hebt</small>
+                        {% if form.kitchen_machines.errors %}
+                            <div class="text-danger">
+                                {% for error in form.kitchen_machines.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
                     <div class="d-grid">
                         {{ form.submit(class="btn btn-primary btn-lg") }}
                     </div>

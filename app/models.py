@@ -5,6 +5,29 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
 
+# Association tables for many-to-many relationships
+user_machines = db.Table(
+    "user_machines",
+    db.Column("user_id", db.Integer, db.ForeignKey("users.id"), primary_key=True),
+    db.Column(
+        "machine_id",
+        db.Integer,
+        db.ForeignKey("kitchen_machines.id"),
+        primary_key=True,
+    ),
+)
+
+recipe_machines = db.Table(
+    "recipe_machines",
+    db.Column("recipe_id", db.Integer, db.ForeignKey("recipes.id"), primary_key=True),
+    db.Column(
+        "machine_id",
+        db.Integer,
+        db.ForeignKey("kitchen_machines.id"),
+        primary_key=True,
+    ),
+)
+
 
 class PaginationMixin:
     """Mixin providing a standard paginate helper for models.
@@ -63,6 +86,14 @@ class User(UserMixin, db.Model):
         "Recipe", backref="author", lazy="dynamic", cascade="all, delete-orphan"
     )
 
+    # Relationship with kitchen machines (many-to-many)
+    kitchen_machines = db.relationship(
+        "KitchenMachine",
+        secondary=user_machines,
+        lazy="subquery",
+        backref=db.backref("users", lazy=True),
+    )
+
     def set_password(self, password):
         """Hash and set the user's password."""
         self.password_hash = generate_password_hash(password)
@@ -99,5 +130,26 @@ class Recipe(PaginationMixin, db.Model):
     # Foreign key to User
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
+    # Relationship with kitchen machines (many-to-many)
+    required_machines = db.relationship(
+        "KitchenMachine",
+        secondary=recipe_machines,
+        lazy="subquery",
+        backref=db.backref("recipes", lazy=True),
+    )
+
     def __repr__(self):
         return f"<Recipe {self.title}>"
+
+
+class KitchenMachine(db.Model):
+    """Kitchen machine/equipment model."""
+
+    __tablename__ = "kitchen_machines"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    description = db.Column(db.String(200))
+
+    def __repr__(self):
+        return f"<KitchenMachine {self.name}>"

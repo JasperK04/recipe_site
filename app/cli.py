@@ -10,7 +10,7 @@ from faker import Faker
 from flask import Flask
 
 from app import db
-from app.models import Recipe, User
+from app.models import KitchenMachine, Recipe, User
 
 fake = Faker("nl_NL")
 
@@ -114,8 +114,8 @@ def register_commands(app: Flask):
             flask seed-data
             flask seed-data --users 10 --recipes 50
         """
-        num_recipes = Recipe.query.delete()  # noqa: F841
-        num_users = User.query.delete()  # noqa: F841
+        Recipe.query.delete()  # noqa: F841
+        User.query.delete()  # noqa: F841
         db.session.commit()
 
         # Create mock users
@@ -148,6 +148,18 @@ def register_commands(app: Flask):
         created_users.append(admin)
 
         db.session.commit()
+
+        # Assign random kitchen machines to users
+        all_machines = KitchenMachine.query.all()
+        if all_machines:
+            click.echo("\nKeukenapparatuur toewijzen aan gebruikers...")
+            for user in created_users:
+                # Each user gets 3-8 random machines
+                num_machines = fake.random_int(min=3, max=min(8, len(all_machines)))
+                user.kitchen_machines = fake.random_elements(
+                    elements=all_machines, length=num_machines, unique=True
+                )
+            db.session.commit()
 
         categories = [
             "voorgerecht",
@@ -188,6 +200,14 @@ def register_commands(app: Flask):
                 category=fake.random_element(elements=categories),  # type: ignore
                 user_id=fake.random_element(elements=created_users).id,  # type: ignore
             )
+
+            # Assign random required machines to some recipes
+            if all_machines and fake.boolean(chance_of_getting_true=70):
+                num_req_machines = fake.random_int(min=1, max=min(3, len(all_machines)))
+                recipe.required_machines = fake.random_elements(
+                    elements=all_machines, length=num_req_machines, unique=True
+                )
+
             db.session.add(recipe)
 
         db.session.commit()
@@ -201,10 +221,8 @@ def register_commands(app: Flask):
         """
         click.echo("Alle data uit de database verwijderen...")
 
-        # Delete all recipes
-        num_recipes = Recipe.query.delete()  # noqa: F841
-        # Delete all users
-        num_users = User.query.delete()  # noqa: F841
+        Recipe.query.delete()  # noqa: F841
+        User.query.delete()  # noqa: F841
 
         db.session.commit()
 
@@ -217,10 +235,12 @@ def register_commands(app: Flask):
         """
         num_users = User.query.count()
         num_recipes = Recipe.query.count()
+        num_machines = KitchenMachine.query.count()
 
         click.echo(click.style("\n=== Database Statistieken ===", fg="cyan", bold=True))
-        click.echo(f"Gebruikers:   {num_users}")
-        click.echo(f"Recepten: {num_recipes}")
+        click.echo(f"Gebruikers:         {num_users}")
+        click.echo(f"Recepten:           {num_recipes}")
+        click.echo(f"Keukenapparatuur:   {num_machines}")
 
         if num_users > 0:
             click.echo(
@@ -243,3 +263,81 @@ def register_commands(app: Flask):
                     click.echo(f"{username}: {count} recept(en)")
             else:
                 click.echo("Nog geen recepten aangemaakt.")
+
+    @app.cli.command("add-machine")
+    @click.argument("name")
+    @click.option(
+        "--description", default="", help="Description of the kitchen machine"
+    )
+    def add_machine(name, description):
+        """Add a kitchen machine to the database.
+
+        Usage:
+            flask add-machine "Oven"
+            flask add-machine "Mixer" --description "Electric hand mixer"
+        """
+        # Check if machine already exists
+        existing = KitchenMachine.query.filter_by(name=name).first()
+        if existing:
+            click.echo(
+                click.style(f'Fout: Keukenapparatuur "{name}" bestaat al.', fg="red")
+            )
+            return
+
+        machine = KitchenMachine(name=name, description=description)  # type: ignore
+        db.session.add(machine)
+        db.session.commit()
+
+        click.echo(click.style(f"✓ Keukenapparatuur toegevoegd: {name}", fg="green"))
+
+    @app.cli.command("list-machines")
+    def list_machines():
+        """List all kitchen machines in the database.
+
+        Usage:
+            flask list-machines
+        """
+        machines = KitchenMachine.query.order_by(KitchenMachine.name).all()
+
+        if not machines:
+            click.echo("Geen keukenapparatuur gevonden.")
+            return
+
+        click.echo(click.style("\n=== Keukenapparatuur ===", fg="cyan", bold=True))
+        for machine in machines:
+            desc = f" - {machine.description}" if machine.description else ""
+            click.echo(f"{machine.id}. {machine.name}{desc}")
+
+    @app.cli.command("seed-machines")
+    def seed_machines():
+        """Seed common kitchen machines into the database.
+
+        Usage:
+            flask seed-machines
+        """
+
+        # Delete all kitchen machines (will also clear association tables)
+        KitchenMachine.query.delete()  # noqa: F841
+
+        click.echo(click.style("Adding kitchen machines...", fg="green"))
+
+        common_machines = [
+            ("kookplaat", "Elektrische of gas kookplaat"),
+            ("Oven", "Standaard oven voor bakken en braden"),
+            ("Magnetron", "Magnetron voor opwarmen en koken"),
+            ("Mixer", "Elektrische mixer voor deeg en beslag"),
+            ("Blender", "Blender voor smoothies en soepen"),
+            ("Staafmixer", "Handstaafmixer"),
+            ("Slowcooker", "Slowcooker voor langzaam garen"),
+            ("Airfryer", "Heteluchtfriteuse"),
+            ("Frituurpan", "voor frituren"),
+            ("Deegmachine", "Deegmachine voor pasta en bakken"),
+            ("Panini ijzer", "Elektrische grill voor broodjes en vlees"),
+            ("Sous-vide", "Sous-vide apparaat voor precisie koken"),
+        ]
+
+        for name, description in common_machines:
+            machine = KitchenMachine(name=name, description=description)  # type: ignore
+            db.session.add(machine)
+
+        db.session.commit()

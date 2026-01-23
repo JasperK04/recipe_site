@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Profiel - Recepten{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h2 class="card-title mb-0">Mijn Profiel</h2>
+                    <a href="{{ url_for('auth.edit_profile') }}" class="btn btn-primary">Profiel bewerken</a>
+                </div>
+
+                <div class="mb-4">
+                    <h5>Accountinformatie</h5>
+                    <p class="mb-1"><strong>Gebruikersnaam:</strong> {{ current_user.username }}</p>
+                    <p class="mb-0"><strong>E-mail:</strong> {{ current_user.email }}</p>
+                </div>
+
+                <hr>
+
+                <h5 class="mb-3">Mijn keukenapparatuur</h5>
+                {% if current_user.kitchen_machines %}
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-2">
+                    {% for machine in current_user.kitchen_machines %}
+                    <div class="col">
+                        <div class="border rounded p-2 h-100 d-flex align-items-center">
+                            <i class="bi bi-gear me-2"></i>
+                            <span>{{ machine.name }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">Nog geen keukenapparatuur geselecteerd.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

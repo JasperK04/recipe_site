@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Profiel bewerken - Recepten{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h2 class="card-title mb-0">Profiel bewerken</h2>
+                    <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary">Annuleren</a>
+                </div>
+
+                <form method="POST" action="{{ url_for('auth.edit_profile') }}">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        {{ form.username.label(class="form-label") }}
+                        {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else "")) }}
+                        {% if form.username.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.username.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label") }}
+                        {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.email.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.kitchen_machines.label(class="form-label") }}
+                        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-2">
+                            {% for subfield in form.kitchen_machines %}
+                            <div class="col">
+                                <div class="form-check">
+                                    {{ subfield(class="form-check-input", id=subfield.id) }}
+                                    <label class="form-check-label" for="{{ subfield.id }}">{{ subfield.label.text }}</label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <small class="form-text text-muted">Selecteer de keukenapparatuur die je hebt.</small>
+                        {% if form.kitchen_machines.errors %}
+                            <div class="text-danger">
+                                {% for error in form.kitchen_machines.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <hr>
+
+                    <h5 class="mb-3">Wachtwoord wijzigen (optioneel)</h5>
+                    <p class="text-muted">Laat leeg als je je wachtwoord niet wilt wijzigen.</p>
+
+                    <div class="mb-3">
+                        {{ form.current_password.label(class="form-label") }}
+                        {{ form.current_password(class="form-control" + (" is-invalid" if form.current_password.errors else "")) }}
+                        {% if form.current_password.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.current_password.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.new_password.label(class="form-label") }}
+                        {{ form.new_password(class="form-control" + (" is-invalid" if form.new_password.errors else "")) }}
+                        {% if form.new_password.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.new_password.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.confirm_new_password.label(class="form-label") }}
+                        {{ form.confirm_new_password(class="form-control" + (" is-invalid" if form.confirm_new_password.errors else "")) }}
+                        {% if form.confirm_new_password.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.confirm_new_password.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('auth.profile') }}" class="btn btn-secondary">Annuleren</a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

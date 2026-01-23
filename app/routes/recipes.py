@@ -4,7 +4,7 @@ from sqlalchemy import or_
 
 from app import db
 from app.forms import RecipeForm
-from app.models import Recipe
+from app.models import KitchenMachine, Recipe
 
 recipes_bp = Blueprint("recipes", __name__)
 
@@ -15,6 +15,9 @@ def list_recipes():
     page = request.args.get("page", 1, type=int)
     category = request.args.get("category", None)
     search = request.args.get("search", "")
+    filter_by_machines = request.args.get(
+        "filter_machines", "1" if current_user.is_authenticated else "0"
+    )
 
     query = Recipe.query
 
@@ -30,12 +33,42 @@ def list_recipes():
             )
         )
 
+    # Filter by user's available kitchen machines (default on for authenticated users)
+    if current_user.is_authenticated and filter_by_machines == "1":
+        user_machine_ids = [m.id for m in current_user.kitchen_machines]
+        if user_machine_ids:
+            # Only show recipes where all required machines are in user's collection
+            # or recipes with no required machines
+            query = query.filter(
+                or_(
+                    ~Recipe.required_machines.any(),  # No required machines
+                    Recipe.id.in_(  # All required machines are available
+                        db.session.query(Recipe.id)
+                        .join(Recipe.required_machines)  # type: ignore
+                        .group_by(Recipe.id)
+                        .having(
+                            db.func.count(KitchenMachine.id)
+                            == db.func.sum(
+                                db.case(
+                                    (KitchenMachine.id.in_(user_machine_ids), 1),
+                                    else_=0,
+                                )
+                            )
+                        )
+                    ),
+                )
+            )
+
     recipes = query.order_by(Recipe.created_at.desc()).paginate(
         page=page, per_page=12, error_out=False
     )
 
     return render_template(
-        "recipes/list.html", recipes=recipes, category=category, search=search
+        "recipes/list.html",
+        recipes=recipes,
+        category=category,
+        search=search,
+        filter_by_machines=filter_by_machines,
     )
 
 
@@ -51,6 +84,11 @@ def view_recipe(recipe_id):
 def add_recipe():
     """Add a new recipe."""
     form = RecipeForm()
+
+    # Populate kitchen machines choices
+    machines = KitchenMachine.query.order_by(KitchenMachine.name).all()
+    form.required_machines.choices = [(m.id, m.name) for m in machines]
+
     if form.validate_on_submit():
         # sanitize ingredient entries: keep only non-empty name or any value
         raw_ingredients = form.ingredients.data or []
@@ -83,6 +121,15 @@ def add_recipe():
             category=form.category.data if form.category.data else None,  # type: ignore
             user_id=current_user.id,  # type: ignore
         )
+
+        # Add required kitchen machines
+        selected_machine_ids = form.required_machines.data
+        if selected_machine_ids:
+            selected_machines = KitchenMachine.query.filter(
+                KitchenMachine.id.in_(selected_machine_ids)
+            ).all()
+            recipe.required_machines = selected_machines  # type: ignore
+
         db.session.add(recipe)
         db.session.commit()
         flash("Recept succesvol toegevoegd!", "success")
@@ -103,6 +150,11 @@ def edit_recipe(recipe_id):
 
     # Build a fresh form instance and populate scalar fields and FieldLists
     form = RecipeForm()
+
+    # Populate kitchen machines choices
+    machines = KitchenMachine.query.order_by(KitchenMachine.name).all()
+    form.required_machines.choices = [(m.id, m.name) for m in machines]
+
     if request.method == "GET":
         # simple fields
         form.title.data = recipe.title
@@ -111,6 +163,9 @@ def edit_recipe(recipe_id):
         form.cook_time.data = recipe.cook_time
         form.servings.data = recipe.servings
         form.category.data = recipe.category if recipe.category else ""
+
+        # Pre-populate required machines
+        form.required_machines.data = [m.id for m in recipe.required_machines]
 
         # populate ingredients FieldList
         try:
@@ -166,6 +221,17 @@ def edit_recipe(recipe_id):
         recipe.cook_time = form.cook_time.data
         recipe.servings = form.servings.data
         recipe.category = form.category.data if form.category.data else None
+
+        # Update required kitchen machines
+        selected_machine_ids = form.required_machines.data
+        if selected_machine_ids:
+            selected_machines = KitchenMachine.query.filter(
+                KitchenMachine.id.in_(selected_machine_ids)
+            ).all()
+            recipe.required_machines = selected_machines
+        else:
+            recipe.required_machines = []
+
         db.session.commit()
         flash("Recept succesvol bijgewerkt!", "success")
         return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))

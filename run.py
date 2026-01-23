@@ -6,7 +6,7 @@ A Flask application for managing cooking recipes.
 import os
 from dotenv import load_dotenv
 from app import create_app, db
-from app.models import User, Recipe
+from app.models import KitchenMachine, Recipe, User
 
 # Load environment variables
 load_dotenv()
@@ -18,7 +18,7 @@ app = create_app(os.environ.get('FLASK_ENV', 'development'))
 @app.shell_context_processor
 def make_shell_context():
     """Make database models available in Flask shell."""
-    return {'db': db, 'User': User, 'Recipe': Recipe}
+    return {'db': db, 'User': User, 'Recipe': Recipe, 'KitchenMachine': KitchenMachine}
 
 
 if __name__ == '__main__':

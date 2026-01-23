@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Flask
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -47,5 +49,10 @@ def create_app(config_name="default"):
     @app.context_processor
     def inject_csrf_token():
         return dict(csrf_token=generate_csrf)
+
+    # Inject current year for footer
+    @app.context_processor
+    def inject_year():
+        return dict(current_year=datetime.now().year)
 
     return app

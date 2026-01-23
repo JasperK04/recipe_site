@@ -68,6 +68,24 @@
                     {% endif %}
                 </div>
 
+                {% if recipe.required_machines %}
+                <h3><i class="bi bi-tools"></i>Benodigde keukenapparatuur</h3>
+                <div class="bg-light p-3 rounded mb-4">
+                    <ul class="mb-0">
+                        {% for machine in recipe.required_machines %}
+                        <li>
+                            {{ machine.name }}
+                            {% if current_user.is_authenticated and machine in current_user.kitchen_machines %}
+                            <span class="badge bg-success ms-2"><i class="bi bi-check-circle"></i> Je hebt dit</span>
+                            {% elif current_user.is_authenticated %}
+                            <span class="badge bg-warning ms-2"><i class="bi bi-exclamation-circle"></i> Je hebt dit niet</span>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
                 <h3><i class="bi bi-basket"></i>Ingrediënten</h3>
                 <div class="bg-light p-3 rounded mb-4">
                     <ul class="mb-0">

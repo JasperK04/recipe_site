@@ -1,3 +1,4 @@
+from flask_login import current_user
 from flask_wtf import FlaskForm
 from wtforms import (
     FieldList,
@@ -5,6 +6,7 @@ from wtforms import (
     IntegerField,
     PasswordField,
     SelectField,
+    SelectMultipleField,
     StringField,
     SubmitField,
     TextAreaField,
@@ -12,12 +14,13 @@ from wtforms import (
 from wtforms import Form as NoCsrfForm
 from wtforms.validators import (
     DataRequired,
-    Email,
     EqualTo,
     Length,
     Optional,
+    Regexp,
     ValidationError,
 )
+from wtforms.widgets import CheckboxInput, ListWidget
 
 from app.models import User
 
@@ -32,11 +35,21 @@ class RegistrationForm(FlaskForm):
             Length(
                 min=3, max=80, message="Gebruikersnaam moet tussen 3 en 80 tekens zijn."
             ),
+            Regexp(
+                r"^[A-Za-z0-9_.-]+$",
+                message="Gebruikersnaam mag alleen letters, cijfers, punt, streep of underscore bevatten.",
+            ),
         ],
     )
     email = StringField(
         "E-mail",
-        validators=[DataRequired(), Email(message="Voer een geldig e-mailadres in.")],
+        validators=[
+            DataRequired(),
+            Regexp(
+                r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$",
+                message="Voer een geldig e-mailadres in.",
+            ),
+        ],
     )
     password = PasswordField(
         "Wachtwoord",
@@ -51,6 +64,13 @@ class RegistrationForm(FlaskForm):
             DataRequired(),
             EqualTo("password", message="Wachtwoorden moeten overeenkomen."),
         ],
+    )
+    kitchen_machines = SelectMultipleField(
+        "Keukenapparatuur",
+        coerce=int,
+        validators=[Optional()],
+        widget=ListWidget(prefix_label=False),
+        option_widget=CheckboxInput(),
     )
     submit = SubmitField("Registreren")
 
@@ -75,6 +95,105 @@ class LoginForm(FlaskForm):
     username = StringField("Gebruikersnaam", validators=[DataRequired()])
     password = PasswordField("Wachtwoord", validators=[DataRequired()])
     submit = SubmitField("Inloggen")
+
+
+class ProfileForm(FlaskForm):
+    """User profile form for updating kitchen machines."""
+
+    kitchen_machines = SelectMultipleField(
+        "Keukenapparatuur",
+        coerce=int,
+        validators=[Optional()],
+        widget=ListWidget(prefix_label=False),
+        option_widget=CheckboxInput(),
+    )
+    submit = SubmitField("Opslaan")
+
+
+class ProfileEditForm(FlaskForm):
+    """Edit profile form with optional password change."""
+
+    username = StringField(
+        "Gebruikersnaam",
+        validators=[
+            DataRequired(),
+            Length(
+                min=3, max=80, message="Gebruikersnaam moet tussen 3 en 80 tekens zijn."
+            ),
+            Regexp(
+                r"^[A-Za-z0-9_.-]+$",
+                message="Gebruikersnaam mag alleen letters, cijfers, punt, streep of underscore bevatten.",
+            ),
+        ],
+    )
+    email = StringField(
+        "E-mail",
+        validators=[
+            DataRequired(),
+            Regexp(
+                r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$",
+                message="Voer een geldig e-mailadres in.",
+            ),
+        ],
+    )
+    kitchen_machines = SelectMultipleField(
+        "Keukenapparatuur",
+        coerce=int,
+        validators=[Optional()],
+        widget=ListWidget(prefix_label=False),
+        option_widget=CheckboxInput(),
+    )
+
+    current_password = PasswordField(
+        "Huidig wachtwoord",
+        validators=[Optional()],
+    )
+    new_password = PasswordField(
+        "Nieuw wachtwoord",
+        validators=[
+            Optional(),
+            Length(min=6, message="Wachtwoord moet minimaal 6 tekens lang zijn."),
+        ],
+    )
+    confirm_new_password = PasswordField(
+        "Bevestig nieuw wachtwoord",
+        validators=[
+            Optional(),
+            EqualTo("new_password", message="Wachtwoorden moeten overeenkomen."),
+        ],
+    )
+
+    submit = SubmitField("Opslaan")
+
+    def validate_username(self, username):
+        existing = User.query.filter_by(username=username.data).first()
+        if existing and existing.id != current_user.id:
+            raise ValidationError("Gebruikersnaam al in gebruik. Kies een andere.")
+
+    def validate_email(self, email):
+        existing = User.query.filter_by(email=email.data).first()
+        if existing and existing.id != current_user.id:
+            raise ValidationError(
+                "E-mail al geregistreerd. Gebruik een ander e-mailadres."
+            )
+
+    def validate(self, extra_validators=None):  # type: ignore[override]
+        if not super().validate(extra_validators=extra_validators):
+            return False
+
+        # Password change logic: only enforce when new_password provided
+        if self.new_password.data:
+            if not self.current_password.data:
+                self.current_password.errors = list(self.current_password.errors) + [
+                    "Vul je huidige wachtwoord in om het wachtwoord te wijzigen."
+                ]
+                return False
+            if not current_user.check_password(self.current_password.data):
+                self.current_password.errors = list(self.current_password.errors) + [
+                    "Huidig wachtwoord is onjuist."
+                ]
+                return False
+        return True
 
 
 class RecipeForm(FlaskForm):
@@ -134,5 +253,12 @@ class RecipeForm(FlaskForm):
             ("Drank", "Drank"),
             ("Overig", "Overig"),
         ],
+    )
+    required_machines = SelectMultipleField(
+        "Benodigde keukenapparatuur",
+        coerce=int,
+        validators=[Optional()],
+        widget=ListWidget(prefix_label=False),
+        option_widget=CheckboxInput(),
     )
     submit = SubmitField("Opslaan")
