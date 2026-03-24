@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}Recept annoteren - Recepten{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                <h2 class="card-title mb-3">Recept annoteren</h2>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    Plak een recept-URL of upload een document. Alle tekst wordt platgeslagen en per regel
+                    aangeboden om labels toe te kennen voor het model.
+                </div>
+
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    <input type="hidden" name="action" value="load">
+
+                    <div class="mb-3">
+                        {{ form.url.label(class="form-label") }}
+                        {{ form.url(class="form-control" + (" is-invalid" if form.url.errors else ""), placeholder="https://...") }}
+                        {% if form.url.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.url.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">Voer de URL van een recept pagina in</small>
+                    </div>
+
+                    <div class="text-center my-3">
+                        <strong>— OF —</strong>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.document.label(class="form-label") }}
+                        {{ form.document(class="form-control" + (" is-invalid" if form.document.errors else "")) }}
+                        {% if form.document.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.document.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">Upload een PDF, DOCX, DOC of TXT bestand met een recept</small>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('recipes.list_recipes') }}" class="btn btn-secondary">Annuleren</a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if lines %}
+        <div class="card shadow">
+            <div class="card-body">
+                <h4 class="mb-3">Annotaties</h4>
+                <form method="POST" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="save">
+
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th style="width: 30px;"></th>
+                                    <th style="width: 50px;">#</th>
+                                    <th>Tekstregel</th>
+                                    <th style="width: 200px;">Label</th>
+                                </tr>
+                            </thead>
+                            <tbody id="annotation-rows">
+                                {% for line in lines %}
+                                <tr class="annotation-row" data-index="{{ loop.index0 }}" style="cursor: move;">
+                                    <td class="text-center text-muted" style="user-select: none;">
+                                        <i class="bi bi-grip-vertical"></i>
+                                    </td>
+                                    <td class="text-muted row-number">{{ loop.index }}</td>
+                                    <td>
+                                        <input type="text" class="form-control text-input" name="text-{{ loop.index0 }}" value="{{ line if line is string else ' '.join(line) }}" data-original="{{ line if line is string else ' '.join(line) }}">
+                                    </td>
+                                    <td>
+                                        <select class="form-select label-select" name="label-{{ loop.index0 }}">
+                                            {% set selected_label = None %}
+                                            {% if annotated_lines and loop.index0 < annotated_lines|length %}
+                                                {% set annotation_dict = annotated_lines[loop.index0] %}
+                                                {% set line_str = line if line is string else ' '.join(line) %}
+                                                {% set selected_label = annotation_dict[line_str] if line_str in annotation_dict else None %}
+                                            {% endif %}
+                                            <option value="" disabled {% if not selected_label %}selected{% endif %}>-- Kies label --</option>
+                                            {% for label in labels %}
+                                            <option value="{{ label }}" {% if label == selected_label %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('recipes.annotate_recipe') }}" class="btn btn-outline-secondary">Opnieuw laden</a>
+                        <button type="submit" class="btn btn-primary">Annotaties opslaan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% block scripts %}
+<!-- Sortable for drag-and-drop -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+function reindexRows() {
+    const rows = document.querySelectorAll('#annotation-rows .annotation-row');
+    rows.forEach((row, idx) => {
+        row.dataset.index = idx;
+        row.querySelector('.row-number').textContent = idx + 1;
+        const textInput = row.querySelector('.text-input');
+        const select = row.querySelector('select');
+        if (textInput) {
+            textInput.name = `text-${idx}`;
+        }
+        if (select) {
+            select.name = `label-${idx}`;
+        }
+    });
+}
+
+function addNewRow() {
+    const tbody = document.getElementById('annotation-rows');
+    const lastRow = tbody.querySelector('.annotation-row:last-child');
+    
+    if (!lastRow) return;
+    
+    const clone = lastRow.cloneNode(true);
+    const idx = tbody.querySelectorAll('.annotation-row').length;
+    
+    clone.querySelectorAll('input, select').forEach(el => el.value = '');
+    clone.dataset.index = idx;
+    clone.querySelector('.row-number').textContent = idx + 1;
+    
+    const textInput = clone.querySelector('.text-input');
+    if (textInput) {
+        textInput.name = `text-${idx}`;
+    }
+    const select = clone.querySelector('select');
+    if (select) {
+        select.name = `label-${idx}`;
+    }
+    
+    tbody.appendChild(clone);
+}
+
+function ensureOneEmptyAtEnd() {
+    const tbody = document.getElementById('annotation-rows');
+    if (!tbody) return;
+    
+    const rows = Array.from(tbody.querySelectorAll('.annotation-row'));
+    const emptyExists = rows.some(row => {
+        const textInput = row.querySelector('.text-input');
+        return textInput && textInput.value.trim() === '';
+    });
+    
+    if (!emptyExists && rows.length > 0) {
+        addNewRow();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const tbody = document.getElementById('annotation-rows');
+    if (!tbody) return;
+
+    // Get the form
+    const form = tbody.closest('form');
+
+    // Setup drag and drop
+    new Sortable(tbody, { 
+        animation: 150, 
+        handle: '.annotation-row',
+        onEnd: function() {
+            reindexRows();
+        }
+    });
+
+    // Function to update label required state based on text field content
+    function updateLabelRequirement(row) {
+        const textInput = row.querySelector('.text-input');
+        const labelSelect = row.querySelector('.label-select');
+        if (textInput && labelSelect) {
+            if (textInput.value.trim() === '') {
+                labelSelect.removeAttribute('required');
+            } else {
+                labelSelect.setAttribute('required', 'required');
+            }
+        }
+    }
+
+    // Update requirement state for all rows on load
+    tbody.querySelectorAll('.annotation-row').forEach(row => {
+        updateLabelRequirement(row);
+    });
+
+    // Auto-add when typing in the last empty text field
+    tbody.addEventListener('input', function(e) {
+        if (!e.target.classList.contains('text-input')) return;
+        
+        const row = e.target.closest('.annotation-row');
+        if (row) {
+            updateLabelRequirement(row);
+        }
+        
+        const rows = Array.from(tbody.querySelectorAll('.annotation-row'));
+        const lastRow = rows[rows.length - 1];
+        
+        if (!lastRow) return;
+        if (e.target.closest('.annotation-row') === lastRow && e.target.value.trim() !== '') {
+            addNewRow();
+        }
+    });
+
+    // Remove empty rows when unfocusing, but keep at least one empty
+    tbody.addEventListener('focusout', function(e) {
+        if (!e.target.classList.contains('text-input')) return;
+        
+        setTimeout(() => {
+            const rows = Array.from(tbody.querySelectorAll('.annotation-row'));
+            const empties = rows.filter(row => {
+                const textInput = row.querySelector('.text-input');
+                return textInput && textInput.value.trim() === '';
+            });
+            
+            const currentRow = e.target.closest('.annotation-row');
+            if (!currentRow) return;
+            
+            const currentIsEmpty = e.target.value.trim() === '';
+            if (currentIsEmpty && empties.length >= 2) {
+                currentRow.remove();
+                reindexRows();
+            }
+        }, 120);
+    });
+
+    // Custom form validation: only validate non-empty rows have labels
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            const rows = Array.from(tbody.querySelectorAll('.annotation-row'));
+            
+            rows.forEach(row => {
+                const textInput = row.querySelector('.text-input');
+                const labelSelect = row.querySelector('.label-select');
+                
+                if (textInput && labelSelect) {
+                    const textValue = textInput.value.trim();
+                    const labelValue = labelSelect.value.trim();
+                    
+                    // Only validate non-empty rows
+                    if (textValue !== '' && labelValue === '') {
+                        labelSelect.classList.add('is-invalid');
+                        isValid = false;
+                    } else {
+                        labelSelect.classList.remove('is-invalid');
+                    }
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+    }
+    
+    ensureOneEmptyAtEnd();
+});
+</script>
+{% endblock %}
+
+{% endblock %}

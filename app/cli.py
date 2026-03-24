@@ -10,7 +10,7 @@ from faker import Faker
 from flask import Flask
 
 from app import db
-from app.models import KitchenMachine, Recipe, User
+from app.models import KitchenMachine, Recipe, User, recipe_machines, user_machines
 
 fake = Faker("nl_NL")
 
@@ -114,6 +114,12 @@ def register_commands(app: Flask):
             flask seed-data
             flask seed-data --users 10 --recipes 50
         """
+        # Clear association tables first to avoid unique constraint conflicts
+        db.session.execute(recipe_machines.delete())
+        db.session.execute(user_machines.delete())
+        db.session.commit()
+
+        # Then clear main tables
         Recipe.query.delete()  # noqa: F841
         User.query.delete()  # noqa: F841
         db.session.commit()
@@ -194,8 +200,9 @@ def register_commands(app: Flask):
                 description=fake.text(max_nb_chars=200),  # type: ignore
                 ingredients=ingredient_list,  # type: ignore
                 instructions=instruction_list,  # type: ignore
-                prep_time=fake.random_int(min=5, max=60),  # type: ignore
+                prep_time=fake.random_int(min=5, max=60) if fake.boolean() else None,  # type: ignore
                 cook_time=fake.random_int(min=10, max=120),  # type: ignore
+                oven_time=fake.random_int(min=5, max=90) if fake.boolean() else None,  # type: ignore
                 servings=fake.random_int(min=1, max=8),  # type: ignore
                 category=fake.random_element(elements=categories),  # type: ignore
                 user_id=fake.random_element(elements=created_users).id,  # type: ignore

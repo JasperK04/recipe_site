@@ -51,10 +51,24 @@
                         <a class="nav-link" href="{{ url_for('recipes.list_recipes') }}">Alle recepten</a>
                     </li>
                     {% if current_user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('recipes.add_recipe') }}">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-plus-circle"></i> Recept toevoegen
                         </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('recipes.add_recipe') }}">
+                                <i class="bi bi-pencil"></i> Handmatig toevoegen
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('recipes.import_recipe') }}">
+                                <i class="bi bi-download"></i> Recept importeren
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('recipes.annotate_recipe') }}">
+                                <i class="bi bi-tags"></i> Recept annoteren
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('recipes.browse_ah_recipes') }}">
+                                <i class="bi bi-list-check"></i> Bulk annoteren (AH)
+                            </a></li>
+                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('recipes.my_recipes') }}">Mijn recepten</a>

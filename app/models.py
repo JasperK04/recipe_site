@@ -116,8 +116,9 @@ class Recipe(PaginationMixin, db.Model):
     description = db.Column(db.Text)
     ingredients = db.Column(db.JSON, nullable=False, default=list)
     instructions = db.Column(db.JSON, nullable=False, default=list)
-    prep_time = db.Column(db.Integer)  # in minutes
-    cook_time = db.Column(db.Integer)  # in minutes
+    prep_time = db.Column(db.Integer, nullable=True)  # in minutes
+    cook_time = db.Column(db.Integer, nullable=False)  # in minutes (required)
+    oven_time = db.Column(db.Integer, nullable=True)  # in minutes
     servings = db.Column(db.Integer)
     category = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))

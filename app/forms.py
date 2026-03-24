@@ -1,5 +1,6 @@
 from flask_login import current_user
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, FileField
 from wtforms import (
     FieldList,
     FormField,
@@ -10,9 +11,11 @@ from wtforms import (
     StringField,
     SubmitField,
     TextAreaField,
+    URLField,
 )
 from wtforms import Form as NoCsrfForm
 from wtforms.validators import (
+    URL,
     DataRequired,
     EqualTo,
     Length,
@@ -237,8 +240,27 @@ class RecipeForm(FlaskForm):
     instructions = FieldList(
         StringField("Stap", validators=[Optional()]), min_entries=1
     )
-    prep_time = IntegerField("Bereidingstijd (minuten)", validators=[])
-    cook_time = IntegerField("Kooktijd (minuten)", validators=[Optional()])
+    prep_time = StringField(
+        "voorbereiding (minuten)",
+        validators=[
+            Optional(),
+            Regexp(r"^\d*$", message="Alleen cijfers"),
+        ],
+    )
+    cook_time = StringField(
+        "bereiding (minuten)",
+        validators=[
+            DataRequired(message="Bereidingstijd is verplicht."),
+            Regexp(r"^\d+$", message="Alleen cijfers"),
+        ],
+    )
+    oven_time = StringField(
+        "oven (minuten)",
+        validators=[
+            Optional(),
+            Regexp(r"^\d*$", message="Alleen cijfers"),
+        ],
+    )
     servings = IntegerField("Porties", validators=[Optional()])
     category = SelectField(
         "Categorie",
@@ -262,3 +284,119 @@ class RecipeForm(FlaskForm):
         option_widget=CheckboxInput(),
     )
     submit = SubmitField("Opslaan")
+
+    def validate(self, extra_validators=None):  # type: ignore[override]
+        is_valid = super().validate(extra_validators=extra_validators)
+
+        # Ingredient validation: if name is provided, quantity and measurement are required
+        # If name is empty, ignore the row (even if qty/meas filled) so loose values are discarded
+        for entry in self.ingredients:
+            name = (entry.name_.data or "").strip()
+            qty = (entry.quantity.data or "").strip()
+            meas = (entry.measurement.data or "").strip()
+
+            if not name:
+                continue
+
+            if not qty:
+                entry.quantity.errors = list(entry.quantity.errors) + [
+                    "Hoeveelheid is vereist."
+                ]
+                is_valid = False
+            if not meas:
+                entry.measurement.errors = list(entry.measurement.errors) + [
+                    "Kies een eenheid (of 'Geen eenheid')."
+                ]
+                is_valid = False
+
+        return is_valid
+
+
+class ImportRecipeForm(FlaskForm):
+    """Form for importing recipe from external URL or document file."""
+
+    url = URLField(
+        "Recept URL",
+        validators=[
+            Optional(),
+            URL(message="Voer een geldige URL in"),
+        ],
+    )
+
+    document = FileField(
+        "Of upload een document",
+        validators=[
+            Optional(),
+            FileAllowed(
+                ["pdf", "docx", "doc", "txt"],
+                "Alleen PDF, DOCX, DOC en TXT bestanden zijn toegestaan.",
+            ),
+        ],
+    )
+
+    submit = SubmitField("Importeren")
+
+    def validate(self, extra_validators=None):  # type: ignore[override]
+        if not super().validate(extra_validators=extra_validators):
+            return False
+
+        # At least one of url or document must be provided
+        if not self.url.data and not self.document.data:
+            self.url.errors = list(self.url.errors) + [
+                "Vul een URL in of upload een document."
+            ]
+            return False
+
+        # Only one of url or document should be provided
+        if self.url.data and self.document.data:
+            self.url.errors = list(self.url.errors) + [
+                "Kies ofwel een URL ofwel een document, niet beide."
+            ]
+            return False
+
+        return True
+
+
+class AnnotationImportForm(FlaskForm):
+    """Form for importing recipe text for annotation from URL or document file."""
+
+    url = URLField(
+        "Recept URL",
+        validators=[
+            Optional(),
+            URL(message="Voer een geldige URL in"),
+        ],
+    )
+
+    document = FileField(
+        "Of upload een document",
+        validators=[
+            Optional(),
+            FileAllowed(
+                ["pdf", "docx", "doc", "txt"],
+                "Alleen PDF, DOCX, DOC en TXT bestanden zijn toegestaan.",
+            ),
+        ],
+    )
+
+    submit = SubmitField("Tekst laden")
+
+    def validate(self, extra_validators=None):  # type: ignore[override]
+        if not super().validate(extra_validators=extra_validators):
+            return False
+
+        # At least one of url or document must be provided
+        if not self.url.data and not self.document.data:
+            self.url.errors = list(self.url.errors) + [
+                "Vul een URL in of upload een document."
+            ]
+            return False
+
+        # Only one of url or document should be provided
+        if self.url.data and self.document.data:
+            self.url.errors = list(self.url.errors) + [
+                "Kies ofwel een URL ofwel een document, niet beide."
+            ]
+            return False
+
+        return True
