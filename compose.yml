@@ -1,0 +1,12 @@
+services:
+  recipes:
+    build: .
+    container_name: recipes
+    networks:
+      - jasper
+    env_file:
+      - .env
+
+networks:
+  jasper:
+    external: true
