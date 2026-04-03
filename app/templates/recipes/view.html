@@ -91,20 +91,7 @@
                     <ul class="mb-0">
                         {% for ingredient in recipe.ingredients %}
                             {% if ingredient["name_"] %}
-                                {% set qty_val = ingredient["quantity"] %}
-                                {% if qty_val is number %}
-                                    {% set qty_str = ("%.2f"|format(qty_val)).rstrip('0').rstrip('.') %}
-                                {% else %}
-                                    {% set qty_str = qty_val|string %}
-                                {% endif %}
-                                {% set qty_str = qty_str.replace('.', ',') %}
-                                {% set unit_val = ingredient["measurement"] %}
-                                {% if unit_val == 'geen' %}
-                                    {% set unit_str = '' %}
-                                {% else %}
-                                    {% set unit_str = unit_val %}
-                                {% endif %}
-                                <li>{{ (qty_str ~ ' ') if qty_str else '' }}{{ (unit_str ~ ' ') if unit_str else '' }}{{ ingredient["name_"] }}</li>
+                            <li>{{ ingredient["quantity"] ~ '' ~ ingredient["measurement"] ~ ' ' ~ ingredient["name_"] }}</li>
                             {% endif %}
                         {% endfor %}
                     </ul>

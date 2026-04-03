@@ -7,14 +7,7 @@
     <div class="col-lg-8">
         <div class="card shadow">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <h2 class="card-title mb-0">{{ title }}</h2>
-                    {% if title == "Recept toevoegen" %}
-                    <a href="{{ url_for('recipes.import_recipe') }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-download"></i> Of recept importeren
-                    </a>
-                    {% endif %}
-                </div>
+                <h2 class="card-title mb-4">{{ title }}</h2>
                 <form method="POST">
                     {{ form.hidden_tag() }}
                     
@@ -61,7 +54,7 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             {{ form.prep_time.label(class="form-label") }}
                             {{ form.prep_time(class="form-control" + (" is-invalid" if form.prep_time.errors else "")) }}
                             {% if form.prep_time.errors %}
@@ -70,21 +63,12 @@
                                 </div>
                             {% endif %}
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             {{ form.cook_time.label(class="form-label") }}
                             {{ form.cook_time(class="form-control" + (" is-invalid" if form.cook_time.errors else "")) }}
                             {% if form.cook_time.errors %}
                                 <div class="invalid-feedback">
                                     {% for error in form.cook_time.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            {{ form.oven_time.label(class="form-label") }}
-                            {{ form.oven_time(class="form-control" + (" is-invalid" if form.oven_time.errors else "")) }}
-                            {% if form.oven_time.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.oven_time.errors %}{{ error }}{% endfor %}
                                 </div>
                             {% endif %}
                         </div>
