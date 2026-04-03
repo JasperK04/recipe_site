@@ -14,6 +14,13 @@ load_dotenv()
 # Create the Flask application
 app = create_app(os.environ.get('FLASK_ENV', 'development'))
 
+# Ensure the database and tables exist on startup (works for WSGI servers too)
+with app.app_context():
+    try:
+        db.create_all()
+    except Exception as e:
+        app.logger.warning("Failed to ensure database tables: %s", e)
+
 
 @app.shell_context_processor
 def make_shell_context():
@@ -22,13 +29,6 @@ def make_shell_context():
 
 
 if __name__ == '__main__':
-
-    with app.app_context():
-        try:
-            db.create_all()
-        except Exception as e:
-            print('Warning: failed to ensure database tables:', e)
-
     # Get debug mode from configuration, not hardcoded
     debug_mode = app.config.get('DEBUG', False)
     # For development, bind to localhost only for security
