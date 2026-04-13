@@ -6,13 +6,8 @@ A Flask application for managing cooking recipes.
 
 import os
 
-from dotenv import load_dotenv
-
 from app import create_app, db
 from app.models import KitchenMachine, Recipe, User
-
-# Load environment variables
-load_dotenv()
 
 # Create the Flask application
 app = create_app(os.environ.get("FLASK_ENV", "development"))

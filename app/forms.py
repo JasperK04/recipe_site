@@ -65,13 +65,6 @@ class RegistrationForm(FlaskForm):
             EqualTo("password", message="Wachtwoorden moeten overeenkomen."),
         ],
     )
-    kitchen_machines = SelectMultipleField(
-        "Keukenapparatuur",
-        coerce=int,
-        validators=[Optional()],
-        widget=ListWidget(prefix_label=False),
-        option_widget=CheckboxInput(),
-    )
     submit = SubmitField("Registreren")
 
     def validate_username(self, username):
@@ -100,13 +93,6 @@ class LoginForm(FlaskForm):
 class ProfileForm(FlaskForm):
     """User profile form for updating kitchen machines."""
 
-    kitchen_machines = SelectMultipleField(
-        "Keukenapparatuur",
-        coerce=int,
-        validators=[Optional()],
-        widget=ListWidget(prefix_label=False),
-        option_widget=CheckboxInput(),
-    )
     submit = SubmitField("Opslaan")
 
 
@@ -136,13 +122,7 @@ class ProfileEditForm(FlaskForm):
             ),
         ],
     )
-    kitchen_machines = SelectMultipleField(
-        "Keukenapparatuur",
-        coerce=int,
-        validators=[Optional()],
-        widget=ListWidget(prefix_label=False),
-        option_widget=CheckboxInput(),
-    )
+    # user-machine linking removed; users no longer select machines
 
     current_password = PasswordField(
         "Huidig wachtwoord",

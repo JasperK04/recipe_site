@@ -15,9 +15,7 @@ def list_recipes():
     page = request.args.get("page", 1, type=int)
     category = request.args.get("category", None)
     search = request.args.get("search", "")
-    filter_by_machines = request.args.get(
-        "filter_machines", "1" if current_user.is_authenticated else "0"
-    )
+    filter_by_machines = request.args.get("filter_machines", "0")
 
     query = Recipe.query
 
@@ -33,31 +31,7 @@ def list_recipes():
             )
         )
 
-    # Filter by user's available kitchen machines (default on for authenticated users)
-    if current_user.is_authenticated and filter_by_machines == "1":
-        user_machine_ids = [m.id for m in current_user.kitchen_machines]
-        if user_machine_ids:
-            # Only show recipes where all required machines are in user's collection
-            # or recipes with no required machines
-            query = query.filter(
-                or_(
-                    ~Recipe.required_machines.any(),  # No required machines
-                    Recipe.id.in_(  # All required machines are available
-                        db.session.query(Recipe.id)
-                        .join(Recipe.required_machines)  # type: ignore
-                        .group_by(Recipe.id)
-                        .having(
-                            db.func.count(KitchenMachine.id)
-                            == db.func.sum(
-                                db.case(
-                                    (KitchenMachine.id.in_(user_machine_ids), 1),
-                                    else_=0,
-                                )
-                            )
-                        )
-                    ),
-                )
-            )
+    # No per-user machine filtering (assume users have needed machines)
 
     recipes = query.order_by(Recipe.created_at.desc()).paginate(
         page=page, per_page=12, error_out=False

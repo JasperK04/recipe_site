@@ -5,18 +5,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
 
-# Association tables for many-to-many relationships
-user_machines = db.Table(
-    "user_machines",
-    db.Column("user_id", db.Integer, db.ForeignKey("users.id"), primary_key=True),
-    db.Column(
-        "machine_id",
-        db.Integer,
-        db.ForeignKey("kitchen_machines.id"),
-        primary_key=True,
-    ),
-)
-
+# Association table for recipe <-> machine many-to-many relationship
 recipe_machines = db.Table(
     "recipe_machines",
     db.Column("recipe_id", db.Integer, db.ForeignKey("recipes.id"), primary_key=True),
@@ -87,12 +76,7 @@ class User(UserMixin, db.Model):
     )
 
     # Relationship with kitchen machines (many-to-many)
-    kitchen_machines = db.relationship(
-        "KitchenMachine",
-        secondary=user_machines,
-        lazy="subquery",
-        backref=db.backref("users", lazy=True),
-    )
+    # Previously users could be linked to machines; this association was removed.
 
     def set_password(self, password):
         """Hash and set the user's password."""

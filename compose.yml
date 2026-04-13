@@ -7,9 +7,9 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=sqlite:////data/recipes.db
+      - DATABASE_URL=sqlite:////app/data/recipes.db
     volumes:
-      - ./data:/data
+      - ./data:/app/data
 
 networks:
   jasper:

@@ -20,21 +20,6 @@
 
                 <hr>
 
-                <h5 class="mb-3">Mijn keukenapparatuur</h5>
-                {% if current_user.kitchen_machines %}
-                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-2">
-                    {% for machine in current_user.kitchen_machines %}
-                    <div class="col">
-                        <div class="border rounded p-2 h-100 d-flex align-items-center">
-                            <i class="bi bi-gear me-2"></i>
-                            <span>{{ machine.name }}</span>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <p class="text-muted">Nog geen keukenapparatuur geselecteerd.</p>
-                {% endif %}
             </div>
         </div>
     </div>

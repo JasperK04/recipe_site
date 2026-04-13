@@ -5,12 +5,20 @@ This module provides Flask CLI commands for database operations, user management
 and generating mock data.
 """
 
+import random
+
 import click
 from faker import Faker
 from flask import Flask
 
 from app import db
-from app.models import KitchenMachine, Recipe, User
+from app.models import (
+    KitchenMachine,
+    Recipe,
+    User,
+    recipe_machines,
+)
+from app.recipe_generator import generate_recipes
 
 fake = Faker("nl_NL")
 
@@ -114,6 +122,12 @@ def register_commands(app: Flask):
             flask seed-data
             flask seed-data --users 10 --recipes 50
         """
+        # Clear association tables first to avoid unique-constraint leftovers
+        try:
+            db.session.execute(recipe_machines.delete())
+        except Exception:
+            pass
+
         Recipe.query.delete()  # noqa: F841
         User.query.delete()  # noqa: F841
         db.session.commit()
@@ -124,10 +138,8 @@ def register_commands(app: Flask):
 
         for i in range(users):
             username = fake.user_name()
-            # Generate proper email address
             email = fake.email()
 
-            # Ensure unique username and email
             counter = 1
             original_username = username
             while User.query.filter(
@@ -138,7 +150,7 @@ def register_commands(app: Flask):
                 counter += 1
 
             user = User(username=username, email=email)  # type: ignore
-            user.set_password("password123")  # Default password for seeded users
+            user.set_password("password123")
             db.session.add(user)
             created_users.append(user)
 
@@ -149,59 +161,60 @@ def register_commands(app: Flask):
 
         db.session.commit()
 
-        # Assign random kitchen machines to users
-        all_machines = KitchenMachine.query.all()
-        if all_machines:
-            click.echo("\nKeukenapparatuur toewijzen aan gebruikers...")
-            for user in created_users:
-                # Each user gets 3-8 random machines
-                num_machines = fake.random_int(min=3, max=min(8, len(all_machines)))
-                user.kitchen_machines = fake.random_elements(
-                    elements=all_machines, length=num_machines, unique=True
-                )
+        if KitchenMachine.query.count() == 0:
+            click.echo(click.style("Adding common kitchen machines...", fg="green"))
+            common_machines = [
+                ("kookplaat", "Elektrische of gas kookplaat"),
+                ("Oven", "Standaard oven voor bakken en braden"),
+                ("Magnetron", "Magnetron voor opwarmen en koken"),
+                ("Mixer", "Elektrische mixer voor deeg en beslag"),
+                ("Blender", "Blender voor smoothies en soepen"),
+                ("Staafmixer", "Handstaafmixer"),
+                ("Slowcooker", "Slowcooker voor langzaam garen"),
+                ("Airfryer", "Heteluchtfriteuse"),
+                ("Frituurpan", "voor frituren"),
+                ("Deegmachine", "Deegmachine voor pasta en bakken"),
+                ("Panini ijzer", "Elektrische grill voor broodjes en vlees"),
+                ("Sous-vide", "Sous-vide apparaat voor precisie koken"),
+            ]
+
+            for name, description in common_machines:
+                machine = KitchenMachine(name=name, description=description)  # type: ignore
+                db.session.add(machine)
             db.session.commit()
 
-        categories = [
-            "voorgerecht",
-            "ontbijt",
-            "lunch",
-            "hoofdgerecht",
-            "nagerecht",
-            "snack",
-            "drank",
-        ]
+        # No per-user machine linking required — assume users have all machines
+        all_machines = KitchenMachine.query.all()
 
-        click.echo(f"\nMaak {recipes} recepten aan...")
-        for i in range(recipes):
-            # create structured ingredients (list of dicts)
-            ing_count = fake.random_int(min=3, max=8)
+        # Generate recipes using the realistic generator
+        click.echo(f"\nMaak {recipes} recepten aan ...")
+        generated = generate_recipes(n=recipes)
+        measurements = ["g", "kg", "ml", "l", "el", "tl", "stuks"]
+
+        for rec in generated:
             ingredient_list = []
-            measurements = ["g", "kg", "ml", "l", "el", "tl", "stuks"]
-            for _ in range(ing_count):
-                name = fake.word()
-                qty = round(fake.random.uniform(0.5, 500), 2)
-                measurement = fake.random_element(elements=measurements)
+            for name in rec.get("ingredients", []):
+                qty = round(fake.random.uniform(1, 500), 2)
+                measurement = random.choice(measurements)
                 ingredient_list.append(
                     {"name_": name, "quantity": qty, "measurement": measurement}
                 )
 
-            # instructions as list of steps
             step_count = fake.random_int(min=2, max=5)
             instruction_list = [fake.sentence() for _ in range(step_count)]
 
             recipe = Recipe(
-                title=fake.catch_phrase(),  # type: ignore
-                description=fake.text(max_nb_chars=200),  # type: ignore
-                ingredients=ingredient_list,  # type: ignore
-                instructions=instruction_list,  # type: ignore
-                prep_time=fake.random_int(min=5, max=60),  # type: ignore
-                cook_time=fake.random_int(min=10, max=120),  # type: ignore
-                servings=fake.random_int(min=1, max=8),  # type: ignore
-                category=fake.random_element(elements=categories),  # type: ignore
-                user_id=fake.random_element(elements=created_users).id,  # type: ignore
+                title=rec.get("title"),
+                description=fake.text(max_nb_chars=200),
+                ingredients=ingredient_list,
+                instructions=instruction_list,
+                prep_time=fake.random_int(min=5, max=60),
+                cook_time=fake.random_int(min=10, max=120),
+                servings=fake.random_int(min=1, max=8),
+                category=rec.get("type", ""),
+                user_id=random.choice(created_users).id,
             )
 
-            # Assign random required machines to some recipes
             if all_machines and fake.boolean(chance_of_getting_true=70):
                 num_req_machines = fake.random_int(min=1, max=min(3, len(all_machines)))
                 recipe.required_machines = fake.random_elements(
@@ -307,37 +320,3 @@ def register_commands(app: Flask):
         for machine in machines:
             desc = f" - {machine.description}" if machine.description else ""
             click.echo(f"{machine.id}. {machine.name}{desc}")
-
-    @app.cli.command("seed-machines")
-    def seed_machines():
-        """Seed common kitchen machines into the database.
-
-        Usage:
-            flask seed-machines
-        """
-
-        # Delete all kitchen machines (will also clear association tables)
-        KitchenMachine.query.delete()  # noqa: F841
-
-        click.echo(click.style("Adding kitchen machines...", fg="green"))
-
-        common_machines = [
-            ("kookplaat", "Elektrische of gas kookplaat"),
-            ("Oven", "Standaard oven voor bakken en braden"),
-            ("Magnetron", "Magnetron voor opwarmen en koken"),
-            ("Mixer", "Elektrische mixer voor deeg en beslag"),
-            ("Blender", "Blender voor smoothies en soepen"),
-            ("Staafmixer", "Handstaafmixer"),
-            ("Slowcooker", "Slowcooker voor langzaam garen"),
-            ("Airfryer", "Heteluchtfriteuse"),
-            ("Frituurpan", "voor frituren"),
-            ("Deegmachine", "Deegmachine voor pasta en bakken"),
-            ("Panini ijzer", "Elektrische grill voor broodjes en vlees"),
-            ("Sous-vide", "Sous-vide apparaat voor precisie koken"),
-        ]
-
-        for name, description in common_machines:
-            machine = KitchenMachine(name=name, description=description)  # type: ignore
-            db.session.add(machine)
-
-        db.session.commit()
