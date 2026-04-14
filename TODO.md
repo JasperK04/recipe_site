@@ -27,8 +27,8 @@
     - Demote Creators to Viewers
 - DONE: Add draft/publish workflow so creators can stage recipes before public release.
 - DONE: Convert all uploaded images to WebP and resize on upload to reduce bandwidth.
-- DONE. Rework CLI to include machines when reseeding
+- DONE: Rework CLI to include machines when reseeding
 - Add a way to backup the db and restore it
-- Add dark mode
-- Add OpenGraph cards
-- Introduce list of favorite recipes 
+- DONE: Add dark mode
+- DONE: Add OpenGraph cards
+- DONE: Introduce list of favorite recipes 
