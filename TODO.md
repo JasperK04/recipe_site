@@ -1,0 +1,34 @@
+## recipes
+- Introduce three account roles: reviewer, creator, and admin with clearly scoped permissions.
+  - Logged out:
+    - View recipes
+    - Search recipes
+  - Viewers: 
+    - All of the above
+    - Score recipes
+    - Request to be become a Creator
+  - Creator:
+    - All of the above
+    - Create recipe drafts
+    - Publish their own drafts
+    - Edit their own recipes
+    - Unpublish or Delete their own recipes
+  - Admin:
+    - All of the above
+    - View unpublished/draft/deactivated recipes
+    - View Deactivated Users
+    - Deactivate recipes (become hidden) 
+    - Deactivate users
+      - Deactivates their recipes 
+      - Prevents creation of new recipes
+    - Reactivate users and recipes
+      - undoes the above
+    - Promote Viewers to Creators 
+    - Demote Creators to Viewers
+- DONE: Add draft/publish workflow so creators can stage recipes before public release.
+- DONE: Convert all uploaded images to WebP and resize on upload to reduce bandwidth.
+- DONE. Rework CLI to include machines when reseeding
+- Add a way to backup the db and restore it
+- Add dark mode
+- Add OpenGraph cards
+- Introduce list of favorite recipes 
