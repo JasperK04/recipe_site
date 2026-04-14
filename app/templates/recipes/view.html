@@ -20,7 +20,7 @@
                             {% endif %}
                         </p>
                     </div>
-                    {% if current_user.is_authenticated and current_user.id == recipe.user_id %}
+                        {% if current_user.is_authenticated and current_user.id == recipe.user_id %}
                     <div class="btn-group">
                         <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-pencil"></i> Edit
@@ -30,9 +30,26 @@
                         </button>
                     </div>
                     {% endif %}
+
+                    {% if current_user.is_authenticated %}
+                    {# Favorite / Unfavorite button (only on recipe page) #}
+                    {% set is_fav = current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
+                    <form method="POST" action="{{ url_for('recipes.unfavorite_recipe', recipe_id=recipe.id) if is_fav else url_for('recipes.favorite_recipe', recipe_id=recipe.id) }}" class="d-inline ms-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <button type="submit" class="btn btn-sm {{ 'btn-outline-danger' if is_fav else 'btn-outline-primary' }}">
+                            <i class="bi {% if is_fav %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                            {% if is_fav %}Favoriet{% else %}Toevoegen aan favorieten{% endif %}
+                        </button>
+                    </form>
+                    {% endif %}
                 </div>
 
                 {% if recipe.description %}
+                {% if recipe.image_data %}
+                <div class="mb-3 text-center">
+                    <img src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="{{ recipe.title }}" class="img-fluid rounded" />
+                </div>
+                {% endif %}
                 <p class="lead">{{ recipe.description }}</p>
                 {% endif %}
 

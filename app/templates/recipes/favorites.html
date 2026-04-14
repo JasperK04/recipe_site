@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Mijn recepten{% endblock %}
+{% block title %}Mijn favorieten - Recepten{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Mijn recepten</h1>
+    <h1>Mijn favorieten</h1>
     <a href="{{ url_for('recipes.add_recipe') }}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Nieuw recept
+        <i class="bi bi-plus-circle"></i> Recept toevoegen
     </a>
 </div>
 
@@ -14,13 +14,7 @@
 <div class="row g-4">
     {% for recipe in recipes.items %}
     <div class="col-md-4">
-        <div class="card recipe-card h-100 position-relative">
-            {% if recipe.status == 'draft' %}
-            <span class="position-absolute top-0 end-0 m-2 badge bg-warning text-dark">Draft</span>
-            {% endif %}
-            {% if recipe.status == 'deactivated' %}
-            <span class="position-absolute top-0 end-0 m-2 badge bg-danger text-dark">Deactivated</span>
-            {% endif %}
+        <div class="card recipe-card h-100">
             {% if recipe.image_data %}
             <img src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="{{ recipe.title }}" class="card-img-top rounded-top" style="height:180px; object-fit:cover; width:100%;" />
             {% else %}
@@ -35,28 +29,15 @@
                 {% endif %}
                 <div class="d-flex justify-content-between align-items-center">
                     <small class="text-muted">
-                        <i class="bi bi-calendar"></i> {{ recipe.created_at.strftime('%b %d, %Y') }}
+                        <i class="bi bi-person"></i> {{ recipe.author.username }}
                     </small>
                     {% if recipe.category %}
                     <span class="badge bg-secondary">{{ recipe.category }}</span>
                     {% endif %}
                 </div>
-                {% if recipe.prep_time or recipe.cook_time %}
-                <div class="mt-2">
-                    {% if recipe.prep_time %}
-                    <small class="text-muted"><i class="bi bi-clock"></i> Prep: {{ recipe.prep_time }}m</small>
-                    {% endif %}
-                    {% if recipe.cook_time %}
-                    <small class="text-muted ms-2"><i class="bi bi-fire"></i> Cook: {{ recipe.cook_time }}m</small>
-                    {% endif %}
-                </div>
-                {% endif %}
             </div>
             <div class="card-footer bg-transparent">
-                <div class="btn-group w-100" role="group">
-                    <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">View</a>
-                    <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                </div>
+                <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-primary w-100">Bekijk recept</a>
             </div>
         </div>
     </div>
@@ -69,23 +50,21 @@
     <ul class="pagination justify-content-center">
         {% if recipes.has_prev %}
         <li class="page-item">
-            <a class="page-link" href="{{ url_for('recipes.my_recipes', page=recipes.prev_num) }}">Previous</a>
+            <a class="page-link" href="{{ url_for('recipes.favorites', page=recipes.prev_num) }}">Vorige</a>
         </li>
         {% endif %}
-        
         {% for page_num in recipes.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
             {% if page_num %}
                 <li class="page-item {% if page_num == recipes.page %}active{% endif %}">
-                    <a class="page-link" href="{{ url_for('recipes.my_recipes', page=page_num) }}">{{ page_num }}</a>
+                    <a class="page-link" href="{{ url_for('recipes.favorites', page=page_num) }}">{{ page_num }}</a>
                 </li>
             {% else %}
                 <li class="page-item disabled"><span class="page-link">...</span></li>
             {% endif %}
         {% endfor %}
-        
         {% if recipes.has_next %}
         <li class="page-item">
-            <a class="page-link" href="{{ url_for('recipes.my_recipes', page=recipes.next_num) }}">Next</a>
+            <a class="page-link" href="{{ url_for('recipes.favorites', page=recipes.next_num) }}">Volgende</a>
         </li>
         {% endif %}
     </ul>
@@ -94,7 +73,7 @@
 
 {% else %}
 <div class="alert alert-info">
-    <i class="bi bi-info-circle"></i> You haven't added any recipes yet. <a href="{{ url_for('recipes.add_recipe') }}" class="alert-link">Add your first recipe!</a>
+    <i class="bi bi-info-circle"></i> Je hebt nog geen favorieten. Bekijk een recept en voeg deze toe aan je favorieten.
 </div>
 {% endif %}
 {% endblock %}

@@ -1,5 +1,6 @@
 from flask_login import current_user
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, FileField
 from wtforms import (
     FieldList,
     FormField,
@@ -240,5 +241,19 @@ class RecipeForm(FlaskForm):
         validators=[Optional()],
         widget=ListWidget(prefix_label=False),
         option_widget=CheckboxInput(),
+    )
+    status = SelectField(
+        "Status",
+        choices=[("public", "Public"), ("draft", "Draft")],
+        default="public",
+    )
+    image = FileField(
+        "Afbeelding (jpg/png/webp)",
+        validators=[
+            Optional(),
+            FileAllowed(
+                ["jpg", "jpeg", "png", "gif", "webp"], "Only images are allowed"
+            ),
+        ],
     )
     submit = SubmitField("Opslaan")

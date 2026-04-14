@@ -8,8 +8,34 @@
         <div class="card shadow">
             <div class="card-body">
                 <h2 class="card-title mb-4">{{ title }}</h2>
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     {{ form.hidden_tag() }}
+                        <div class="mb-3 text-center">
+                            <div id="image-preview-wrap" class="text-center">
+                            {% if recipe and recipe.image_data %}
+                                <div class="image-frame d-inline-block position-relative">
+                                    <img id="image-preview" src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="Recipe image" class="img-fluid rounded mb-2 d-block" style="max-height:300px; object-fit:cover;" />
+                                    <button type="button" id="image-remove-btn" class="btn btn-dark btn-sm text-white position-absolute top-0 end-0 m-2 rounded d-flex align-items-center justify-content-center" aria-label="Change image" title="Change image" style="width:40px;height:40px;box-shadow:0 2px 6px rgba(0,0,0,0.35);"><i class="bi bi-pencil-fill"></i></button>
+                                </div>
+                            {% else %}
+                                <div class="image-frame position-relative" style="display:none;">
+                                    <img id="image-preview" alt="Recipe image preview test" class="img-fluid rounded mb-2 d-block" style="display:none; max-height:300px; object-fit:cover;" />
+                                    <button type="button" id="image-remove-btn" class="btn btn-dark btn-sm text-white position-absolute top-0 end-0 m-2 rounded d-flex align-items-center justify-content-center" aria-label="Change image" title="Change image" style="width:40px;height:40px;box-shadow:0 2px 6px rgba(0,0,0,0.35); display:none;"><i class="bi bi-pencil-fill"></i></button>
+                                </div>
+
+                                {{ form.image(class="d-none") }}
+                                <input type="hidden" name="remove_image" id="remove_image" value="0" />
+
+                                <div id="image-placeholder" role="button" tabindex="0" class="border rounded d-flex align-items-center justify-content-center text-muted"
+                                     style="height:150px; width:100%; cursor:pointer;">
+                                    <div class="text-center">
+                                        <i class="bi bi-image" style="font-size:2rem;"></i>
+                                        <div id="image-placeholder-text">Click to choose image</div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            </div>
+                        </div>
                     
                     <div class="mb-3">
                         {{ form.title.label(class="form-label") }}
@@ -147,7 +173,16 @@
                     
                     <div class="d-flex justify-content-between">
                         <a href="{{ url_for('recipes.list_recipes') }}" class="btn btn-secondary">Annuleren</a>
-                        {{ form.submit(class="btn btn-primary") }}
+                        <div>
+                            {% if form.status %}
+                                <input type="hidden" name="status" id="status-field" value="{{ form.status.data or 'public' }}">
+                                <button type="submit" class="btn btn-secondary me-2" onclick="document.getElementById('status-field').value='draft'">Concept</button>
+                                <button type="submit" class="btn btn-primary" onclick="document.getElementById('status-field').value='public'">Publiceren</button>
+                            {% else %}
+                                {{ form.submit(class="btn btn-primary") }}
+                            {% endif %}
+                        </div>
+                    </div>
                     </div>
                 </form>
             </div>
@@ -249,6 +284,81 @@ document.addEventListener('DOMContentLoaded', function(){
     attachListHandlers('#instructions-list', '.instruction-item', false);
     ensureOneEmptyAtEnd(document.querySelector('#ingredients-list'), true);
     ensureOneEmptyAtEnd(document.querySelector('#instructions-list'), false);
+});
+</script>
+<script>
+// Image preview & upload handler (delegated) — reliably triggers when a file input changes
+document.addEventListener('DOMContentLoaded', function(){
+    const preview = document.getElementById('image-preview');
+    const placeholder = document.getElementById('image-placeholder');
+    const removeBtn = document.getElementById('image-remove-btn');
+    const removeFlag = document.getElementById('remove_image');
+
+    function showPreview(url, filename) {
+        if (!preview) return;
+        preview.setAttribute('src', url);
+        preview.style.display = 'block';
+        // ensure image frame is visible
+        const imageFrame = document.querySelector('.image-frame');
+        if (imageFrame) imageFrame.style.display = 'inline-block';
+        // remove placeholder node if present
+        const ph = document.getElementById('image-placeholder');
+        if (ph && ph.parentNode) ph.parentNode.removeChild(ph);
+        // show remove button
+        if (removeBtn) removeBtn.style.display = 'block';
+        // filename
+        const nameSpan = document.getElementById('image-filename');
+        if (nameSpan) nameSpan.textContent = filename || '';
+    }
+
+    // Delegated handler: catch any change on file inputs (useful if input rendered later)
+    document.addEventListener('change', function(e){
+        const target = e.target;
+        if (!target) return;
+        if (target.matches('input[type="file"][name="image"]')) {
+            const file = target.files && target.files[0];
+            if (!file) {
+                if (preview) { preview.removeAttribute('src'); preview.style.display = 'none'; }
+                return;
+            }
+            const url = URL.createObjectURL(file);
+            showPreview(url, file.name);
+        }
+    });
+
+    // Click on the placeholder should open the file picker — find the input dynamically
+    if (placeholder) {
+        placeholder.addEventListener('click', function(){
+            const input = document.querySelector('input[type="file"][name="image"]');
+            if (input) input.click();
+        });
+        placeholder.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { const input = document.querySelector('input[type="file"][name="image"]'); if (input) input.click(); }});
+    }
+
+    // Change button: open file picker to replace image
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function(){
+            const input = document.querySelector('input[type="file"][name="image"]');
+            if (input) {
+                if (removeFlag) removeFlag.value = '0';
+                input.click();
+            }
+        });
+    }
+
+    // On load: if preview has a src (server-rendered), remove placeholder node immediately
+    (function init(){
+        if (!preview) return;
+        const src = preview.getAttribute('src');
+        if (src && src.trim() !== '') {
+            const ph = document.getElementById('image-placeholder');
+            if (ph && ph.parentNode) ph.parentNode.removeChild(ph);
+            // ensure image frame visible and remove button shown
+            const imageFrame = document.querySelector('.image-frame');
+            if (imageFrame) imageFrame.style.display = 'inline-block';
+            if (removeBtn) removeBtn.style.display = 'block';
+        }
+    })();
 });
 </script>
 {% endblock %}

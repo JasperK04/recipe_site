@@ -30,6 +30,13 @@
     {% for recipe in recipes %}
     <div class="col-md-4">
         <div class="card recipe-card h-100">
+            {% if recipe.image_data %}
+            <img src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="{{ recipe.title }}" class="card-img-top rounded-top" style="height:180px; object-fit:cover; width:100%;" />
+            {% else %}
+            <div class="card-img-top bg-light d-flex align-items-center justify-content-center text-muted rounded-top" style="height:180px; width:100%;">
+                <div class="text-center" aria-hidden="true"><i class="bi bi-image" style="font-size:2rem;"></i></div>
+            </div>
+            {% endif %}
             <div class="card-body">
                 <h5 class="card-title">{{ recipe.title }}</h5>
                 {% if recipe.description %}

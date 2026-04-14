@@ -111,9 +111,9 @@ def register_commands(app: Flask):
         )
 
     @app.cli.command("seed-data")
-    @click.option("--users", default=5, help="Number of users to create (default: 5)")
+    @click.option("--users", default=10, help="Number of users to create (default: 10)")
     @click.option(
-        "--recipes", default=40, help="Number of recipes to create (default: 40)"
+        "--recipes", default=100, help="Number of recipes to create (default: 100)"
     )
     def seed_data(users, recipes):
         """Populate database with mock data using Faker.
@@ -211,9 +211,17 @@ def register_commands(app: Flask):
                 prep_time=fake.random_int(min=5, max=60),
                 cook_time=fake.random_int(min=10, max=120),
                 servings=fake.random_int(min=1, max=8),
-                category=rec.get("type", ""),
+                category=rec.get("category", ""),
                 user_id=random.choice(created_users).id,
             )
+
+            r = random.random()
+            if r < 0.70:
+                recipe.status = "public"
+            elif r < 0.85:
+                recipe.status = "draft"
+            else:
+                recipe.status = "deactivated"
 
             if all_machines and fake.boolean(chance_of_getting_true=70):
                 num_req_machines = fake.random_int(min=1, max=min(3, len(all_machines)))
@@ -224,6 +232,25 @@ def register_commands(app: Flask):
             db.session.add(recipe)
 
         db.session.commit()
+
+        # Add random favorites for created users
+        try:
+            all_recipes = Recipe.query.all()
+            if all_recipes:
+                for user in created_users:
+                    # each user gets 0-6 favorites randomly
+                    fav_count = random.randint(0, min(6, len(all_recipes)))
+                    if fav_count == 0:
+                        continue
+                    favs = random.sample(all_recipes, k=fav_count)
+                    for r in favs:
+                        # avoid duplicates due to seeding logic
+                        if not user.favorites.filter_by(id=r.id).first():
+                            user.favorites.append(r)
+                db.session.commit()
+        except Exception:
+            # don't fail the whole seed if favorites can't be added
+            db.session.rollback()
 
     @app.cli.command("clear-data")
     def clear_data():

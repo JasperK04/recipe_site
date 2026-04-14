@@ -17,6 +17,13 @@ recipe_machines = db.Table(
     ),
 )
 
+# Association table for user <-> recipe favorites (many-to-many)
+users_favorites = db.Table(
+    "users_favorites",
+    db.Column("user_id", db.Integer, db.ForeignKey("users.id"), primary_key=True),
+    db.Column("recipe_id", db.Integer, db.ForeignKey("recipes.id"), primary_key=True),
+)
+
 
 class PaginationMixin:
     """Mixin providing a standard paginate helper for models.
@@ -75,6 +82,14 @@ class User(UserMixin, db.Model):
         "Recipe", backref="author", lazy="dynamic", cascade="all, delete-orphan"
     )
 
+    # Favorite recipes (many-to-many to Recipe)
+    favorites = db.relationship(
+        "Recipe",
+        secondary=users_favorites,
+        lazy="dynamic",
+        backref=db.backref("favorited_by", lazy="dynamic"),
+    )
+
     # Relationship with kitchen machines (many-to-many)
     # Previously users could be linked to machines; this association was removed.
 
@@ -104,6 +119,13 @@ class Recipe(PaginationMixin, db.Model):
     cook_time = db.Column(db.Integer)  # in minutes
     servings = db.Column(db.Integer)
     category = db.Column(db.String(50))
+    status = db.Column(
+        db.String(20), nullable=False, default="public", server_default="public"
+    )
+
+    # Binary image data (stored as WebP) and MIME type (usually 'image/webp')
+    image_data = db.Column(db.LargeBinary)
+    image_mime = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
         db.DateTime,

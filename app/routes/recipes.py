@@ -1,5 +1,8 @@
+import io
+
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
+from PIL import Image
 from sqlalchemy import or_
 
 from app import db
@@ -17,7 +20,7 @@ def list_recipes():
     search = request.args.get("search", "")
     filter_by_machines = request.args.get("filter_machines", "0")
 
-    query = Recipe.query
+    query = Recipe.query.filter_by(status="public")
 
     if category:
         query = query.filter_by(category=category)
@@ -50,7 +53,46 @@ def list_recipes():
 def view_recipe(recipe_id):
     """View a single recipe."""
     recipe = Recipe.query.get_or_404(recipe_id)
+    # Only public recipes are viewable by others. Authors can view their own drafts.
+    if recipe.status != "public":
+        if not current_user.is_authenticated or current_user.id != recipe.user_id:
+            abort(404)
     return render_template("recipes/view.html", recipe=recipe)
+
+
+@recipes_bp.route("/<int:recipe_id>/image")
+def recipe_image(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    if not recipe.image_data:
+        abort(404)
+    return (recipe.image_data, 200, {"Content-Type": recipe.image_mime or "image/webp"})
+
+
+@recipes_bp.route("/<int:recipe_id>/favorite", methods=["POST"])
+@login_required
+def favorite_recipe(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    # add to favorites if not already present
+    if not current_user.favorites.filter_by(id=recipe.id).first():
+        current_user.favorites.append(recipe)
+        db.session.commit()
+        flash("Toegevoegd aan favorieten", "success")
+    else:
+        flash("Recept staat al in favorieten", "info")
+    return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
+
+
+@recipes_bp.route("/<int:recipe_id>/unfavorite", methods=["POST"])
+@login_required
+def unfavorite_recipe(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    if current_user.favorites.filter_by(id=recipe.id).first():
+        current_user.favorites.remove(recipe)
+        db.session.commit()
+        flash("Verwijderd uit favorieten", "success")
+    else:
+        flash("Recept stond niet in favorieten", "info")
+    return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
 
 
 @recipes_bp.route("/add", methods=["GET", "POST"])
@@ -93,6 +135,7 @@ def add_recipe():
             cook_time=form.cook_time.data,  # type: ignore
             servings=form.servings.data,  # type: ignore
             category=form.category.data if form.category.data else None,  # type: ignore
+            status=form.status.data if getattr(form, "status", None) else "public",
             user_id=current_user.id,  # type: ignore
         )
 
@@ -105,6 +148,20 @@ def add_recipe():
             recipe.required_machines = selected_machines  # type: ignore
 
         db.session.add(recipe)
+        # handle uploaded image (convert to webp before storing)
+        if getattr(form, "image", None) and form.image.data:
+            try:
+                file_storage = form.image.data
+                file_storage.stream.seek(0)
+                img = Image.open(file_storage.stream)
+                webp_bytes = io.BytesIO()
+                img.convert("RGBA" if img.mode in ("RGBA", "LA") else "RGB").save(
+                    webp_bytes, format="WEBP"
+                )
+                recipe.image_data = webp_bytes.getvalue()
+                recipe.image_mime = "image/webp"
+            except Exception:
+                pass
         db.session.commit()
         flash("Recept succesvol toegevoegd!", "success")
         return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
@@ -133,6 +190,11 @@ def edit_recipe(recipe_id):
         # simple fields
         form.title.data = recipe.title
         form.description.data = recipe.description
+        # status
+        try:
+            form.status.data = recipe.status
+        except Exception:
+            pass
         form.prep_time.data = recipe.prep_time
         form.cook_time.data = recipe.cook_time
         form.servings.data = recipe.servings
@@ -195,6 +257,9 @@ def edit_recipe(recipe_id):
         recipe.cook_time = form.cook_time.data
         recipe.servings = form.servings.data
         recipe.category = form.category.data if form.category.data else None
+        # status update
+        if getattr(form, "status", None):
+            recipe.status = form.status.data
 
         # Update required kitchen machines
         selected_machine_ids = form.required_machines.data
@@ -205,6 +270,26 @@ def edit_recipe(recipe_id):
             recipe.required_machines = selected_machines
         else:
             recipe.required_machines = []
+
+        # handle uploaded image replacement
+        if getattr(form, "image", None) and form.image.data:
+            try:
+                file_storage = form.image.data
+                file_storage.stream.seek(0)
+                img = Image.open(file_storage.stream)
+                webp_bytes = io.BytesIO()
+                img.convert("RGBA" if img.mode in ("RGBA", "LA") else "RGB").save(
+                    webp_bytes, format="WEBP"
+                )
+                recipe.image_data = webp_bytes.getvalue()
+                recipe.image_mime = "image/webp"
+            except Exception:
+                pass
+
+        # handle image removal requested by the form
+        if request.form.get("remove_image") == "1":
+            recipe.image_data = None
+            recipe.image_mime = None
 
         db.session.commit()
         flash("Recept succesvol bijgewerkt!", "success")
@@ -243,3 +328,15 @@ def my_recipes():
     )
 
     return render_template("recipes/my_recipes.html", recipes=recipes)
+
+
+@recipes_bp.route("/favorites")
+@login_required
+def favorites():
+    """Display current user's favorite recipes."""
+    page = request.args.get("page", 1, type=int)
+    recipes = current_user.favorites.order_by(Recipe.created_at.desc()).paginate(
+        page=page, per_page=12, error_out=False
+    )
+
+    return render_template("recipes/favorites.html", recipes=recipes)

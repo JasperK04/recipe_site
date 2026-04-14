@@ -1,7 +1,8 @@
-"""Realistic recipe title and ingredient generator.
+"""Generator voor realistische recepttitels en ingrediënten.
 
-Provides lists of adjectives, recipe bases and ingredient pools and
-helper functions to generate plausible-sounding recipes.
+Bevat lijsten met bijvoeglijke naamwoorden, receptbasissen en
+extra-ingredienten per type en helperfuncties om plausibele recepten te
+genereren.
 """
 
 from __future__ import annotations
@@ -9,139 +10,307 @@ from __future__ import annotations
 import random
 from typing import Any, Dict, List
 
-# Adjectives to prefix titles
+# Bijvoeglijke naamwoorden die aan titels worden voorafgeplaatst
 ADJECTIVES = [
-    "Spicy",
-    "Creamy",
-    "Herbed",
-    "Smoky",
-    "Tangy",
+    "Pittig",
+    "Romig",
+    "Kruidig",
+    "Rokerig",
+    "Zurig",
     "Citrus",
-    "Garlic",
-    "Honey-Glazed",
-    "Crispy",
-    "Slow-Cooked",
-    "Roasted",
-    "Grilled",
-    "Fresh",
-    "Zesty",
+    "Knoflook",
+    "Honingglazuur",
+    "Krokant",
+    "Langzaam gegaard",
+    "Geroosterd",
+    "Gegrild",
+    "Vers",
+    "Fris",
     "Warm",
-    "Velvety",
-    "Quick",
-    "Easy",
-    "One-Pot",
-    "Vegan",
-    "Vegetarian",
-    "Gluten-Free",
-    "Low-Carb",
-    "Comfort",
-    "Hearty",
-    "Light",
-    "Lemon",
-    "Maple",
-    "Caramelized",
-    "Spiced",
-    "Mediterranean",
-    "Asian-Style",
+    "Zijdezacht",
+    "Snel",
+    "Makkelijk",
+    "Eenpans",
+    "Veganistisch",
+    "Vegetarisch",
+    "Glutenvrij",
+    "Koolhydraatarm",
+    "Comfortfood",
+    "Vullend",
+    "Licht",
+    "Citroen",
+    "Ahornsiroop",
+    "Gekarameliseerd",
+    "Gekruid",
+    "Mediterraan",
+    "Aziatisch",
+    "Romantisch",
+    "Familie-favoriet",
+    "Barbecue",
+    "Herfstig",
+    "Lente",
+    "Winterwarm",
+    "Zomers",
+    "Kruidig-zoet",
+    "Smaakvol",
+    "Authentiek",
+    "Gourmet",
+    "Budgetvriendelijk",
+    "Kinderproof",
 ]
 
 
-# Recipe bases with a small canonical ingredient list and a type tag
+# Receptbasissen met canonical ingrediëntenlijst en directe categorie (Nederlands)
 RECIPE_BASES = [
     (
         "Pasta Carbonara",
-        ["spaghetti", "eggs", "parmesan", "pancetta", "black pepper"],
-        "pasta",
+        ["spaghetti", "eieren", "parmezaan", "pancetta", "zwarte peper"],
+        "Diner",
     ),
     (
-        "Tomato Basil Soup",
-        ["tomatoes", "basil", "onion", "garlic", "vegetable stock"],
+        "Tomaat-basilicumsoep",
+        ["tomaten", "basilicum", "ui", "knoflook", "groentebouillon"],
+        "Voorgerecht",
+    ),
+    (
+        "Kip roerbak",
+        ["kipfilet", "sojasaus", "knoflook", "gember", "groente-olie"],
+        "Diner",
+    ),
+    (
+        "Kikkererwtencurry",
+        ["kikkererwten", "kokosmelk", "kerriepoeder", "ui", "tomaat"],
+        "Diner",
+    ),
+    (
+        "Griekse salade",
+        ["komkommer", "tomaat", "feta", "olijfolie", "olijven"],
+        "Lunch",
+    ),
+    (
+        "Runderstoofpot",
+        ["stoofvlees", "wortels", "aardappelen", "ui", "runderbouillon"],
+        "Diner",
+    ),
+    (
+        "Groenterisotto",
+        ["arborio rijst", "parmezaan", "witte wijn", "champignons", "groentebouillon"],
+        "Diner",
+    ),
+    ("Vistaco's", ["witte vis", "tortilla's", "kool", "limoen", "koriander"], "Diner"),
+    (
+        "Pizza Margherita",
+        ["pizzadeeg", "mozzarella", "tomatensaus", "basilicum", "olijfolie"],
+        "Diner",
+    ),
+    ("Bananenbrood", ["bananen", "bloem", "boter", "suiker", "eieren"], "Ontbijt"),
+    (
+        "Havermoutpannenkoeken",
+        ["havermout", "melk", "ei", "bakpoeder", "vanille"],
+        "Ontbijt",
+    ),
+    (
+        "Quinoasalade",
+        ["quinoa", "citroen", "olijfolie", "komkommer", "cherrytomaatjes"],
+        "Lunch",
+    ),
+    (
+        "Linzensoep",
+        ["linzen", "wortel", "selderij", "ui", "groentebouillon"],
+        "Voorgerecht",
+    ),
+    (
+        "Garnalen scampi",
+        ["garnalen", "knoflook", "boter", "citroen", "peterselie"],
+        "Diner",
+    ),
+    (
+        "Rundertaco's",
+        ["rundergehakt", "tortilla's", "sla", "cheddar", "salsa"],
+        "Diner",
+    ),
+    (
+        "Geroosterde kip",
+        ["hele kip", "rozemarijn", "knoflook", "citroen", "olijfolie"],
+        "Diner",
+    ),
+    (
+        "Miso ramen",
+        ["ramen noedels", "misopasta", "dashi", "lente-ui", "ei"],
+        "Diner",
+    ),
+    (
+        "Appelcrumble",
+        ["appels", "haver", "boter", "bruine suiker", "kaneel"],
+        "Nagerecht",
+    ),
+    (
+        "Tofu roerbak",
+        ["tofu", "sojasaus", "knoflook", "broccoli", "sesamolie"],
+        "Diner",
+    ),
+    ("Hummus", ["kikkererwten", "tahini", "citroen", "knoflook", "olijfolie"], "Snack"),
+]
+
+# Extra voorbeelden en variaties voor meer combinaties
+RECIPE_BASES += [
+    (
+        "Spinazie-feta frittata",
+        ["eieren", "spinazie", "feta", "ui", "olijfolie"],
+        "breakfast",
+    ),
+    (
+        "Butternut pompoensoep",
+        ["butternut pompoen", "ui", "knoflook", "groentebouillon", "room"],
         "soup",
     ),
     (
-        "Chicken Stir-Fry",
-        ["chicken breast", "soy sauce", "garlic", "ginger", "vegetable oil"],
-        "stirfry",
+        "Pulled pork sandwich",
+        ["varkensschouder", "barbecuesaus", "broodjes", "coleslaw", "augurk"],
+        "baked",
     ),
+    ("Shakshuka", ["eieren", "tomaat", "ui", "paprika", "komijn"], "breakfast"),
+    ("Ceviche", ["witte vis", "limoensap", "ui", "koriander", "peper"], "seafood"),
     (
-        "Chickpea Curry",
-        ["chickpeas", "coconut milk", "curry powder", "onion", "tomato"],
+        "Thaise groene curry",
+        ["kip", "groene currypasta", "kokosmelk", "basilicum", "aubergine"],
         "curry",
     ),
-    ("Greek Salad", ["cucumber", "tomato", "feta", "olive oil", "olives"], "salad"),
     (
-        "Beef Stew",
-        ["stewing beef", "carrots", "potatoes", "onion", "beef stock"],
+        "Boeuf Bourguignon",
+        ["runderstoofvlees", "rode wijn", "wortel", "ui", "champignons"],
         "stew",
     ),
     (
-        "Vegetable Risotto",
-        ["arborio rice", "parmesan", "white wine", "mushrooms", "vegetable stock"],
+        "Courgettekoekjes",
+        ["courgette", "ei", "bloem", "parmezaan", "knoflook"],
+        "snack",
+    ),
+    (
+        "Aubergine Parmigiana",
+        ["aubergine", "tomatensaus", "mozzarella", "parmezaan", "basilicum"],
+        "dinner",
+    ),
+    ("Dal van linzen", ["linzen", "uien", "komijn", "kurkuma", "kokosmelk"], "curry"),
+    (
+        "Paneer Tikka",
+        ["paneer", "yoghurt", "tikka masala", "paprika", "limoen"],
+        "dinner",
+    ),
+    ("Sushi bowl", ["sushi rijst", "zalm", "avocado", "komkommer", "sojasaus"], "rice"),
+    (
+        "BBQ spareribs",
+        ["varkensribben", "barbecuesaus", "kool", "mais", "aardappels"],
+        "dinner",
+    ),
+    ("Falafel wrap", ["kikkererwten", "kruiden", "salade", "tahini", "wrap"], "lunch"),
+    (
+        "Zoete aardappel frietjes",
+        ["zoete aardappel", "olijfolie", "paprikapoeder", "zout", "peper"],
+        "snack",
+    ),
+    (
+        "Yoghurt parfait",
+        ["Griekse yoghurt", "muesli", "bessen", "honing", "noten"],
+        "breakfast",
+    ),
+    (
+        "Paddenstoelenstroganoff",
+        ["paddenstoelen", "zure room", "ui", "paprikapoeder", "pasta"],
+        "pasta",
+    ),
+    (
+        "Caesar salade met kip",
+        ["kropsla", "kip", "croutons", "Parmezaan", "Caesar dressing"],
+        "lunch",
+    ),
+    ("Poke bowl", ["rijst", "tonijn", "sojasaus", "zeewier", "edamame"], "rice"),
+    (
+        "Gebakken zalm",
+        ["zalmfilet", "citroen", "dille", "boter", "olijfolie"],
+        "seafood",
+    ),
+    ("Scones", ["bloem", "boter", "melk", "bakpoeder", "suiker"], "baked"),
+    ("Crêpes", ["bloem", "melk", "eieren", "boter", "suiker"], "breakfast"),
+    (
+        "Gnocchi met tomatensaus",
+        ["gnocchi", "tomatensaus", "parmezaan", "basilicum", "olijfolie"],
+        "pasta",
+    ),
+    (
+        "Polenta met paddenstoelen",
+        ["polenta", "paddenstoelen", "Parmezaan", "boter", "tijm"],
         "rice",
     ),
-    ("Fish Tacos", ["white fish", "tortillas", "cabbage", "lime", "cilantro"], "taco"),
+    ("Ratatouille", ["aubergine", "courgette", "tomaat", "paprika", "ui"], "dinner"),
+    ("Chili con carne", ["rundergehakt", "bonen", "tomaat", "chili", "ui"], "dinner"),
     (
-        "Margherita Pizza",
-        ["pizza dough", "mozzarella", "tomato sauce", "basil", "olive oil"],
-        "pizza",
-    ),
-    ("Banana Bread", ["bananas", "flour", "butter", "sugar", "eggs"], "baked"),
-    ("Oat Pancakes", ["oats", "milk", "egg", "baking powder", "vanilla"], "breakfast"),
-    (
-        "Quinoa Salad",
-        ["quinoa", "lemon", "olive oil", "cucumber", "cherry tomatoes"],
+        "Geroosterde pompoen salade",
+        ["pompoen", "rucola", "feta", "walnoten", "vinaigrette"],
         "salad",
     ),
-    (
-        "Lentil Soup",
-        ["lentils", "carrot", "celery", "onion", "vegetable stock"],
-        "soup",
-    ),
-    ("Shrimp Scampi", ["shrimp", "garlic", "butter", "lemon", "parsley"], "seafood"),
-    ("Beef Tacos", ["ground beef", "tortillas", "lettuce", "cheddar", "salsa"], "taco"),
-    (
-        "Roast Chicken",
-        ["whole chicken", "rosemary", "garlic", "lemon", "olive oil"],
-        "roast",
-    ),
-    (
-        "Miso Ramen",
-        ["ramen noodles", "miso paste", "dashi", "scallions", "egg"],
-        "noodle",
-    ),
-    (
-        "Apple Crumble",
-        ["apples", "oats", "butter", "brown sugar", "cinnamon"],
-        "dessert",
-    ),
-    (
-        "Tofu Stir-Fry",
-        ["tofu", "soy sauce", "garlic", "broccoli", "sesame oil"],
-        "stirfry",
-    ),
-    ("Hummus", ["chickpeas", "tahini", "lemon", "garlic", "olive oil"], "dip"),
+    ("Shiitake miso soep", ["shiitake", "miso", "tofu", "dashi", "lente-ui"], "soup"),
 ]
 
 
-# Additional pools keyed by type
+# Extra-ingrediënten per type (Nederlandstalig)
 EXTRAS = {
-    "pasta": ["olive oil", "chili flakes", "parsley", "lemon zest", "mushrooms"],
-    "soup": ["cream", "croutons", "thyme", "bay leaf", "sour cream"],
-    "stirfry": ["bell pepper", "spring onion", "sesame seeds", "chili", "peanuts"],
-    "curry": ["garam masala", "cilantro", "chili", "potato", "spinach"],
-    "salad": ["mixed greens", "avocado", "nuts", "seeds", "vinegar"],
-    "stew": ["red wine", "tomato paste", "bay leaf", "thyme", "peas"],
-    "rice": ["peas", "lemon", "zucchini", "spinach", "chicken stock"],
-    "taco": ["avocado", "sour cream", "pico de gallo", "cotija cheese", "jalapeno"],
-    "pizza": ["pepperoni", "bell pepper", "onion", "olives", "oregano"],
-    "baked": ["walnuts", "vanilla", "nutmeg", "chocolate chips", "lemon zest"],
-    "breakfast": ["maple syrup", "berries", "yogurt", "butter", "banana"],
-    "seafood": ["white wine", "butter", "garlic", "lemon", "capers"],
-    "roast": ["potatoes", "carrots", "thyme", "butter", "garlic"],
-    "noodle": ["nori", "sesame oil", "bok choy", "scallions", "mushrooms"],
-    "dessert": ["whipped cream", "vanilla", "powdered sugar", "nuts", "butter"],
-    "dip": ["paprika", "olive oil", "pita bread", "cucumber", "tomato"],
+    "Diner": [
+        "olijfolie",
+        "chilivlokken",
+        "peterselie",
+        "champignons",
+        "kappertjes",
+        "citroen",
+        "sesamolie",
+    ],
+    "Voorgerecht": [
+        "room",
+        "croutons",
+        "tijm",
+        "laurierblad",
+        "zure room",
+        "geroosterde pompoenpitten",
+    ],
+    "Lunch": [
+        "gemengde sla",
+        "avocado",
+        "noten",
+        "zaden",
+        "vinaigrette",
+        "croutons",
+    ],
+    "Ontbijt": [
+        "ahornsiroop",
+        "bessen",
+        "yoghurt",
+        "boter",
+        "banaan",
+        "granola",
+    ],
+    "Nagerecht": ["slagroom", "vanille", "poedersuiker", "noten", "karamel"],
+    "Snack": ["paprika", "olijfolie", "pitabrood", "komkommer", "tomaat", "feta"],
+    "Drank": ["citroen", "limoen", "mint", "siroop", "ijsblokjes"],
+    "Overig": [
+        "olijfolie",
+        "kruiden",
+        "peper",
+        "zout",
+        "citroen",
+    ],
 }
+
+# Allowed Dutch categories for the application (matches form choices)
+CATEGORIES = [
+    "Voorgerecht",
+    "Ontbijt",
+    "Lunch",
+    "Diner",
+    "Nagerecht",
+    "Snack",
+    "Drank",
+    "Overig",
+]
 
 
 def generate_title(use_adjective: bool = True) -> str:
@@ -163,13 +332,13 @@ def generate_ingredients(num_extra: int = 2, base_hint: str | None = None) -> Li
         base = random.choice(RECIPE_BASES)
 
     core = list(base[1])
-    typ = base[2]
+    category = base[2]
 
-    extras = EXTRAS.get(typ, [])
+    extras = EXTRAS.get(category, [])
     # Add a couple of extras, avoid duplicates
     picks = random.sample(extras, k=min(len(extras), num_extra)) if extras else []
 
-    # Small chance to add a complementary item from other pools
+    # Small chance to add a complementary item from other categories
     if random.random() < 0.2:
         other = random.choice(list(EXTRAS.values()))
         if other:
@@ -188,16 +357,25 @@ def generate_recipe(use_adjective: bool = True, num_extra: int = 2) -> Dict[str,
     """Return a dict with `title` and `ingredients` for a generated recipe."""
     # pick base so ingredients align with title
     base_entry = random.choice(RECIPE_BASES)
-    base_title, base_core, typ = base_entry
+    base_title, base_core, category = base_entry
     title = f"{random.choice(ADJECTIVES)} {base_title}" if use_adjective else base_title
     ingredients = list(base_core)
-    extras = EXTRAS.get(typ, [])
+    extras = EXTRAS.get(category, [])
     picks = random.sample(extras, k=min(len(extras), num_extra)) if extras else []
-    # maybe swap one core with a vegetarian alternative
-    if typ in ("pasta", "stirfry", "taco") and random.random() < 0.15:
-        # replace meat with tofu or chickpeas
+
+    # Small chance to make a vegetarian swap if core contains obvious meats
+    meat_terms = (
+        "pancetta",
+        "rundergehakt",
+        "kipfilet",
+        "varkensschouder",
+        "stoofvlees",
+    )
+    if any(mt in " ".join(ingredients) for mt in meat_terms) and random.random() < 0.15:
         ingredients = [
-            "tofu" if x in ("pancetta", "ground beef", "chicken breast") else x
+            "tofu"
+            if x in ("pancetta", "rundergehakt", "kipfilet", "varkensschouder")
+            else x
             for x in ingredients
         ]
 
@@ -206,7 +384,7 @@ def generate_recipe(use_adjective: bool = True, num_extra: int = 2) -> Dict[str,
         if p not in ingredients:
             ingredients.append(p)
 
-    return {"title": title, "ingredients": ingredients, "type": typ}
+    return {"title": title, "ingredients": ingredients, "category": category}
 
 
 def generate_recipes(
