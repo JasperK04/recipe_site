@@ -5,7 +5,11 @@ This module provides Flask CLI commands for database operations, user management
 and generating mock data.
 """
 
+import os
 import random
+import shutil
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import click
 from faker import Faker
@@ -19,8 +23,21 @@ from app.models import (
     recipe_machines,
 )
 from app.recipe_generator import generate_recipes
+from config import BASE_DIR, config
 
 fake = Faker("nl_NL")
+
+
+def _get_db_file_from_uri(uri: str) -> str:
+    """Convert a SQLite SQLALCHEMY_DATABASE_URI to a file system path."""
+
+    # Absolute path: sqlite:////absolute/path.db
+    if uri.startswith("sqlite:////"):
+        return "/" + uri[len("sqlite:////") :]
+
+    # Relative path: sqlite:///relative/path.db
+    if uri.startswith("sqlite:///"):
+        return uri[len("sqlite:///") :]
 
 
 def register_commands(app: Flask):
@@ -347,3 +364,46 @@ def register_commands(app: Flask):
         for machine in machines:
             desc = f" - {machine.description}" if machine.description else ""
             click.echo(f"{machine.id}. {machine.name}{desc}")
+
+    @app.cli.command("backup")
+    def backup_database():
+        """Creates a backup of the configured SQLite database as backup.db."""
+        env = os.getenv("FLASK_ENV", "development")
+        app_config = config[env]
+        db_uri = app_config.SQLALCHEMY_DATABASE_URI
+
+        db_path = _get_db_file_from_uri(db_uri)
+        if not os.path.exists(db_path):
+            raise click.ClickException(f"Database file not found: {db_path}")
+
+        backup_path = os.path.join(os.path.dirname(db_path) or ".", "backup.db")
+        shutil.copy2(db_path, backup_path)
+
+        now = datetime.now(ZoneInfo("Europe/Amsterdam")).strftime("%d-%m-%Y %H:%M:%S")
+        rel_db = os.path.relpath(db_path, start=BASE_DIR)
+        rel_backup = os.path.relpath(backup_path, start=BASE_DIR)
+        print(f"Database backed up ({now}): {rel_db} -> {rel_backup}")
+
+    @app.cli.command("restore")
+    def restore_database():
+        env = os.getenv("FLASK_ENV", "development")
+        app_config = config[env]
+        db_uri = app_config.SQLALCHEMY_DATABASE_URI
+
+        db_path = _get_db_file_from_uri(db_uri)
+        backup_path = os.path.join(os.path.dirname(db_path) or ".", "backup.db")
+
+        if not os.path.exists(backup_path):
+            raise click.ClickException(f"Backup file not found: {backup_path}")
+
+        db.session.remove()
+        db.engine.dispose()
+
+        shutil.copy2(backup_path, db_path)
+
+        db.engine.dispose()
+
+        now = datetime.now(ZoneInfo("Europe/Amsterdam")).strftime("%d-%m-%Y %H:%M:%S")
+        rel_db = os.path.relpath(db_path, start=BASE_DIR)
+        rel_backup = os.path.relpath(backup_path, start=BASE_DIR)
+        print(f"Database restored ({now}): {rel_backup} -> {rel_db}")
