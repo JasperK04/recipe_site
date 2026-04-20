@@ -182,7 +182,7 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('recipes.list_recipes') }}">Alle recepten</a>
                     </li>
-                    {% if current_user.is_authenticated %}
+                    {% if current_user.is_authenticated and current_user.can_create_recipes %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('recipes.add_recipe') }}">
                             <i class="bi bi-plus-circle"></i> Recept toevoegen
@@ -208,6 +208,11 @@
                             <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">Mijn profiel</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('recipes.my_recipes') }}">Mijn recepten</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('recipes.favorites') }}">Favorieten</a></li>
+                            {% if current_user.is_admin %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('recipes.admin_recipes') }}">Receptmoderatie</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.admin_users') }}">Gebruikersbeheer</a></li>
+                            {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Uitloggen</a></li>
                         </ul>

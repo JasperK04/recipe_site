@@ -10,6 +10,7 @@
     <p>Maak een account aan om je favoriete recepten toe te voegen of blader door onze collectie.</p>
     <div class="mt-4">
         {% if current_user.is_authenticated %}
+            {% if current_user.can_create_recipes %}
             <a class="btn btn-primary btn-lg" href="{{ url_for('recipes.add_recipe') }}" role="button">
                 {% if not current_user.recipes %}
                     <i class="bi bi-plus-circle"></i> Voeg je eerste recept toe
@@ -17,6 +18,9 @@
                     <i class="bi bi-plus-circle"></i> Voeg een nieuw recept toe
                 {% endif %}
             </a>
+            {% else %}
+            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('recipes.list_recipes') }}" role="button">Recepten bekijken</a>
+            {% endif %}
         {% else %}
             <a class="btn btn-primary btn-lg me-2" href="{{ url_for('auth.register') }}" role="button">Begin</a>
             <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('recipes.list_recipes') }}" role="button">Recepten bekijken</a>

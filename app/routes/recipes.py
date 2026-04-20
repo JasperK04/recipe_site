@@ -7,20 +7,42 @@ from sqlalchemy import or_
 
 from app import db
 from app.forms import RecipeForm
-from app.models import KitchenMachine, Recipe
+from app.models import KitchenMachine, Recipe, RecipeScore
 
 recipes_bp = Blueprint("recipes", __name__)
 
 
+def _admin_required():
+    if not current_user.is_authenticated:
+        abort(401)
+    if not current_user.is_active or not current_user.is_admin:
+        abort(403)
+
+
+def _creator_required():
+    if not current_user.is_authenticated:
+        abort(401)
+    if not current_user.can_create_recipes:
+        abort(403)
+
+
+def _status_badge(status):
+    if status == Recipe.STATUS_DRAFT:
+        return ("Concept", "warning text-dark")
+    if status == Recipe.STATUS_DEACTIVATED:
+        return ("Gedeactiveerd", "danger")
+    return ("Openbaar", "success")
+
+
 @recipes_bp.route("/")
 def list_recipes():
-    """Display all recipes."""
+    """Display public recipes."""
     page = request.args.get("page", 1, type=int)
     category = request.args.get("category", None)
     search = request.args.get("search", "")
     filter_by_machines = request.args.get("filter_machines", "0")
 
-    query = Recipe.query.filter_by(status="public")
+    query = Recipe.query.filter_by(status=Recipe.STATUS_PUBLIC)
 
     if category:
         query = query.filter_by(category=category)
@@ -53,16 +75,46 @@ def list_recipes():
 def view_recipe(recipe_id):
     """View a single recipe."""
     recipe = Recipe.query.get_or_404(recipe_id)
-    # Only public recipes are viewable by others. Authors can view their own drafts.
-    if recipe.status != "public":
-        if not current_user.is_authenticated or current_user.id != recipe.user_id:
-            abort(404)
-    return render_template("recipes/view.html", recipe=recipe)
+    if not recipe.is_visible_to(current_user):
+        abort(404)
+
+    my_score = None
+    if current_user.is_authenticated:
+        my_score = recipe.score_for_user(current_user.id)
+
+    can_edit_recipe = (
+        current_user.is_authenticated
+        and current_user.id == recipe.user_id
+        and current_user.can_create_recipes
+        and recipe.status != Recipe.STATUS_DEACTIVATED
+    )
+    can_moderate_recipe = (
+        current_user.is_authenticated and current_user.is_active and current_user.is_admin
+    )
+    can_score_recipe = (
+        current_user.is_authenticated
+        and current_user.can_score_recipes
+        and recipe.status == Recipe.STATUS_PUBLIC
+    )
+    status_label, status_badge_class = _status_badge(recipe.status)
+
+    return render_template(
+        "recipes/view.html",
+        recipe=recipe,
+        can_edit_recipe=can_edit_recipe,
+        can_moderate_recipe=can_moderate_recipe,
+        can_score_recipe=can_score_recipe,
+        my_score=my_score,
+        status_label=status_label,
+        status_badge_class=status_badge_class,
+    )
 
 
 @recipes_bp.route("/<int:recipe_id>/image")
 def recipe_image(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
+    if not recipe.is_visible_to(current_user):
+        abort(404)
     if not recipe.image_data:
         abort(404)
     return (recipe.image_data, 200, {"Content-Type": recipe.image_mime or "image/webp"})
@@ -72,6 +124,8 @@ def recipe_image(recipe_id):
 @login_required
 def favorite_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
+    if recipe.status != Recipe.STATUS_PUBLIC:
+        abort(403)
     # add to favorites if not already present
     if not current_user.favorites.filter_by(id=recipe.id).first():
         current_user.favorites.append(recipe)
@@ -86,6 +140,8 @@ def favorite_recipe(recipe_id):
 @login_required
 def unfavorite_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
+    if recipe.status != Recipe.STATUS_PUBLIC:
+        abort(403)
     if current_user.favorites.filter_by(id=recipe.id).first():
         current_user.favorites.remove(recipe)
         db.session.commit()
@@ -99,6 +155,7 @@ def unfavorite_recipe(recipe_id):
 @login_required
 def add_recipe():
     """Add a new recipe."""
+    _creator_required()
     form = RecipeForm()
 
     # Populate kitchen machines choices
@@ -123,19 +180,26 @@ def add_recipe():
                 except Exception:
                     quantity = qty_raw
             ingredients.append(
-                {"name": name, "quantity": quantity, "measurement": measurement}
+                {"name_": name, "quantity": quantity, "measurement": measurement}
             )
+
+        raw_steps = form.instructions.data or []
+        instructions = [step.strip() for step in raw_steps if step and step.strip()]
+
+        requested_status = (form.status.data or Recipe.STATUS_DRAFT).strip().lower()
+        if requested_status not in (Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC):
+            requested_status = Recipe.STATUS_DRAFT
 
         recipe = Recipe(
             title=form.title.data,  # type: ignore
             description=form.description.data,  # type: ignore
-            ingredients=form.ingredients.data,  # type: ignore
-            instructions=form.instructions.data,  # type: ignore
+            ingredients=ingredients,
+            instructions=instructions,
             prep_time=form.prep_time.data,  # type: ignore
             cook_time=form.cook_time.data,  # type: ignore
             servings=form.servings.data,  # type: ignore
             category=form.category.data if form.category.data else None,  # type: ignore
-            status=form.status.data if getattr(form, "status", None) else "public",
+            status=requested_status,
             user_id=current_user.id,  # type: ignore
         )
 
@@ -163,7 +227,10 @@ def add_recipe():
             except Exception:
                 pass
         db.session.commit()
-        flash("Recept succesvol toegevoegd!", "success")
+        if recipe.status == Recipe.STATUS_PUBLIC:
+            flash("Recept succesvol gepubliceerd!", "success")
+        else:
+            flash("Concept opgeslagen.", "success")
         return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
 
     return render_template("recipes/form.html", form=form, title="Recept toevoegen")
@@ -174,9 +241,12 @@ def add_recipe():
 def edit_recipe(recipe_id):
     """Edit an existing recipe."""
     recipe = Recipe.query.get_or_404(recipe_id)
+    _creator_required()
 
     # Only the author can edit their recipe
     if recipe.user_id != current_user.id:
+        abort(403)
+    if recipe.status == Recipe.STATUS_DEACTIVATED:
         abort(403)
 
     # Build a fresh form instance and populate scalar fields and FieldLists
@@ -211,7 +281,7 @@ def edit_recipe(recipe_id):
         for ing in recipe.ingredients or []:
             form.ingredients.append_entry(
                 {
-                    "name_": ing.get("name_", ""),
+                    "name_": ing.get("name_", ing.get("name", "")),
                     "quantity": str(ing.get("quantity", "") or ""),
                     "measurement": ing.get("measurement", "") or "",
                 }
@@ -259,7 +329,9 @@ def edit_recipe(recipe_id):
         recipe.category = form.category.data if form.category.data else None
         # status update
         if getattr(form, "status", None):
-            recipe.status = form.status.data
+            next_status = (form.status.data or Recipe.STATUS_DRAFT).strip().lower()
+            if next_status in (Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC):
+                recipe.status = next_status
 
         # Update required kitchen machines
         selected_machine_ids = form.required_machines.data
@@ -292,7 +364,10 @@ def edit_recipe(recipe_id):
             recipe.image_mime = None
 
         db.session.commit()
-        flash("Recept succesvol bijgewerkt!", "success")
+        if recipe.status == Recipe.STATUS_PUBLIC:
+            flash("Recept succesvol bijgewerkt en gepubliceerd.", "success")
+        else:
+            flash("Concept succesvol bijgewerkt.", "success")
         return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
 
     return render_template(
@@ -305,6 +380,7 @@ def edit_recipe(recipe_id):
 def delete_recipe(recipe_id):
     """Delete a recipe."""
     recipe = Recipe.query.get_or_404(recipe_id)
+    _creator_required()
 
     # Only the author can delete their recipe
     if recipe.user_id != current_user.id:
@@ -335,8 +411,103 @@ def my_recipes():
 def favorites():
     """Display current user's favorite recipes."""
     page = request.args.get("page", 1, type=int)
-    recipes = current_user.favorites.order_by(Recipe.created_at.desc()).paginate(
-        page=page, per_page=12, error_out=False
+    recipes = (
+        current_user.favorites.filter(Recipe.status == Recipe.STATUS_PUBLIC)
+        .order_by(Recipe.created_at.desc())
+        .paginate(page=page, per_page=12, error_out=False)
     )
 
     return render_template("recipes/favorites.html", recipes=recipes)
+
+
+@recipes_bp.route("/<int:recipe_id>/score", methods=["POST"])
+@login_required
+def score_recipe(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    if not recipe.is_visible_to(current_user):
+        abort(404)
+    if not current_user.can_score_recipes:
+        abort(403)
+    if recipe.status != Recipe.STATUS_PUBLIC:
+        abort(403)
+
+    score_value = request.form.get("score", type=int)
+    if score_value not in [1, 2, 3, 4, 5]:
+        flash("Score moet tussen 1 en 5 liggen.", "danger")
+        return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
+
+    existing = RecipeScore.query.filter_by(
+        recipe_id=recipe.id, user_id=current_user.id
+    ).first()
+    if existing:
+        existing.score = score_value
+        flash("Je score is bijgewerkt.", "success")
+    else:
+        db.session.add(
+            RecipeScore(recipe_id=recipe.id, user_id=current_user.id, score=score_value)
+        )
+        flash("Je score is opgeslagen.", "success")
+    db.session.commit()
+    return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
+
+
+@recipes_bp.route("/admin")
+@login_required
+def admin_recipes():
+    _admin_required()
+    page = request.args.get("page", 1, type=int)
+    status = request.args.get("status", "all")
+    search = request.args.get("search", "")
+
+    query = Recipe.query
+    if status in Recipe.VALID_STATUSES:
+        query = query.filter_by(status=status)
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            or_(
+                Recipe.title.ilike(search_pattern),
+                Recipe.description.ilike(search_pattern),
+            )
+        )
+    recipes = query.order_by(Recipe.created_at.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
+    return render_template(
+        "recipes/admin_list.html", recipes=recipes, status=status, search=search
+    )
+
+
+@recipes_bp.route("/admin/<int:recipe_id>/deactivate", methods=["POST"])
+@login_required
+def deactivate_recipe(recipe_id):
+    _admin_required()
+    recipe = Recipe.query.get_or_404(recipe_id)
+    if recipe.status == Recipe.STATUS_DEACTIVATED:
+        flash("Recept is al gedeactiveerd.", "info")
+        return redirect(request.referrer or url_for("recipes.admin_recipes"))
+
+    recipe.status_before_deactivation = recipe.status
+    recipe.status = Recipe.STATUS_DEACTIVATED
+    db.session.commit()
+    flash("Recept gedeactiveerd.", "success")
+    return redirect(request.referrer or url_for("recipes.admin_recipes"))
+
+
+@recipes_bp.route("/admin/<int:recipe_id>/reactivate", methods=["POST"])
+@login_required
+def reactivate_recipe(recipe_id):
+    _admin_required()
+    recipe = Recipe.query.get_or_404(recipe_id)
+    if recipe.status != Recipe.STATUS_DEACTIVATED:
+        flash("Recept is al actief.", "info")
+        return redirect(request.referrer or url_for("recipes.admin_recipes"))
+
+    if recipe.status_before_deactivation in (Recipe.STATUS_PUBLIC, Recipe.STATUS_DRAFT):
+        recipe.status = recipe.status_before_deactivation
+    else:
+        recipe.status = Recipe.STATUS_DRAFT
+    recipe.status_before_deactivation = None
+    db.session.commit()
+    flash("Recept opnieuw geactiveerd.", "success")
+    return redirect(request.referrer or url_for("recipes.admin_recipes"))

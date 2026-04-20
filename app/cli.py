@@ -40,6 +40,31 @@ def _get_db_file_from_uri(uri: str) -> str:
         return uri[len("sqlite:///") :]
 
 
+def _clear_filesystem_sessions(app: Flask) -> int:
+    """Remove all persisted Flask-Session files and return deleted file count."""
+    if app.config.get("SESSION_TYPE") != "filesystem":
+        return 0
+
+    session_dir = app.config.get("SESSION_FILE_DIR")
+    if not session_dir:
+        # Flask-Session default when SESSION_FILE_DIR is not configured.
+        session_dir = os.path.join(os.getcwd(), "flask_session")
+
+    if not os.path.isdir(session_dir):
+        return 0
+
+    deleted = 0
+    for entry in os.listdir(session_dir):
+        path = os.path.join(session_dir, entry)
+        if os.path.isfile(path):
+            try:
+                os.remove(path)
+                deleted += 1
+            except OSError:
+                continue
+    return deleted
+
+
 def register_commands(app: Flask):
     """Register all CLI commands with the Flask application."""
 
@@ -74,7 +99,7 @@ def register_commands(app: Flask):
             return
 
         # Create new user
-        user = User(username=username, email=email)  # type: ignore
+        user = User(username=username, email=email, role=User.ROLE_REVIEWER)  # type: ignore
         user.set_password(password)
 
         db.session.add(user)
@@ -115,7 +140,7 @@ def register_commands(app: Flask):
             return
 
         # Create new admin user
-        user = User(username=username, email=email)  # type: ignore
+        user = User(username=username, email=email, role=User.ROLE_ADMIN)  # type: ignore
         user.set_password(password)
 
         db.session.add(user)
@@ -166,15 +191,30 @@ def register_commands(app: Flask):
                 email = fake.email()
                 counter += 1
 
-            user = User(username=username, email=email)  # type: ignore
+            user = User(username=username, email=email, role=User.ROLE_REVIEWER)  # type: ignore
             user.set_password("password123")
             db.session.add(user)
             created_users.append(user)
 
-        admin = User(username="admin", email="admin@example.com")  # type: ignore
-        admin.set_password("admin123")
+        admin_username = os.getenv("admin_username", "admin")
+        admin_email = os.getenv("admin_email", "admin@example.com")
+        admin_password = os.getenv("admin_password", "admin123")
+
+        admin = User(username=admin_username, email=admin_email, role=User.ROLE_ADMIN)  # type: ignore
+        admin.set_password(admin_password)
         db.session.add(admin)
         created_users.append(admin)
+
+        db.session.commit()
+
+        reviewers = [
+            user
+            for user in created_users
+            if user.role == User.ROLE_REVIEWER and user.username != "admin"
+        ]
+        creator_count = min(len(reviewers), max(1, users // 4))
+        for creator in random.sample(reviewers, k=creator_count) if reviewers else []:
+            creator.role = User.ROLE_CREATOR
 
         db.session.commit()
 
@@ -229,7 +269,13 @@ def register_commands(app: Flask):
                 cook_time=fake.random_int(min=10, max=120),
                 servings=fake.random_int(min=1, max=8),
                 category=rec.get("category", ""),
-                user_id=random.choice(created_users).id,
+                user_id=random.choice(
+                    [
+                        u
+                        for u in created_users
+                        if u.role in (User.ROLE_CREATOR, User.ROLE_ADMIN)
+                    ]
+                ).id,
             )
 
             r = random.random()
@@ -291,11 +337,21 @@ def register_commands(app: Flask):
             flask db-stats
         """
         num_users = User.query.count()
+        num_active_users = User.query.filter_by(is_active=True).count()
+        num_deactivated_users = User.query.filter_by(is_active=False).count()
+        num_reviewers = User.query.filter_by(role=User.ROLE_REVIEWER).count()
+        num_creators = User.query.filter_by(role=User.ROLE_CREATOR).count()
+        num_admins = User.query.filter_by(role=User.ROLE_ADMIN).count()
         num_recipes = Recipe.query.count()
         num_machines = KitchenMachine.query.count()
 
         click.echo(click.style("\n=== Database Statistieken ===", fg="cyan", bold=True))
         click.echo(f"Gebruikers:         {num_users}")
+        click.echo(f"  - Actief:         {num_active_users}")
+        click.echo(f"  - Gedeactiveerd:  {num_deactivated_users}")
+        click.echo(f"  - Reviewers:      {num_reviewers}")
+        click.echo(f"  - Creators:       {num_creators}")
+        click.echo(f"  - Admins:         {num_admins}")
         click.echo(f"Recepten:           {num_recipes}")
         click.echo(f"Keukenapparatuur:   {num_machines}")
 
@@ -402,8 +458,12 @@ def register_commands(app: Flask):
         shutil.copy2(backup_path, db_path)
 
         db.engine.dispose()
+        deleted_sessions = _clear_filesystem_sessions(app)
 
         now = datetime.now(ZoneInfo("Europe/Amsterdam")).strftime("%d-%m-%Y %H:%M:%S")
         rel_db = os.path.relpath(db_path, start=BASE_DIR)
         rel_backup = os.path.relpath(backup_path, start=BASE_DIR)
-        print(f"Database restored ({now}): {rel_backup} -> {rel_db}")
+        print(
+            f"Database restored ({now}): {rel_backup} -> {rel_db}. "
+            f"Cleared {deleted_sessions} server session(s); users must log in again."
+        )

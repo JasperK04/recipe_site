@@ -5,6 +5,7 @@ A Flask application for managing cooking recipes.
 """
 
 import os
+import sys
 
 from app import create_app, db
 from app.models import KitchenMachine, Recipe, User
@@ -12,12 +13,18 @@ from app.models import KitchenMachine, Recipe, User
 # Create the Flask application
 app = create_app(os.environ.get("FLASK_ENV", "development"))
 
-# Ensure the database and tables exist on startup (works for WSGI servers too)
-with app.app_context():
-    try:
-        db.create_all()
-    except Exception as e:
-        app.logger.warning("Failed to ensure database tables: %s", e)
+def _running_flask_db_command() -> bool:
+    argv = [arg.lower() for arg in sys.argv[1:4]]
+    return "db" in argv
+
+
+# Ensure tables exist for direct app startup, but skip while running Alembic commands.
+if not _running_flask_db_command():
+    with app.app_context():
+        try:
+            db.create_all()
+        except Exception as e:
+            app.logger.warning("Failed to ensure database tables: %s", e)
 
 
 @app.shell_context_processor

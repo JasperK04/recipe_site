@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from flask import Flask
+from flask import Flask, flash, redirect, request, url_for
 from flask_login import LoginManager
+from flask_login import current_user, logout_user
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect, generate_csrf
@@ -44,6 +45,16 @@ def create_app(config_name="default"):
     from app.cli import register_commands
 
     register_commands(app)
+
+    @app.before_request
+    def enforce_active_account():
+        # Deactivated accounts are logged out immediately, including existing sessions.
+        if current_user.is_authenticated and not current_user.is_active:
+            logout_user()
+            flash("Je account is gedeactiveerd. Neem contact op met een beheerder.", "warning")
+            if request.endpoint == "auth.login":
+                return None
+            return redirect(url_for("auth.login"))
 
     # expose csrf_token() in templates for manual forms
     @app.context_processor

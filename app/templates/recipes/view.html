@@ -38,30 +38,46 @@
                             <span class="mx-2">|</span>
                             <span class="badge bg-secondary">{{ recipe.category }}</span>
                             {% endif %}
+                            <span class="mx-2">|</span>
+                            <span class="badge bg-{{ status_badge_class }}">{{ status_label }}</span>
                         </p>
                     </div>
-                        {% if current_user.is_authenticated and current_user.id == recipe.user_id %}
-                    <div class="btn-group">
-                        <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-pencil"></i> Edit
-                        </a>
-                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                            <i class="bi bi-trash"></i> Delete
-                        </button>
-                    </div>
-                    {% endif %}
+                    <div class="d-flex flex-column align-items-end gap-2">
+                        {% if can_edit_recipe %}
+                        <div class="btn-group">
+                            <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i> Bewerken
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                <i class="bi bi-trash"></i> Verwijderen
+                            </button>
+                        </div>
+                        {% endif %}
 
-                    {% if current_user.is_authenticated %}
-                    {# Favorite / Unfavorite button (only on recipe page) #}
-                    {% set is_fav = current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
-                    <form method="POST" action="{{ url_for('recipes.unfavorite_recipe', recipe_id=recipe.id) if is_fav else url_for('recipes.favorite_recipe', recipe_id=recipe.id) }}" class="d-inline ms-2">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                        <button type="submit" class="btn btn-sm {{ 'btn-outline-danger' if is_fav else 'btn-outline-primary' }}">
-                            <i class="bi {% if is_fav %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
-                            {% if is_fav %}Favoriet{% else %}Toevoegen aan favorieten{% endif %}
-                        </button>
-                    </form>
-                    {% endif %}
+                        {% if can_moderate_recipe %}
+                        <form method="POST" action="{{ url_for('recipes.reactivate_recipe', recipe_id=recipe.id) if recipe.status == 'deactivated' else url_for('recipes.deactivate_recipe', recipe_id=recipe.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit" class="btn btn-sm {{ 'btn-outline-success' if recipe.status == 'deactivated' else 'btn-outline-danger' }}">
+                                {% if recipe.status == 'deactivated' %}
+                                <i class="bi bi-eye"></i> Reactiveren
+                                {% else %}
+                                <i class="bi bi-eye-slash"></i> Deactiveren
+                                {% endif %}
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        {% if current_user.is_authenticated and recipe.status == 'public' %}
+                        {% set is_fav = current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
+                        <form method="POST" action="{{ url_for('recipes.unfavorite_recipe', recipe_id=recipe.id) if is_fav else url_for('recipes.favorite_recipe', recipe_id=recipe.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit" class="btn btn-sm {{ 'btn-outline-danger' if is_fav else 'btn-outline-primary' }}">
+                                <i class="bi {% if is_fav %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                                {% if is_fav %}Favoriet{% else %}Toevoegen aan favorieten{% endif %}
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
                 </div>
 
                 {% if recipe.description %}
@@ -72,6 +88,29 @@
                 {% endif %}
                 <p class="lead">{{ recipe.description }}</p>
                 {% endif %}
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        {% if recipe.score_count %}
+                        <span class="badge bg-primary">Score {{ recipe.score_average }}/5</span>
+                        <small class="text-muted ms-1">({{ recipe.score_count }} beoordeling(en))</small>
+                        {% else %}
+                        <small class="text-muted">Nog geen beoordelingen</small>
+                        {% endif %}
+                    </div>
+                    {% if can_score_recipe %}
+                    <form method="POST" action="{{ url_for('recipes.score_recipe', recipe_id=recipe.id) }}" class="d-flex align-items-center gap-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <label for="score" class="small text-muted mb-0">Jouw score:</label>
+                        <select name="score" id="score" class="form-select form-select-sm" style="width:auto;">
+                            {% for i in range(1, 6) %}
+                            <option value="{{ i }}" {% if my_score and my_score.score == i %}selected{% endif %}>{{ i }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Opslaan</button>
+                    </form>
+                    {% endif %}
+                </div>
 
                 <hr>
 
@@ -120,8 +159,9 @@
                 <div class="bg-light p-3 rounded mb-4">
                     <ul class="mb-0">
                         {% for ingredient in recipe.ingredients %}
-                            {% if ingredient["name_"] %}
-                            <li>{{ ingredient["quantity"] ~ '' ~ ingredient["measurement"] ~ ' ' ~ ingredient["name_"] }}</li>
+                            {% set ing_name = ingredient.get('name_') or ingredient.get('name') %}
+                            {% if ing_name %}
+                            <li>{{ (ingredient.get("quantity") or '') ~ ' ' ~ (ingredient.get("measurement") or '') ~ ' ' ~ ing_name }}</li>
                             {% endif %}
                         {% endfor %}
                     </ul>
@@ -150,7 +190,7 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-{% if current_user.is_authenticated and current_user.id == recipe.user_id %}
+{% if can_edit_recipe %}
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">

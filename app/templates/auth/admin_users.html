@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Gebruikersbeheer - Recepten{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Gebruikersbeheer</h1>
+    <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary">Terug naar profiel</a>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <p class="text-muted mb-3">Bekijk actieve en gedeactiveerde gebruikers, behandel creator-aanvragen en beheer rollen.</p>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Gebruiker</th>
+                        <th>Rol</th>
+                        <th>Status</th>
+                        <th>Aanvraag</th>
+                        <th class="text-end">Acties</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">{{ user.username }}</div>
+                            <small class="text-muted">{{ user.email }}</small>
+                        </td>
+                        <td>
+                            <span class="badge {% if user.role == 'admin' %}bg-danger{% elif user.role == 'creator' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                {{ user.role|capitalize }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="badge bg-success">Actief</span>
+                            {% else %}
+                            <span class="badge bg-danger">Gedeactiveerd</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.creator_request_pending %}
+                            <span class="badge bg-warning text-dark">Creator aangevraagd</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-2 flex-wrap justify-content-end">
+                                {% if user.id != current_user.id and user.role != 'admin' %}
+                                    {% if user.is_active %}
+                                    <form method="POST" action="{{ url_for('auth.deactivate_user', user_id=user.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Deactiveer</button>
+                                    </form>
+                                    {% else %}
+                                    <form method="POST" action="{{ url_for('auth.reactivate_user', user_id=user.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success">Reactiveer</button>
+                                    </form>
+                                    {% endif %}
+                                {% endif %}
+
+                                {% if user.role == 'reviewer' and user.id != current_user.id %}
+                                <form method="POST" action="{{ url_for('auth.promote_user', user_id=user.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Promoveer</button>
+                                </form>
+                                {% endif %}
+
+                                {% if user.role == 'creator' and user.id != current_user.id %}
+                                <form method="POST" action="{{ url_for('auth.demote_user', user_id=user.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Degradeer</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

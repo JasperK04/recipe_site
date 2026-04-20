@@ -70,11 +70,28 @@ class User(UserMixin, db.Model):
     """User model for authentication."""
 
     __tablename__ = "users"
+    ROLE_REVIEWER = "reviewer"
+    ROLE_CREATOR = "creator"
+    ROLE_ADMIN = "admin"
+    VALID_ROLES = (ROLE_REVIEWER, ROLE_CREATOR, ROLE_ADMIN)
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
+    role = db.Column(
+        db.String(20),
+        nullable=False,
+        default=ROLE_REVIEWER,
+        server_default=ROLE_REVIEWER,
+        index=True,
+    )
+    is_active = db.Column(
+        db.Boolean, nullable=False, default=True, server_default=db.true()
+    )
+    creator_request_pending = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationship with recipes
@@ -89,6 +106,9 @@ class User(UserMixin, db.Model):
         lazy="dynamic",
         backref=db.backref("favorited_by", lazy="dynamic"),
     )
+    scores = db.relationship(
+        "RecipeScore", back_populates="user", cascade="all, delete-orphan"
+    )
 
     # Relationship with kitchen machines (many-to-many)
     # Previously users could be linked to machines; this association was removed.
@@ -101,6 +121,22 @@ class User(UserMixin, db.Model):
         """Check if the provided password matches the hash."""
         return check_password_hash(self.password_hash, password)
 
+    @property
+    def is_admin(self):
+        return self.role == self.ROLE_ADMIN
+
+    @property
+    def is_creator(self):
+        return self.role in (self.ROLE_CREATOR, self.ROLE_ADMIN)
+
+    @property
+    def can_create_recipes(self):
+        return bool(self.is_active and self.is_creator)
+
+    @property
+    def can_score_recipes(self):
+        return bool(self.is_active and self.role in self.VALID_ROLES)
+
     def __repr__(self):
         return f"<User {self.username}>"
 
@@ -109,6 +145,10 @@ class Recipe(PaginationMixin, db.Model):
     """Recipe model for storing cooking recipes."""
 
     __tablename__ = "recipes"
+    STATUS_PUBLIC = "public"
+    STATUS_DRAFT = "draft"
+    STATUS_DEACTIVATED = "deactivated"
+    VALID_STATUSES = (STATUS_PUBLIC, STATUS_DRAFT, STATUS_DEACTIVATED)
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -122,6 +162,7 @@ class Recipe(PaginationMixin, db.Model):
     status = db.Column(
         db.String(20), nullable=False, default="public", server_default="public"
     )
+    status_before_deactivation = db.Column(db.String(20))
 
     # Binary image data (stored as WebP) and MIME type (usually 'image/webp')
     image_data = db.Column(db.LargeBinary)
@@ -143,6 +184,37 @@ class Recipe(PaginationMixin, db.Model):
         lazy="subquery",
         backref=db.backref("recipes", lazy=True),
     )
+    scores = db.relationship(
+        "RecipeScore", back_populates="recipe", cascade="all, delete-orphan"
+    )
+
+    @property
+    def score_count(self):
+        return len(self.scores)
+
+    @property
+    def score_average(self):
+        if not self.scores:
+            return None
+        total = sum(score.score for score in self.scores)
+        return round(total / len(self.scores), 1)
+
+    def score_for_user(self, user_id):
+        for score in self.scores:
+            if score.user_id == user_id:
+                return score
+        return None
+
+    def is_visible_to(self, user):
+        if self.status == self.STATUS_PUBLIC:
+            return True
+        if not user or not getattr(user, "is_authenticated", False):
+            return False
+        if not getattr(user, "is_active", False):
+            return False
+        if getattr(user, "is_admin", False):
+            return True
+        return user.id == self.user_id
 
     def __repr__(self):
         return f"<Recipe {self.title}>"
@@ -159,3 +231,34 @@ class KitchenMachine(db.Model):
 
     def __repr__(self):
         return f"<KitchenMachine {self.name}>"
+
+
+class RecipeScore(db.Model):
+    """Per-user recipe score."""
+
+    __tablename__ = "recipe_scores"
+    __table_args__ = (
+        db.UniqueConstraint("recipe_id", "user_id", name="uq_recipe_scores_recipe_user"),
+        db.CheckConstraint("score >= 1 AND score <= 5", name="ck_recipe_scores_score"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    recipe_id = db.Column(
+        db.Integer, db.ForeignKey("recipes.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    score = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    recipe = db.relationship("Recipe", back_populates="scores")
+    user = db.relationship("User", back_populates="scores")
+
+    def __repr__(self):
+        return f"<RecipeScore recipe={self.recipe_id} user={self.user_id} score={self.score}>"

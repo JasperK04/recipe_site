@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Receptmoderatie - Recepten{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Receptmoderatie</h1>
+    <a href="{{ url_for('recipes.list_recipes') }}" class="btn btn-outline-secondary">Publieke lijst</a>
+</div>
+
+<div class="row g-2 mb-3">
+    <div class="col-md-6">
+        <form method="GET" class="d-flex gap-2">
+            <input type="text" name="search" class="form-control" placeholder="Zoek op titel of beschrijving" value="{{ search }}">
+            <input type="hidden" name="status" value="{{ status }}">
+            <button type="submit" class="btn btn-outline-primary">Zoeken</button>
+        </form>
+    </div>
+    <div class="col-md-3">
+        <form method="GET">
+            <input type="hidden" name="search" value="{{ search }}">
+            <select class="form-select" name="status" onchange="this.form.submit()">
+                <option value="all" {% if status == 'all' %}selected{% endif %}>Alle statussen</option>
+                <option value="public" {% if status == 'public' %}selected{% endif %}>Openbaar</option>
+                <option value="draft" {% if status == 'draft' %}selected{% endif %}>Concept</option>
+                <option value="deactivated" {% if status == 'deactivated' %}selected{% endif %}>Gedeactiveerd</option>
+            </select>
+        </form>
+    </div>
+</div>
+
+{% if recipes.items %}
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Titel</th>
+                <th>Auteur</th>
+                <th>Status</th>
+                <th>Aangemaakt</th>
+                <th class="text-end">Acties</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for recipe in recipes.items %}
+            <tr>
+                <td><a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}">{{ recipe.title }}</a></td>
+                <td>{{ recipe.author.username }}</td>
+                <td>
+                    {% if recipe.status == 'public' %}
+                    <span class="badge bg-success">Openbaar</span>
+                    {% elif recipe.status == 'draft' %}
+                    <span class="badge bg-warning text-dark">Concept</span>
+                    {% else %}
+                    <span class="badge bg-danger">Gedeactiveerd</span>
+                    {% endif %}
+                </td>
+                <td>{{ recipe.created_at.strftime('%d-%m-%Y') if recipe.created_at else '-' }}</td>
+                <td class="text-end">
+                    <div class="d-inline-flex gap-2">
+                        {% if recipe.status == 'deactivated' %}
+                        <form method="POST" action="{{ url_for('recipes.reactivate_recipe', recipe_id=recipe.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit" class="btn btn-sm btn-outline-success">Reactiveer</button>
+                        </form>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('recipes.deactivate_recipe', recipe_id=recipe.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Deactiveer</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if recipes.pages > 1 %}
+<nav aria-label="Recipe pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if recipes.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('recipes.admin_recipes', page=recipes.prev_num, status=status, search=search) }}">Vorige</a>
+        </li>
+        {% endif %}
+        {% for page_num in recipes.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+            {% if page_num %}
+            <li class="page-item {% if page_num == recipes.page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('recipes.admin_recipes', page=page_num, status=status, search=search) }}">{{ page_num }}</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+        {% if recipes.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('recipes.admin_recipes', page=recipes.next_num, status=status, search=search) }}">Volgende</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Geen recepten gevonden voor dit filter.
+</div>
+{% endif %}
+{% endblock %}

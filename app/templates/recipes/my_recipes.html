@@ -5,9 +5,11 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Mijn recepten</h1>
+    {% if current_user.can_create_recipes %}
     <a href="{{ url_for('recipes.add_recipe') }}" class="btn btn-primary">
         <i class="bi bi-plus-circle"></i> Nieuw recept
     </a>
+    {% endif %}
 </div>
 
 {% if recipes.items %}
@@ -16,10 +18,10 @@
     <div class="col-md-4">
         <div class="card recipe-card h-100 position-relative">
             {% if recipe.status == 'draft' %}
-            <span class="position-absolute top-0 end-0 m-2 badge bg-warning text-dark">Draft</span>
+            <span class="position-absolute top-0 end-0 m-2 badge bg-warning text-dark">Concept</span>
             {% endif %}
             {% if recipe.status == 'deactivated' %}
-            <span class="position-absolute top-0 end-0 m-2 badge bg-danger text-dark">Deactivated</span>
+            <span class="position-absolute top-0 end-0 m-2 badge bg-danger">Gedeactiveerd</span>
             {% endif %}
             {% if recipe.image_data %}
             <img src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="{{ recipe.title }}" class="card-img-top rounded-top" style="height:180px; object-fit:cover; width:100%;" />
@@ -54,8 +56,10 @@
             </div>
             <div class="card-footer bg-transparent">
                 <div class="btn-group w-100" role="group">
-                    <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">View</a>
-                    <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">Bekijk</a>
+                    {% if current_user.can_create_recipes and recipe.status != 'deactivated' %}
+                    <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-secondary">Bewerk</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -94,7 +98,10 @@
 
 {% else %}
 <div class="alert alert-info">
-    <i class="bi bi-info-circle"></i> You haven't added any recipes yet. <a href="{{ url_for('recipes.add_recipe') }}" class="alert-link">Add your first recipe!</a>
+    <i class="bi bi-info-circle"></i> Je hebt nog geen recepten toegevoegd.
+    {% if current_user.can_create_recipes %}
+    <a href="{{ url_for('recipes.add_recipe') }}" class="alert-link">Voeg je eerste recept toe.</a>
+    {% endif %}
 </div>
 {% endif %}
 {% endblock %}
