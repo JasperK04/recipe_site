@@ -225,10 +225,10 @@ class RecipeForm(FlaskForm):
         "Categorie",
         choices=[
             ("", "Selecteer een categorie"),
-            ("Voorgerecht", "Voorgerecht"),
             ("Ontbijt", "Ontbijt"),
             ("Lunch", "Lunch"),
-            ("Diner", "Diner"),
+            ("Voorgerecht", "Voorgerecht"),
+            ("Hoofdgericht", "Hoofdgericht"),
             ("Nagerecht", "Nagerecht"),
             ("Snack", "Snack"),
             ("Drank", "Drank"),

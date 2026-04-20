@@ -23,14 +23,14 @@
     <div class="col-md-4">
         <select class="form-select" onchange="window.location.href=this.value;">
             <option value="{{ url_for('recipes.list_recipes') }}" {% if not category %}selected{% endif %}>Alle categorieën</option>
-            <option value="{{ url_for('recipes.list_recipes', category='appetizer') }}" {% if category == 'appetizer' %}selected{% endif %}>Voorgerecht</option>
-            <option value="{{ url_for('recipes.list_recipes', category='breakfast') }}" {% if category == 'breakfast' %}selected{% endif %}>Ontbijt</option>
-            <option value="{{ url_for('recipes.list_recipes', category='lunch') }}" {% if category == 'lunch' %}selected{% endif %}>Lunch</option>
-            <option value="{{ url_for('recipes.list_recipes', category='dinner') }}" {% if category == 'dinner' %}selected{% endif %}>Diner</option>
-            <option value="{{ url_for('recipes.list_recipes', category='dessert') }}" {% if category == 'dessert' %}selected{% endif %}>Nagerecht</option>
-            <option value="{{ url_for('recipes.list_recipes', category='snack') }}" {% if category == 'snack' %}selected{% endif %}>Snack</option>
-            <option value="{{ url_for('recipes.list_recipes', category='beverage') }}" {% if category == 'beverage' %}selected{% endif %}>Drank</option>
-            <option value="{{ url_for('recipes.list_recipes', category='other') }}" {% if category == 'other' %}selected{% endif %}>Overig</option>
+            <option value="{{ url_for('recipes.list_recipes', category='Voorgerecht') }}" {% if category == 'Voorgerecht' %}selected{% endif %}>Voorgerecht</option>
+            <option value="{{ url_for('recipes.list_recipes', category='Ontbijt') }}" {% if category == 'Ontbijt' %}selected{% endif %}>Ontbijt</option>
+            <option value="{{ url_for('recipes.list_recipes', category='Lunch') }}" {% if category == 'Lunch' %}selected{% endif %}>Lunch</option>
+            <option value="{{ url_for('recipes.list_recipes', category='Hoofdgerecht') }}" {% if category == 'Hoofdgerecht' %}selected{% endif %}>Hoofdgerecht</option>
+            <option value="{{ url_for('recipes.list_recipes', category='Nagerecht') }}" {% if category == 'Nagerecht' %}selected{% endif %}>Nagerecht</option>
+            <option value="{{ url_for('recipes.list_recipes', category='Snack') }}" {% if category == 'Snack' %}selected{% endif %}>Snack</option>
+            <option value="{{ url_for('recipes.list_recipes', category='Drank') }}" {% if category == 'Drank' %}selected{% endif %}>Drank</option>
+            <option value="{{ url_for('recipes.list_recipes', category='Overig') }}" {% if category == 'Overig' %}selected{% endif %}>Overig</option>
         </select>
     </div>
 </div>

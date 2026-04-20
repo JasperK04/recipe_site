@@ -65,7 +65,7 @@ RECIPE_BASES = [
     (
         "Pasta Carbonara",
         ["spaghetti", "eieren", "parmezaan", "pancetta", "zwarte peper"],
-        "Diner",
+        "Hoofdgerecht",
     ),
     (
         "Tomaat-basilicumsoep",
@@ -75,12 +75,12 @@ RECIPE_BASES = [
     (
         "Kip roerbak",
         ["kipfilet", "sojasaus", "knoflook", "gember", "groente-olie"],
-        "Diner",
+        "Hoofdgerecht",
     ),
     (
         "Kikkererwtencurry",
         ["kikkererwten", "kokosmelk", "kerriepoeder", "ui", "tomaat"],
-        "Diner",
+        "Hoofdgerecht",
     ),
     (
         "Griekse salade",
@@ -90,18 +90,22 @@ RECIPE_BASES = [
     (
         "Runderstoofpot",
         ["stoofvlees", "wortels", "aardappelen", "ui", "runderbouillon"],
-        "Diner",
+        "Hoofdgerecht",
     ),
     (
         "Groenterisotto",
         ["arborio rijst", "parmezaan", "witte wijn", "champignons", "groentebouillon"],
-        "Diner",
+        "Hoofdgerecht",
     ),
-    ("Vistaco's", ["witte vis", "tortilla's", "kool", "limoen", "koriander"], "Diner"),
+    (
+        "Vistaco's",
+        ["witte vis", "tortilla's", "kool", "limoen", "koriander"],
+        "Hoofdgerecht",
+    ),
     (
         "Pizza Margherita",
         ["pizzadeeg", "mozzarella", "tomatensaus", "basilicum", "olijfolie"],
-        "Diner",
+        "Hoofdgerecht",
     ),
     ("Bananenbrood", ["bananen", "bloem", "boter", "suiker", "eieren"], "Ontbijt"),
     (
@@ -122,22 +126,22 @@ RECIPE_BASES = [
     (
         "Garnalen scampi",
         ["garnalen", "knoflook", "boter", "citroen", "peterselie"],
-        "Diner",
+        "Hoofdgerecht",
     ),
     (
         "Rundertaco's",
         ["rundergehakt", "tortilla's", "sla", "cheddar", "salsa"],
-        "Diner",
+        "Hoofdgerecht",
     ),
     (
         "Geroosterde kip",
         ["hele kip", "rozemarijn", "knoflook", "citroen", "olijfolie"],
-        "Diner",
+        "Hoofdgerecht",
     ),
     (
         "Miso ramen",
         ["ramen noedels", "misopasta", "dashi", "lente-ui", "ei"],
-        "Diner",
+        "Hoofdgerecht",
     ),
     (
         "Appelcrumble",
@@ -147,7 +151,7 @@ RECIPE_BASES = [
     (
         "Tofu roerbak",
         ["tofu", "sojasaus", "knoflook", "broccoli", "sesamolie"],
-        "Diner",
+        "Hoofdgerecht",
     ),
     ("Hummus", ["kikkererwten", "tahini", "citroen", "knoflook", "olijfolie"], "Snack"),
 ]
@@ -157,105 +161,125 @@ RECIPE_BASES += [
     (
         "Spinazie-feta frittata",
         ["eieren", "spinazie", "feta", "ui", "olijfolie"],
-        "breakfast",
+        "Ontbijt",
     ),
     (
         "Butternut pompoensoep",
         ["butternut pompoen", "ui", "knoflook", "groentebouillon", "room"],
-        "soup",
+        "Soep",
     ),
     (
         "Pulled pork sandwich",
         ["varkensschouder", "barbecuesaus", "broodjes", "coleslaw", "augurk"],
-        "baked",
+        "Hoofdgerecht",
     ),
-    ("Shakshuka", ["eieren", "tomaat", "ui", "paprika", "komijn"], "breakfast"),
-    ("Ceviche", ["witte vis", "limoensap", "ui", "koriander", "peper"], "seafood"),
+    ("Shakshuka", ["eieren", "tomaat", "ui", "paprika", "komijn"], "Ontbijt"),
+    ("Ceviche", ["witte vis", "limoensap", "ui", "koriander", "peper"], "Hoofdgerecht"),
     (
         "Thaise groene curry",
         ["kip", "groene currypasta", "kokosmelk", "basilicum", "aubergine"],
-        "curry",
+        "Hoofdgerecht",
     ),
     (
         "Boeuf Bourguignon",
         ["runderstoofvlees", "rode wijn", "wortel", "ui", "champignons"],
-        "stew",
+        "Hoofdgerecht",
     ),
     (
         "Courgettekoekjes",
         ["courgette", "ei", "bloem", "parmezaan", "knoflook"],
-        "snack",
+        "Snack",
     ),
     (
         "Aubergine Parmigiana",
         ["aubergine", "tomatensaus", "mozzarella", "parmezaan", "basilicum"],
-        "dinner",
+        "Hoofdgerecht",
     ),
-    ("Dal van linzen", ["linzen", "uien", "komijn", "kurkuma", "kokosmelk"], "curry"),
+    (
+        "Dal van linzen",
+        ["linzen", "uien", "komijn", "kurkuma", "kokosmelk"],
+        "Hoofdgerecht",
+    ),
     (
         "Paneer Tikka",
         ["paneer", "yoghurt", "tikka masala", "paprika", "limoen"],
-        "dinner",
+        "Hoofdgerecht",
     ),
-    ("Sushi bowl", ["sushi rijst", "zalm", "avocado", "komkommer", "sojasaus"], "rice"),
+    (
+        "Sushi bowl",
+        ["sushi rijst", "zalm", "avocado", "komkommer", "sojasaus"],
+        "Hoofdgerecht",
+    ),
     (
         "BBQ spareribs",
         ["varkensribben", "barbecuesaus", "kool", "mais", "aardappels"],
-        "dinner",
+        "Hoofdgerecht",
     ),
-    ("Falafel wrap", ["kikkererwten", "kruiden", "salade", "tahini", "wrap"], "lunch"),
+    ("Falafel wrap", ["kikkererwten", "kruiden", "salade", "tahini", "wrap"], "Lunch"),
     (
         "Zoete aardappel frietjes",
         ["zoete aardappel", "olijfolie", "paprikapoeder", "zout", "peper"],
-        "snack",
+        "Snack",
     ),
     (
         "Yoghurt parfait",
         ["Griekse yoghurt", "muesli", "bessen", "honing", "noten"],
-        "breakfast",
+        "Ontbijt",
     ),
     (
         "Paddenstoelenstroganoff",
         ["paddenstoelen", "zure room", "ui", "paprikapoeder", "pasta"],
-        "pasta",
+        "Hoofdgerecht",
     ),
     (
         "Caesar salade met kip",
         ["kropsla", "kip", "croutons", "Parmezaan", "Caesar dressing"],
-        "lunch",
+        "Lunch",
     ),
-    ("Poke bowl", ["rijst", "tonijn", "sojasaus", "zeewier", "edamame"], "rice"),
+    (
+        "Poke bowl",
+        ["rijst", "tonijn", "sojasaus", "zeewier", "edamame"],
+        "Hoofdgerecht",
+    ),
     (
         "Gebakken zalm",
         ["zalmfilet", "citroen", "dille", "boter", "olijfolie"],
-        "seafood",
+        "Hoofdgerecht",
     ),
-    ("Scones", ["bloem", "boter", "melk", "bakpoeder", "suiker"], "baked"),
-    ("Crêpes", ["bloem", "melk", "eieren", "boter", "suiker"], "breakfast"),
+    ("Scones", ["bloem", "boter", "melk", "bakpoeder", "suiker"], "Hoofdgerecht"),
+    ("Crêpes", ["bloem", "melk", "eieren", "boter", "suiker"], "Ontbijt"),
     (
         "Gnocchi met tomatensaus",
         ["gnocchi", "tomatensaus", "parmezaan", "basilicum", "olijfolie"],
-        "pasta",
+        "Hoofdgerecht",
     ),
     (
         "Polenta met paddenstoelen",
         ["polenta", "paddenstoelen", "Parmezaan", "boter", "tijm"],
-        "rice",
+        "Hoofdgerecht",
     ),
-    ("Ratatouille", ["aubergine", "courgette", "tomaat", "paprika", "ui"], "dinner"),
-    ("Chili con carne", ["rundergehakt", "bonen", "tomaat", "chili", "ui"], "dinner"),
+    (
+        "Ratatouille",
+        ["aubergine", "courgette", "tomaat", "paprika", "ui"],
+        "Hoofdgerecht",
+    ),
+    (
+        "Chili con carne",
+        ["rundergehakt", "bonen", "tomaat", "chili", "ui"],
+        "Hoofdgerecht",
+    ),
     (
         "Geroosterde pompoen salade",
         ["pompoen", "rucola", "feta", "walnoten", "vinaigrette"],
-        "salad",
+        "Voorgerecht",
     ),
-    ("Shiitake miso soep", ["shiitake", "miso", "tofu", "dashi", "lente-ui"], "soup"),
+    ("Shiitake miso soep", ["shiitake", "miso", "tofu", "dashi", "lente-ui"], "Soep"),
 ]
 
 
 # Extra-ingrediënten per type (Nederlandstalig)
 EXTRAS = {
-    "Diner": [
+    "Hoofdgerecht": [
         "olijfolie",
         "chilivlokken",
         "peterselie",
@@ -305,7 +329,7 @@ CATEGORIES = [
     "Voorgerecht",
     "Ontbijt",
     "Lunch",
-    "Diner",
+    "Hoofdgerecht",
     "Nagerecht",
     "Snack",
     "Drank",
