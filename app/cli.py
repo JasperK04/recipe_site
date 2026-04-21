@@ -9,6 +9,7 @@ import os
 import random
 import shutil
 from datetime import datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import click
@@ -23,21 +24,51 @@ from app.models import (
     recipe_machines,
 )
 from app.recipe_generator import generate_recipes
-from config import BASE_DIR, config
+from config import BASE_DIR
+from utils import (
+    clear_directory_files,
+    create_zip_from_directory,
+    ensure_directory,
+    restore_directory_from_zip,
+    sqlite_path_from_uri,
+)
 
 fake = Faker("nl_NL")
 
 
 def _get_db_file_from_uri(uri: str) -> str:
     """Convert a SQLite SQLALCHEMY_DATABASE_URI to a file system path."""
+    db_path = sqlite_path_from_uri(uri)
+    if db_path is None:
+        raise ValueError(
+            "Only sqlite:/// database URIs are supported for backup/restore"
+        )
+    return db_path
 
-    # Absolute path: sqlite:////absolute/path.db
-    if uri.startswith("sqlite:////"):
-        return "/" + uri[len("sqlite:////") :]
 
-    # Relative path: sqlite:///relative/path.db
-    if uri.startswith("sqlite:///"):
-        return uri[len("sqlite:///") :]
+def _get_recipe_image_dir(app: Flask) -> Path:
+    return ensure_directory(app.config["RECIPE_IMAGE_DIR"])
+
+
+def _clear_recipe_images(app: Flask) -> int:
+    return clear_directory_files(_get_recipe_image_dir(app), pattern="*.webp")
+
+
+def _create_recipe_backup_zip(app: Flask, backup_zip_path: Path) -> int:
+    return create_zip_from_directory(
+        _get_recipe_image_dir(app),
+        backup_zip_path,
+        archive_root="recipe",
+        pattern="*.webp",
+    )
+
+
+def _restore_recipe_from_backup_zip(app: Flask, backup_zip_path: Path) -> int:
+    return restore_directory_from_zip(
+        backup_zip_path,
+        _get_recipe_image_dir(app),
+        pattern="*.webp",
+    )
 
 
 def _clear_filesystem_sessions(app: Flask) -> int:
@@ -47,22 +78,12 @@ def _clear_filesystem_sessions(app: Flask) -> int:
 
     session_dir = app.config.get("SESSION_FILE_DIR")
     if not session_dir:
-        # Flask-Session default when SESSION_FILE_DIR is not configured.
         session_dir = os.path.join(os.getcwd(), "flask_session")
 
     if not os.path.isdir(session_dir):
         return 0
 
-    deleted = 0
-    for entry in os.listdir(session_dir):
-        path = os.path.join(session_dir, entry)
-        if os.path.isfile(path):
-            try:
-                os.remove(path)
-                deleted += 1
-            except OSError:
-                continue
-    return deleted
+    return clear_directory_files(session_dir, pattern="*")
 
 
 def register_commands(app: Flask):
@@ -171,6 +192,7 @@ def register_commands(app: Flask):
             pass
 
         Recipe.query.delete()  # noqa: F841
+        _clear_recipe_images(app)
         User.query.delete()  # noqa: F841
         db.session.commit()
 
@@ -210,7 +232,7 @@ def register_commands(app: Flask):
         reviewers = [
             user
             for user in created_users
-            if user.role == User.ROLE_REVIEWER and user.username != "admin"
+            if user.role == User.ROLE_REVIEWER and user.username != admin_username
         ]
         creator_count = min(len(reviewers), max(1, users // 4))
         for creator in random.sample(reviewers, k=creator_count) if reviewers else []:
@@ -240,10 +262,8 @@ def register_commands(app: Flask):
                 db.session.add(machine)
             db.session.commit()
 
-        # No per-user machine linking required — assume users have all machines
         all_machines = KitchenMachine.query.all()
 
-        # Generate recipes using the realistic generator
         click.echo(f"\nMaak {recipes} recepten aan ...")
         generated = generate_recipes(n=recipes)
         measurements = ["g", "kg", "ml", "l", "el", "tl", "stuks"]
@@ -296,23 +316,20 @@ def register_commands(app: Flask):
 
         db.session.commit()
 
-        # Add random favorites for created users
+        # Add favorites for created users
         try:
             all_recipes = Recipe.query.all()
             if all_recipes:
                 for user in created_users:
-                    # each user gets 0-6 favorites randomly
                     fav_count = random.randint(0, min(6, len(all_recipes)))
                     if fav_count == 0:
                         continue
-                    favs = random.sample(all_recipes, k=fav_count)
-                    for r in favs:
-                        # avoid duplicates due to seeding logic
+                    favorites = random.sample(all_recipes, k=fav_count)
+                    for r in favorites:
                         if not user.favorites.filter_by(id=r.id).first():
                             user.favorites.append(r)
                 db.session.commit()
         except Exception:
-            # don't fail the whole seed if favorites can't be added
             db.session.rollback()
 
     @app.cli.command("clear-data")
@@ -325,9 +342,11 @@ def register_commands(app: Flask):
         click.echo("Alle data uit de database verwijderen...")
 
         Recipe.query.delete()  # noqa: F841
+        deleted_images = _clear_recipe_images(app)
         User.query.delete()  # noqa: F841
 
         db.session.commit()
+        click.echo(f"Verwijderde recepten-afbeeldingen: {deleted_images}")
 
     @app.cli.command("db-stats")
     def db_stats():
@@ -423,47 +442,52 @@ def register_commands(app: Flask):
 
     @app.cli.command("backup")
     def backup_database():
-        """Creates a backup of the configured SQLite database as backup.db."""
-        env = os.getenv("FLASK_ENV", "development")
-        app_config = config[env]
-        db_uri = app_config.SQLALCHEMY_DATABASE_URI
+        """Create backups for database (backup.db) and images (backup.zip)."""
+        db_uri = app.config["SQLALCHEMY_DATABASE_URI"]
 
         db_path = _get_db_file_from_uri(db_uri)
         if not os.path.exists(db_path):
             raise click.ClickException(f"Database file not found: {db_path}")
 
-        backup_path = os.path.join(os.path.dirname(db_path) or ".", "backup.db")
-        shutil.copy2(db_path, backup_path)
+        backup_db_path = Path(os.path.dirname(db_path) or ".") / "backup.db"
+        shutil.copy2(db_path, backup_db_path)
+        backup_zip_path = _get_recipe_image_dir(app).parent / "backup.zip"
+        _create_recipe_backup_zip(app, backup_zip_path)
 
         now = datetime.now(ZoneInfo("Europe/Amsterdam")).strftime("%d-%m-%Y %H:%M:%S")
         rel_db = os.path.relpath(db_path, start=BASE_DIR)
-        rel_backup = os.path.relpath(backup_path, start=BASE_DIR)
-        print(f"Database backed up ({now}): {rel_db} -> {rel_backup}")
+        rel_backup_db = os.path.relpath(backup_db_path, start=BASE_DIR)
+        rel_backup_zip = os.path.relpath(backup_zip_path, start=BASE_DIR)
+        print(
+            f"Backup completed ({now}):\n\t{rel_db:15}\t-> {rel_backup_db}\n\t{'data/recipe/':15}\t-> {rel_backup_zip}."
+        )
 
     @app.cli.command("restore")
     def restore_database():
-        env = os.getenv("FLASK_ENV", "development")
-        app_config = config[env]
-        db_uri = app_config.SQLALCHEMY_DATABASE_URI
+        db_uri = app.config["SQLALCHEMY_DATABASE_URI"]
 
         db_path = _get_db_file_from_uri(db_uri)
-        backup_path = os.path.join(os.path.dirname(db_path) or ".", "backup.db")
+        backup_db_path = Path(os.path.dirname(db_path) or ".") / "backup.db"
+        backup_zip_path = _get_recipe_image_dir(app).parent / "backup.zip"
 
-        if not os.path.exists(backup_path):
-            raise click.ClickException(f"Backup file not found: {backup_path}")
+        if not backup_db_path.exists():
+            raise click.ClickException(f"Backup file not found: {backup_db_path}")
+        if not backup_zip_path.exists():
+            raise click.ClickException(f"Image backup not found: {backup_zip_path}")
 
         db.session.remove()
         db.engine.dispose()
 
-        shutil.copy2(backup_path, db_path)
+        shutil.copy2(backup_db_path, db_path)
+        _restore_recipe_from_backup_zip(app, backup_zip_path)
 
         db.engine.dispose()
-        deleted_sessions = _clear_filesystem_sessions(app)
+        _clear_filesystem_sessions(app)
 
         now = datetime.now(ZoneInfo("Europe/Amsterdam")).strftime("%d-%m-%Y %H:%M:%S")
         rel_db = os.path.relpath(db_path, start=BASE_DIR)
-        rel_backup = os.path.relpath(backup_path, start=BASE_DIR)
+        rel_backup_db = os.path.relpath(backup_db_path, start=BASE_DIR)
+        rel_backup_zip = os.path.relpath(backup_zip_path, start=BASE_DIR)
         print(
-            f"Database restored ({now}): {rel_backup} -> {rel_db}. "
-            f"Cleared {deleted_sessions} server session(s); users must log in again."
+            f"Restore completed ({now}):\n\t{rel_backup_db:15}\t-> {rel_db}\n\t{rel_backup_zip:15}\t-> data/recipe/"
         )

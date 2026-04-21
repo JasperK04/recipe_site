@@ -4,15 +4,9 @@ from flask_login import current_user, login_required, login_user, logout_user
 from app import db, login_manager
 from app.forms import LoginForm, ProfileEditForm, RegistrationForm
 from app.models import Recipe, User
+from utils import require_active_admin
 
 auth_bp = Blueprint("auth", __name__)
-
-
-def _admin_required():
-    if not current_user.is_authenticated:
-        abort(401)
-    if not current_user.is_active or not current_user.is_admin:
-        abort(403)
 
 
 @login_manager.user_loader
@@ -130,15 +124,15 @@ def request_creator():
 @auth_bp.route("/admin/users")
 @login_required
 def admin_users():
-    _admin_required()
-    users = User.query.order_by(User.is_active.desc(), User.username.asc()).all()
+    require_active_admin(current_user)
+    users = User.query.order_by(db.text("is_active DESC"), User.username.asc()).all()
     return render_template("auth/admin_users.html", users=users)
 
 
 @auth_bp.route("/admin/users/<int:user_id>/deactivate", methods=["POST"])
 @login_required
 def deactivate_user(user_id):
-    _admin_required()
+    require_active_admin(current_user)
     target = User.query.get_or_404(user_id)
 
     if target.id == current_user.id:
@@ -166,7 +160,7 @@ def deactivate_user(user_id):
 @auth_bp.route("/admin/users/<int:user_id>/reactivate", methods=["POST"])
 @login_required
 def reactivate_user(user_id):
-    _admin_required()
+    require_active_admin(current_user)
     target = User.query.get_or_404(user_id)
     if target.is_active:
         flash(f"{target.username} is al actief.", "info")
@@ -193,7 +187,7 @@ def reactivate_user(user_id):
 @auth_bp.route("/admin/users/<int:user_id>/promote", methods=["POST"])
 @login_required
 def promote_user(user_id):
-    _admin_required()
+    require_active_admin(current_user)
     target = User.query.get_or_404(user_id)
 
     if target.role == User.ROLE_ADMIN:
@@ -213,7 +207,7 @@ def promote_user(user_id):
 @auth_bp.route("/admin/users/<int:user_id>/demote", methods=["POST"])
 @login_required
 def demote_user(user_id):
-    _admin_required()
+    require_active_admin(current_user)
     target = User.query.get_or_404(user_id)
 
     if target.role == User.ROLE_ADMIN:

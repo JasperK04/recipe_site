@@ -7,7 +7,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=sqlite:////app/data/recipes.db
+      - DATAROOT=/app/data
     volumes:
       - ./data:/app/data
     restart: unless-stopped

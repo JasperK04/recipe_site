@@ -12,7 +12,7 @@
                     {{ form.hidden_tag() }}
                         <div class="mb-3 text-center">
                             <div id="image-preview-wrap" class="text-center">
-                            {% if recipe and recipe.image_data %}
+                            {% if recipe and recipe.has_image %}
                                 <div class="image-frame d-inline-block position-relative">
                                     <img id="image-preview" src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="Recipe image" class="img-fluid rounded mb-2 d-block" style="max-height:300px; object-fit:cover;" />
                                     <button type="button" id="image-remove-btn" class="btn btn-dark btn-sm text-white position-absolute top-0 end-0 m-2 rounded d-flex align-items-center justify-content-center" aria-label="Change image" title="Change image" style="width:40px;height:40px;box-shadow:0 2px 6px rgba(0,0,0,0.35);"><i class="bi bi-pencil-fill"></i></button>

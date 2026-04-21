@@ -5,24 +5,22 @@ A Flask application for managing cooking recipes.
 """
 
 import os
-import sys
 
 from app import create_app, db
 from app.models import KitchenMachine, Recipe, User
+from utils import is_running_flask_db_command, sqlite_path_from_uri
 
 # Create the Flask application
 app = create_app(os.environ.get("FLASK_ENV", "development"))
 
-def _running_flask_db_command() -> bool:
-    argv = [arg.lower() for arg in sys.argv[1:4]]
-    return "db" in argv
-
-
-# Ensure tables exist for direct app startup, but skip while running Alembic commands.
-if not _running_flask_db_command():
+# Ensure tables exist only on first startup of a brand-new SQLite database.
+if not is_running_flask_db_command():
     with app.app_context():
         try:
-            db.create_all()
+            db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+            sqlite_db_file = sqlite_path_from_uri(db_uri)
+            if sqlite_db_file and not os.path.exists(sqlite_db_file):
+                db.create_all()
         except Exception as e:
             app.logger.warning("Failed to ensure database tables: %s", e)
 

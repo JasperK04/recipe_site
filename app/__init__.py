@@ -51,7 +51,10 @@ def create_app(config_name="default"):
         # Deactivated accounts are logged out immediately, including existing sessions.
         if current_user.is_authenticated and not current_user.is_active:
             logout_user()
-            flash("Je account is gedeactiveerd. Neem contact op met een beheerder.", "warning")
+            flash(
+                "Je account is gedeactiveerd. Neem contact op met een beheerder.",
+                "warning",
+            )
             if request.endpoint == "auth.login":
                 return None
             return redirect(url_for("auth.login"))

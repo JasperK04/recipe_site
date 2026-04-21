@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Any, cast
 
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -86,7 +87,7 @@ class User(UserMixin, db.Model):
         server_default=ROLE_REVIEWER,
         index=True,
     )
-    is_active = db.Column(
+    is_active = db.Column(  # pyright: ignore[reportIncompatibleMethodOverride]
         db.Boolean, nullable=False, default=True, server_default=db.true()
     )
     creator_request_pending = db.Column(
@@ -112,6 +113,9 @@ class User(UserMixin, db.Model):
 
     # Relationship with kitchen machines (many-to-many)
     # Previously users could be linked to machines; this association was removed.
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
 
     def set_password(self, password):
         """Hash and set the user's password."""
@@ -164,9 +168,8 @@ class Recipe(PaginationMixin, db.Model):
     )
     status_before_deactivation = db.Column(db.String(20))
 
-    # Binary image data (stored as WebP) and MIME type (usually 'image/webp')
-    image_data = db.Column(db.LargeBinary)
-    image_mime = db.Column(db.String(50))
+    # File-backed recipe image identifier (stored as DATAROOT/recipe/<image_id>.webp)
+    image_id = db.Column(db.String(64), index=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
         db.DateTime,
@@ -188,19 +191,25 @@ class Recipe(PaginationMixin, db.Model):
         "RecipeScore", back_populates="recipe", cascade="all, delete-orphan"
     )
 
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+
     @property
     def score_count(self):
-        return len(self.scores)
+        scores = cast(list["RecipeScore"], self.scores)
+        return len(scores)
 
     @property
     def score_average(self):
-        if not self.scores:
+        scores = cast(list["RecipeScore"], self.scores)
+        if not scores:
             return None
-        total = sum(score.score for score in self.scores)
-        return round(total / len(self.scores), 1)
+        total = sum(score.score for score in scores)
+        return round(total / len(scores), 1)
 
     def score_for_user(self, user_id):
-        for score in self.scores:
+        scores = cast(list["RecipeScore"], self.scores)
+        for score in scores:
             if score.user_id == user_id:
                 return score
         return None
@@ -216,6 +225,10 @@ class Recipe(PaginationMixin, db.Model):
             return True
         return user.id == self.user_id
 
+    @property
+    def has_image(self):
+        return bool(self.image_id)
+
     def __repr__(self):
         return f"<Recipe {self.title}>"
 
@@ -229,6 +242,9 @@ class KitchenMachine(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.String(200))
 
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+
     def __repr__(self):
         return f"<KitchenMachine {self.name}>"
 
@@ -238,7 +254,9 @@ class RecipeScore(db.Model):
 
     __tablename__ = "recipe_scores"
     __table_args__ = (
-        db.UniqueConstraint("recipe_id", "user_id", name="uq_recipe_scores_recipe_user"),
+        db.UniqueConstraint(
+            "recipe_id", "user_id", name="uq_recipe_scores_recipe_user"
+        ),
         db.CheckConstraint("score >= 1 AND score <= 5", name="ck_recipe_scores_score"),
     )
 
@@ -259,6 +277,9 @@ class RecipeScore(db.Model):
 
     recipe = db.relationship("Recipe", back_populates="scores")
     user = db.relationship("User", back_populates="scores")
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
 
     def __repr__(self):
         return f"<RecipeScore recipe={self.recipe_id} user={self.user_id} score={self.score}>"

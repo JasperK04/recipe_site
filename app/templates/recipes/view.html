@@ -11,7 +11,7 @@
     {% endif %}
     <meta property="og:type" content="article" />
     <meta property="og:url" content="{{ url_for('recipes.view_recipe', recipe_id=recipe.id, _external=True) }}" />
-    {% if recipe.image_data %}
+    {% if recipe.has_image %}
     <meta property="og:image" content="{{ url_for('recipes.recipe_image', recipe_id=recipe.id, _external=True) }}" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="{{ url_for('recipes.recipe_image', recipe_id=recipe.id, _external=True) }}" />
@@ -81,7 +81,7 @@
                 </div>
 
                 {% if recipe.description %}
-                {% if recipe.image_data %}
+                {% if recipe.has_image %}
                 <div class="mb-3 text-center">
                     <img src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="{{ recipe.title }}" class="img-fluid rounded" />
                 </div>

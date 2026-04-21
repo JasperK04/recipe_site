@@ -1,29 +1,27 @@
-import io
-
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
-from PIL import Image
 from sqlalchemy import or_
+from typing import cast
 
 from app import db
 from app.forms import RecipeForm
+from app.image_store import (
+    delete_recipe_image,
+    read_recipe_image_bytes,
+    save_recipe_image,
+)
 from app.models import KitchenMachine, Recipe, RecipeScore
+from utils import (
+    normalize_choice,
+    query_rows_by_ids,
+    require_active_admin,
+    require_active_creator,
+    sanitize_recipe_ingredients,
+    sanitize_recipe_instructions,
+    to_model_choices,
+)
 
 recipes_bp = Blueprint("recipes", __name__)
-
-
-def _admin_required():
-    if not current_user.is_authenticated:
-        abort(401)
-    if not current_user.is_active or not current_user.is_admin:
-        abort(403)
-
-
-def _creator_required():
-    if not current_user.is_authenticated:
-        abort(401)
-    if not current_user.can_create_recipes:
-        abort(403)
 
 
 def _status_badge(status):
@@ -89,7 +87,9 @@ def view_recipe(recipe_id):
         and recipe.status != Recipe.STATUS_DEACTIVATED
     )
     can_moderate_recipe = (
-        current_user.is_authenticated and current_user.is_active and current_user.is_admin
+        current_user.is_authenticated
+        and current_user.is_active
+        and current_user.is_admin
     )
     can_score_recipe = (
         current_user.is_authenticated
@@ -115,9 +115,10 @@ def recipe_image(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     if not recipe.is_visible_to(current_user):
         abort(404)
-    if not recipe.image_data:
+    image_data = read_recipe_image_bytes(recipe.image_id)
+    if not image_data:
         abort(404)
-    return (recipe.image_data, 200, {"Content-Type": recipe.image_mime or "image/webp"})
+    return (image_data, 200, {"Content-Type": "image/webp"})
 
 
 @recipes_bp.route("/<int:recipe_id>/favorite", methods=["POST"])
@@ -155,40 +156,21 @@ def unfavorite_recipe(recipe_id):
 @login_required
 def add_recipe():
     """Add a new recipe."""
-    _creator_required()
+    require_active_creator(current_user)
     form = RecipeForm()
 
     # Populate kitchen machines choices
     machines = KitchenMachine.query.order_by(KitchenMachine.name).all()
-    form.required_machines.choices = [(m.id, m.name) for m in machines]
+    form.required_machines.choices = to_model_choices(machines)
 
     if form.validate_on_submit():
-        # sanitize ingredient entries: keep only non-empty name or any value
-        raw_ingredients = form.ingredients.data or []
-        ingredients = []
-        for ing in raw_ingredients:
-            name = (ing.get("name_") or "").strip()
-            qty_raw = (ing.get("quantity") or "").strip()
-            measurement = (ing.get("measurement") or "").strip()
-            if not name and not qty_raw and not measurement:
-                continue
-            # try to parse quantity to float, otherwise keep as string
-            quantity = None
-            if qty_raw:
-                try:
-                    quantity = float(qty_raw)
-                except Exception:
-                    quantity = qty_raw
-            ingredients.append(
-                {"name_": name, "quantity": quantity, "measurement": measurement}
-            )
-
-        raw_steps = form.instructions.data or []
-        instructions = [step.strip() for step in raw_steps if step and step.strip()]
-
-        requested_status = (form.status.data or Recipe.STATUS_DRAFT).strip().lower()
-        if requested_status not in (Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC):
-            requested_status = Recipe.STATUS_DRAFT
+        ingredients = sanitize_recipe_ingredients(form.ingredients.data)
+        instructions = sanitize_recipe_instructions(form.instructions.data)
+        requested_status = normalize_choice(
+            form.status.data,
+            allowed=(Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC),
+            default=Recipe.STATUS_DRAFT,
+        )
 
         recipe = Recipe(
             title=form.title.data,  # type: ignore
@@ -204,29 +186,28 @@ def add_recipe():
         )
 
         # Add required kitchen machines
-        selected_machine_ids = form.required_machines.data
-        if selected_machine_ids:
-            selected_machines = KitchenMachine.query.filter(
-                KitchenMachine.id.in_(selected_machine_ids)
-            ).all()
-            recipe.required_machines = selected_machines  # type: ignore
+        recipe.required_machines = cast(  # pyright: ignore[reportAttributeAccessIssue]
+            list[KitchenMachine],
+            query_rows_by_ids(KitchenMachine, form.required_machines.data),
+        )
 
         db.session.add(recipe)
-        # handle uploaded image (convert to webp before storing)
+        uploaded_image_id = None
+        # Handle uploaded image (store as DATAROOT/recipe/<image_id>.webp).
         if getattr(form, "image", None) and form.image.data:
             try:
-                file_storage = form.image.data
-                file_storage.stream.seek(0)
-                img = Image.open(file_storage.stream)
-                webp_bytes = io.BytesIO()
-                img.convert("RGBA" if img.mode in ("RGBA", "LA") else "RGB").save(
-                    webp_bytes, format="WEBP"
-                )
-                recipe.image_data = webp_bytes.getvalue()
-                recipe.image_mime = "image/webp"
+                uploaded_image_id = save_recipe_image(form.image.data)
+                recipe.image_id = uploaded_image_id
             except Exception:
                 pass
-        db.session.commit()
+
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            if uploaded_image_id:
+                delete_recipe_image(uploaded_image_id)
+            raise
         if recipe.status == Recipe.STATUS_PUBLIC:
             flash("Recept succesvol gepubliceerd!", "success")
         else:
@@ -241,7 +222,7 @@ def add_recipe():
 def edit_recipe(recipe_id):
     """Edit an existing recipe."""
     recipe = Recipe.query.get_or_404(recipe_id)
-    _creator_required()
+    require_active_creator(current_user)
 
     # Only the author can edit their recipe
     if recipe.user_id != current_user.id:
@@ -254,7 +235,7 @@ def edit_recipe(recipe_id):
 
     # Populate kitchen machines choices
     machines = KitchenMachine.query.order_by(KitchenMachine.name).all()
-    form.required_machines.choices = [(m.id, m.name) for m in machines]
+    form.required_machines.choices = to_model_choices(machines)
 
     if request.method == "GET":
         # simple fields
@@ -299,25 +280,8 @@ def edit_recipe(recipe_id):
         if len(form.instructions.entries) == 0:
             form.instructions.append_entry()
     if form.validate_on_submit():
-        # sanitize as in add_recipe
-        raw_ingredients = form.ingredients.data or []
-        ingredients = []
-        for ing in raw_ingredients:
-            name = (ing.get("name_") or "").strip()
-            qty_raw = (ing.get("quantity") or "").strip()
-            measurement = (ing.get("measurement") or "").strip()
-            if not name and not qty_raw and not measurement:
-                continue
-            try:
-                quantity = float(qty_raw) if qty_raw else None
-            except Exception:
-                quantity = qty_raw
-            ingredients.append(
-                {"name_": name, "quantity": quantity, "measurement": measurement}
-            )
-
-        raw_steps = form.instructions.data or []
-        instructions = [step for step in raw_steps if step.strip()]
+        ingredients = sanitize_recipe_ingredients(form.ingredients.data)
+        instructions = sanitize_recipe_instructions(form.instructions.data)
 
         recipe.title = form.title.data
         recipe.description = form.description.data
@@ -329,41 +293,48 @@ def edit_recipe(recipe_id):
         recipe.category = form.category.data if form.category.data else None
         # status update
         if getattr(form, "status", None):
-            next_status = (form.status.data or Recipe.STATUS_DRAFT).strip().lower()
-            if next_status in (Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC):
-                recipe.status = next_status
+            recipe.status = normalize_choice(
+                form.status.data,
+                allowed=(Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC),
+                default=recipe.status,
+            )
 
         # Update required kitchen machines
-        selected_machine_ids = form.required_machines.data
-        if selected_machine_ids:
-            selected_machines = KitchenMachine.query.filter(
-                KitchenMachine.id.in_(selected_machine_ids)
-            ).all()
-            recipe.required_machines = selected_machines
-        else:
-            recipe.required_machines = []
+        recipe.required_machines = cast(  # pyright: ignore[reportAttributeAccessIssue]
+            list[KitchenMachine],
+            query_rows_by_ids(KitchenMachine, form.required_machines.data),
+        )
+
+        previous_image_id = recipe.image_id
+        image_ids_to_delete_after_commit = set()
+        uploaded_image_id = None
 
         # handle uploaded image replacement
         if getattr(form, "image", None) and form.image.data:
             try:
-                file_storage = form.image.data
-                file_storage.stream.seek(0)
-                img = Image.open(file_storage.stream)
-                webp_bytes = io.BytesIO()
-                img.convert("RGBA" if img.mode in ("RGBA", "LA") else "RGB").save(
-                    webp_bytes, format="WEBP"
-                )
-                recipe.image_data = webp_bytes.getvalue()
-                recipe.image_mime = "image/webp"
+                uploaded_image_id = save_recipe_image(form.image.data)
+                recipe.image_id = uploaded_image_id
+                if previous_image_id:
+                    image_ids_to_delete_after_commit.add(previous_image_id)
             except Exception:
                 pass
 
         # handle image removal requested by the form
         if request.form.get("remove_image") == "1":
-            recipe.image_data = None
-            recipe.image_mime = None
+            if recipe.image_id:
+                image_ids_to_delete_after_commit.add(recipe.image_id)
+            recipe.image_id = None
 
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            if uploaded_image_id:
+                delete_recipe_image(uploaded_image_id)
+            raise
+        for image_id in image_ids_to_delete_after_commit:
+            if image_id != recipe.image_id:
+                delete_recipe_image(image_id)
         if recipe.status == Recipe.STATUS_PUBLIC:
             flash("Recept succesvol bijgewerkt en gepubliceerd.", "success")
         else:
@@ -380,14 +351,16 @@ def edit_recipe(recipe_id):
 def delete_recipe(recipe_id):
     """Delete a recipe."""
     recipe = Recipe.query.get_or_404(recipe_id)
-    _creator_required()
+    require_active_creator(current_user)
 
     # Only the author can delete their recipe
     if recipe.user_id != current_user.id:
         abort(403)
 
+    image_id = recipe.image_id
     db.session.delete(recipe)
     db.session.commit()
+    delete_recipe_image(image_id)
     flash("Recept succesvol verwijderd!", "success")
     return redirect(url_for("recipes.list_recipes"))
 
@@ -454,7 +427,7 @@ def score_recipe(recipe_id):
 @recipes_bp.route("/admin")
 @login_required
 def admin_recipes():
-    _admin_required()
+    require_active_admin(current_user)
     page = request.args.get("page", 1, type=int)
     status = request.args.get("status", "all")
     search = request.args.get("search", "")
@@ -481,7 +454,7 @@ def admin_recipes():
 @recipes_bp.route("/admin/<int:recipe_id>/deactivate", methods=["POST"])
 @login_required
 def deactivate_recipe(recipe_id):
-    _admin_required()
+    require_active_admin(current_user)
     recipe = Recipe.query.get_or_404(recipe_id)
     if recipe.status == Recipe.STATUS_DEACTIVATED:
         flash("Recept is al gedeactiveerd.", "info")
@@ -497,7 +470,7 @@ def deactivate_recipe(recipe_id):
 @recipes_bp.route("/admin/<int:recipe_id>/reactivate", methods=["POST"])
 @login_required
 def reactivate_recipe(recipe_id):
-    _admin_required()
+    require_active_admin(current_user)
     recipe = Recipe.query.get_or_404(recipe_id)
     if recipe.status != Recipe.STATUS_DEACTIVATED:
         flash("Recept is al actief.", "info")
