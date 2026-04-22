@@ -33,7 +33,7 @@
 <div class="row g-4">
     {% for recipe in recipes %}
     <div class="col-md-4">
-        <div class="card recipe-card h-100">
+        <div class="card recipe-card h-100 position-relative">
             {% if recipe.has_image %}
             <img src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="{{ recipe.title }}" class="card-img-top rounded-top" style="height:180px; object-fit:cover; width:100%;" />
             {% else %}
@@ -41,29 +41,34 @@
                 <div class="text-center" aria-hidden="true"><i class="bi bi-image" style="font-size:2rem;"></i></div>
             </div>
             {% endif %}
-            <div class="card-body">
+            <div class="card-body d-flex flex-column">
+                <div class="position-absolute" style="top:8px; right:8px; z-index:5;">
+                    <span class="badge bg-primary">{% if recipe.score_count %}{{ '%.1f' % recipe.score_average }}{% else %}-{% endif %}/5</span>
+                </div>
                 <h5 class="card-title">{{ recipe.title }}</h5>
                 {% if recipe.description %}
                 <p class="card-text text-muted">{{ recipe.description[:100] }}{% if recipe.description|length > 100 %}...{% endif %}</p>
                 {% endif %}
-                <div class="d-flex justify-content-between align-items-center">
-                    <small class="text-muted">
-                        <i class="bi bi-person"></i> {{ recipe.author.username }}
-                    </small>
-                    {% if recipe.category %}
-                    <span class="badge bg-secondary">{{ recipe.category }}</span>
+                <div class="mt-auto">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="bi bi-person"></i> {{ recipe.author.username }}
+                        </small>
+                        {% if recipe.category %}
+                        <span class="badge bg-secondary">{{ recipe.category }}</span>
+                        {% endif %}
+                    </div>
+                    {% if recipe.prep_time or recipe.cook_time %}
+                    <div class="mt-2">
+                        {% if recipe.prep_time %}
+                        <small class="text-muted"><i class="bi bi-clock"></i> Prep: {{ recipe.prep_time }}m</small>
+                        {% endif %}
+                        {% if recipe.cook_time %}
+                        <small class="text-muted ms-2"><i class="bi bi-fire"></i> Cook: {{ recipe.cook_time }}m</small>
+                        {% endif %}
+                    </div>
                     {% endif %}
                 </div>
-                {% if recipe.prep_time or recipe.cook_time %}
-                <div class="mt-2">
-                    {% if recipe.prep_time %}
-                    <small class="text-muted"><i class="bi bi-clock"></i> Prep: {{ recipe.prep_time }}m</small>
-                    {% endif %}
-                    {% if recipe.cook_time %}
-                    <small class="text-muted"><i class="bi bi-fire"></i> Cook: {{ recipe.cook_time }}m</small>
-                    {% endif %}
-                </div>
-                {% endif %}
             </div>
             <div class="card-footer bg-transparent">
                 <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-primary w-100">Bekijk recept</a>

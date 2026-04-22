@@ -1,7 +1,17 @@
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from typing import cast
+
+from flask import (
+    Blueprint,
+    abort,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user, login_required
 from sqlalchemy import or_
-from typing import cast
 
 from app import db
 from app.forms import RecipeForm
@@ -128,12 +138,15 @@ def favorite_recipe(recipe_id):
     if recipe.status != Recipe.STATUS_PUBLIC:
         abort(403)
     # add to favorites if not already present
+    created = False
     if not current_user.favorites.filter_by(id=recipe.id).first():
         current_user.favorites.append(recipe)
         db.session.commit()
-        flash("Toegevoegd aan favorieten", "success")
-    else:
-        flash("Recept staat al in favorieten", "info")
+        created = True
+
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"status": "ok", "favorited": created})
+
     return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
 
 
@@ -143,12 +156,15 @@ def unfavorite_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     if recipe.status != Recipe.STATUS_PUBLIC:
         abort(403)
+    removed = False
     if current_user.favorites.filter_by(id=recipe.id).first():
         current_user.favorites.remove(recipe)
         db.session.commit()
-        flash("Verwijderd uit favorieten", "success")
-    else:
-        flash("Recept stond niet in favorieten", "info")
+        removed = True
+
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"status": "ok", "favorited": not removed})
+
     return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
 
 
@@ -401,6 +417,16 @@ def score_recipe(recipe_id):
         abort(404)
     if not current_user.can_score_recipes:
         abort(403)
+    # Prevent authors from scoring their own recipes
+    if current_user.id == recipe.user_id:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "U kunt uw eigen recept niet beoordelen.",
+                }
+            ), 403
+        return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
     if recipe.status != Recipe.STATUS_PUBLIC:
         abort(403)
 
@@ -414,13 +440,23 @@ def score_recipe(recipe_id):
     ).first()
     if existing:
         existing.score = score_value
-        flash("Je score is bijgewerkt.", "success")
     else:
         db.session.add(
             RecipeScore(recipe_id=recipe.id, user_id=current_user.id, score=score_value)
         )
-        flash("Je score is opgeslagen.", "success")
     db.session.commit()
+    # Prepare updated stats
+    score_average = recipe.score_average
+    score_count = recipe.score_count
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify(
+            {
+                "status": "ok",
+                "score": score_value,
+                "score_average": score_average,
+                "score_count": score_count,
+            }
+        )
     return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
 
 
@@ -457,12 +493,16 @@ def deactivate_recipe(recipe_id):
     require_active_admin(current_user)
     recipe = Recipe.query.get_or_404(recipe_id)
     if recipe.status == Recipe.STATUS_DEACTIVATED:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"status": "ok", "new_status": recipe.status})
         flash("Recept is al gedeactiveerd.", "info")
         return redirect(request.referrer or url_for("recipes.admin_recipes"))
 
     recipe.status_before_deactivation = recipe.status
     recipe.status = Recipe.STATUS_DEACTIVATED
     db.session.commit()
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"status": "ok", "new_status": recipe.status})
     flash("Recept gedeactiveerd.", "success")
     return redirect(request.referrer or url_for("recipes.admin_recipes"))
 
@@ -473,6 +513,8 @@ def reactivate_recipe(recipe_id):
     require_active_admin(current_user)
     recipe = Recipe.query.get_or_404(recipe_id)
     if recipe.status != Recipe.STATUS_DEACTIVATED:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"status": "ok", "new_status": recipe.status})
         flash("Recept is al actief.", "info")
         return redirect(request.referrer or url_for("recipes.admin_recipes"))
 
@@ -482,5 +524,7 @@ def reactivate_recipe(recipe_id):
         recipe.status = Recipe.STATUS_DRAFT
     recipe.status_before_deactivation = None
     db.session.commit()
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"status": "ok", "new_status": recipe.status})
     flash("Recept opnieuw geactiveerd.", "success")
     return redirect(request.referrer or url_for("recipes.admin_recipes"))

@@ -26,89 +26,125 @@
 <div class="row">
     <div class="col-lg-8 mx-auto">
         <div class="card shadow">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div>
+            <div class="card-body position-relative">
+                <div class="row align-items-start mb-3">
+                    <div class="col-12 col-md-8">
                         <h1 class="card-title">{{ recipe.title }}</h1>
-                        <p class="text-muted">
+                        <p class="text-muted mb-0">
                             <i class="bi bi-person"></i> Door {{ recipe.author.username }}
                             <span class="mx-2">|</span>
                             <i class="bi bi-calendar"></i> {{ recipe.created_at.strftime('%d-%m-%Y') }}
                             {% if recipe.category %}
                             <span class="mx-2">|</span>
-                            <span class="badge bg-secondary">{{ recipe.category }}</span>
+                            <span class="badge bg-secondary d-inline-block me-1 mb-1">{{ recipe.category }}</span>
                             {% endif %}
-                            <span class="mx-2">|</span>
-                            <span class="badge bg-{{ status_badge_class }}">{{ status_label }}</span>
                         </p>
                     </div>
-                    <div class="d-flex flex-column align-items-end gap-2">
+                    <div class="col-12 col-md-4 d-flex flex-column align-items-start align-items-md-end gap-2 mt-3 mt-md-0">
                         {% if can_edit_recipe %}
-                        <div class="btn-group">
-                            <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-pencil"></i> Bewerken
+                        <div class="w-100 d-flex flex-column flex-md-row gap-2">
+                            <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary w-100 w-md-auto">
+                                <i class="bi bi-pencil"></i>
                             </a>
-                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                                <i class="bi bi-trash"></i> Verwijderen
+                            <button type="button" class="btn btn-sm btn-outline-danger w-100 w-md-auto" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                <i class="bi bi-trash"></i>
                             </button>
                         </div>
                         {% endif %}
 
                         {% if can_moderate_recipe %}
-                        <form method="POST" action="{{ url_for('recipes.reactivate_recipe', recipe_id=recipe.id) if recipe.status == 'deactivated' else url_for('recipes.deactivate_recipe', recipe_id=recipe.id) }}">
+                        <form method="POST" action="{{ url_for('recipes.reactivate_recipe', recipe_id=recipe.id) if recipe.status == 'deactivated' else url_for('recipes.deactivate_recipe', recipe_id=recipe.id) }}" class="w-100 moderate-form" data-recipe-status="{{ recipe.status }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                            <button type="submit" class="btn btn-sm {{ 'btn-outline-success' if recipe.status == 'deactivated' else 'btn-outline-danger' }}">
+                            <button type="submit" class="btn btn-sm {{ 'btn-outline-success' if recipe.status == 'deactivated' else 'btn-outline-danger' }} w-100 w-md-auto">
                                 {% if recipe.status == 'deactivated' %}
-                                <i class="bi bi-eye"></i> Reactiveren
+                                <i class="bi bi-eye"></i>
                                 {% else %}
-                                <i class="bi bi-eye-slash"></i> Deactiveren
+                                <i class="bi bi-eye-slash"></i>
                                 {% endif %}
                             </button>
                         </form>
                         {% endif %}
 
-                        {% if current_user.is_authenticated and recipe.status == 'public' %}
+                        {% if current_user.is_authenticated and recipe.status == 'public' and not recipe.has_image %}
                         {% set is_fav = current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
-                        <form method="POST" action="{{ url_for('recipes.unfavorite_recipe', recipe_id=recipe.id) if is_fav else url_for('recipes.favorite_recipe', recipe_id=recipe.id) }}">
+                        <form method="POST" action="{{ url_for('recipes.unfavorite_recipe', recipe_id=recipe.id) if is_fav else url_for('recipes.favorite_recipe', recipe_id=recipe.id) }}" class="w-100 fav-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                            <button type="submit" class="btn btn-sm {{ 'btn-outline-danger' if is_fav else 'btn-outline-primary' }}">
+                            <button type="submit" class="btn btn-sm btn-outline-primary w-100 w-md-auto">
                                 <i class="bi {% if is_fav %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
-                                {% if is_fav %}Favoriet{% else %}Toevoegen aan favorieten{% endif %}
                             </button>
                         </form>
                         {% endif %}
+
+                        
                     </div>
                 </div>
 
+                {# removed absolute fallback; favorite button will be rendered inline in header when no image #}
+
                 {% if recipe.description %}
                 {% if recipe.has_image %}
-                <div class="mb-3 text-center">
+                <div class="mb-3 text-center position-relative recipe-image-wrapper">
                     <img src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="{{ recipe.title }}" class="img-fluid rounded" />
+                    {% if current_user.is_authenticated and recipe.status == 'public' %}
+                    <form method="POST" action="{{ url_for('recipes.unfavorite_recipe', recipe_id=recipe.id) if (current_user.favorites.filter_by(id=recipe.id).count() > 0) else url_for('recipes.favorite_recipe', recipe_id=recipe.id) }}" class="position-absolute fav-form" style="top:8px;right:8px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        {% set is_fav_inline = current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
+                        <button type="submit" class="btn btn-sm fav-btn-overlay" aria-label="{% if is_fav_inline %}Verwijder favoriet{% else %}Voeg toe aan favorieten{% endif %}">
+                            <i class="bi {% if is_fav_inline %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                        </button>
+                    </form>
+                    {% endif %}
                 </div>
+                <style>
+                .fav-btn-overlay{
+                    background:rgba(255,255,255,0.6);
+                    border:1px solid rgba(0,0,0,0.08);
+                    backdrop-filter:blur(4px);
+                    box-shadow:0 .125rem .25rem rgba(0,0,0,0.06);
+                    border-radius:.375rem;
+                    width:44px;height:44px;padding:0;display:inline-flex;align-items:center;justify-content:center;}
+                .fav-btn-overlay .bi{font-size:1.5em;transition:color .12s,opacity .12s}
+                .fav-btn-overlay .bi-heart{color:#e25555}
+                .fav-btn-overlay .bi-heart-fill{color:#e25555}
+                .fav-btn-overlay.faded .bi{color:rgba(226,85,85,0.45) !important;opacity:0.85}
+                /* Prevent Bootstrap .btn hover/focus from changing background */
+                .fav-btn-overlay:hover,
+                .fav-btn-overlay:focus,
+                .fav-btn-overlay:active {
+                    background: rgba(255,255,255,0.6) !important;
+                    box-shadow:0 .125rem .25rem rgba(0,0,0,0.06) !important;
+                }
+                </style>
                 {% endif %}
                 <p class="lead">{{ recipe.description }}</p>
                 {% endif %}
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
-                        {% if recipe.score_count %}
-                        <span class="badge bg-primary">Score {{ recipe.score_average }}/5</span>
-                        <small class="text-muted ms-1">({{ recipe.score_count }} beoordeling(en))</small>
-                        {% else %}
-                        <small class="text-muted">Nog geen beoordelingen</small>
-                        {% endif %}
+                        <span id="recipe-score-badge" class="badge bg-primary">Score {% if recipe.score_count %}{{ '%.1f' % recipe.score_average }}{% else %}-{% endif %}/5</span>
+                        <small id="recipe-score-count" class="text-muted ms-1">({{ recipe.score_count or 0 }})</small>
                     </div>
-                    {% if can_score_recipe %}
-                    <form method="POST" action="{{ url_for('recipes.score_recipe', recipe_id=recipe.id) }}" class="d-flex align-items-center gap-2">
+                    {% set owner_is_author = current_user.is_authenticated and (current_user.id == recipe.user_id) and recipe.status == 'public' %}
+                    {% if can_score_recipe or owner_is_author %}
+                    <form id="score-form" method="POST" action="{{ url_for('recipes.score_recipe', recipe_id=recipe.id) }}" class="d-flex align-items-center gap-2 score-form" {% if owner_is_author %}data-owner-disabled="1"{% endif %}>
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                        <label for="score" class="small text-muted mb-0">Jouw score:</label>
-                        <select name="score" id="score" class="form-select form-select-sm" style="width:auto;">
+                        <input type="hidden" name="score" id="score-input" value="{% if my_score %}{{ my_score.score }}{% endif %}" />
+                        <label class="small text-muted mb-0 me-1"></label>
+                        <div class="score-stars d-flex align-items-center">
                             {% for i in range(1, 6) %}
-                            <option value="{{ i }}" {% if my_score and my_score.score == i %}selected{% endif %}>{{ i }}</option>
+                            <button type="button" class="btn btn-link score-star" data-score="{{ i }}" aria-label="{{ i }} sterren" {% if owner_is_author %}disabled aria-disabled="true" title="U kunt uw eigen recept niet beoordelen"{% endif %}>
+                                <i class="bi {% if my_score and my_score.score >= i %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+                            </button>
                             {% endfor %}
-                        </select>
-                        <button type="submit" class="btn btn-sm btn-outline-primary">Opslaan</button>
+                        </div>
                     </form>
+                    <style>
+                    .score-star{display:inline-flex;align-items:center;justify-content:center;padding:0 .15rem}
+                    .score-star:last-child{padding-right:0}
+                    .score-star .bi{font-size:1.25rem;color:#ffc107;transition:color .12s,opacity .12s}
+                    .score-star.faded .bi{color:rgba(255,193,7,0.45) !important;opacity:0.85}
+                    .score-star .bi.bi-star{opacity:0.9}
+                    </style>
                     {% endif %}
                 </div>
 
@@ -212,4 +248,162 @@
     </div>
 </div>
 {% endif %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const favForm = document.querySelector('.fav-form');
+  if (favForm){
+     favForm.addEventListener('submit', async function(e){
+        e.preventDefault();
+        const btn = favForm.querySelector('button');
+        if (!btn) return;
+        btn.disabled = true;
+                try {
+                    const res = await fetch(favForm.action, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:new FormData(favForm)});
+                    const data = await res.json();
+                    const icon = btn.querySelector('i.bi');
+                    // clear any hover-only state
+                    btn.classList.remove('faded');
+                    if (icon) icon.classList.remove('hover-fill');
+                    if (data.favorited){
+                            icon.classList.remove('bi-heart');
+                            icon.classList.add('bi-heart-fill');
+                            btn.setAttribute('aria-label','Verwijder favoriet');
+                    } else {
+                            icon.classList.remove('bi-heart-fill');
+                            icon.classList.add('bi-heart');
+                            btn.setAttribute('aria-label','Voeg toe aan favorieten');
+                    }
+                } catch (err) {
+                    console.error(err);
+                } finally { btn.disabled = false; }
+     });
+
+         // hover behavior: show faded filled heart on hover
+         if (favForm){
+             const hoverBtn = favForm.querySelector('button');
+             if (hoverBtn){
+                 hoverBtn.addEventListener('mouseenter', function(){
+                     const icon = hoverBtn.querySelector('i.bi');
+                     if (!icon) return;
+                     if (!icon.classList.contains('bi-heart-fill')){
+                         icon.classList.add('hover-fill');
+                         icon.classList.remove('bi-heart');
+                         icon.classList.add('bi-heart-fill');
+                         hoverBtn.classList.add('faded');
+                     } else {
+                         hoverBtn.classList.add('faded');
+                     }
+                 });
+                 hoverBtn.addEventListener('mouseleave', function(){
+                     const icon = hoverBtn.querySelector('i.bi');
+                     if (!icon) return;
+                     hoverBtn.classList.remove('faded');
+                     if (icon.classList.contains('hover-fill')){
+                         icon.classList.remove('bi-heart-fill','hover-fill');
+                         icon.classList.add('bi-heart');
+                     }
+                 });
+             }
+         }
+  }
+
+  document.querySelectorAll('.moderate-form').forEach(form => {
+      form.addEventListener('submit', async function(e){
+          e.preventDefault();
+          const btn = form.querySelector('button');
+          if (!btn) return;
+          btn.disabled = true;
+          try {
+              const res = await fetch(form.action, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:new FormData(form)});
+              const data = await res.json();
+              if (data.new_status === 'deactivated'){
+                    btn.classList.remove('btn-outline-danger');
+                    btn.classList.add('btn-outline-success');
+                    btn.innerHTML = '<i class="bi bi-eye"></i>';
+              } else {
+                    btn.classList.remove('btn-outline-success');
+                    btn.classList.add('btn-outline-danger');
+                    btn.innerHTML = '<i class="bi bi-eye-slash"></i>';
+              }
+          } catch(err){
+              console.error(err);
+          } finally { btn.disabled = false; }
+      });
+  });
+    // Score stars: hover faded effect and AJAX submit
+    const scoreForm = document.getElementById('score-form');
+    if (scoreForm){
+        const stars = Array.from(scoreForm.querySelectorAll('.score-star'));
+        const scoreInput = scoreForm.querySelector('#score-input');
+        const badge = document.getElementById('recipe-score-badge');
+        const countEl = document.getElementById('recipe-score-count');
+        const ownerDisabled = scoreForm.dataset.ownerDisabled === '1';
+
+        function setStars(fillCount){
+            stars.forEach((btn, idx)=>{
+                const icon = btn.querySelector('i.bi');
+                if (!icon) return;
+                if (idx < fillCount) {
+                    icon.classList.remove('bi-star'); icon.classList.add('bi-star-fill');
+                    btn.classList.remove('faded');
+                } else {
+                    icon.classList.remove('bi-star-fill'); icon.classList.add('bi-star');
+                    btn.classList.remove('faded');
+                }
+            });
+        }
+
+        function renderSelected(){
+            const val = parseInt(scoreInput.value) || 0;
+            setStars(val);
+            stars.forEach(b=>b.classList.remove('faded'));
+        }
+
+        if (!ownerDisabled) {
+        stars.forEach((btn, idx)=>{
+            const n = idx+1;
+            btn.addEventListener('mouseenter', ()=>{
+                // temporarily clear selected stars to make hover target obvious
+                setStars(0);
+                // faded fill up to hovered index
+                stars.forEach((b,i)=>{
+                    const icon = b.querySelector('i.bi');
+                    if (!icon) return;
+                    if (i <= idx){
+                        icon.classList.remove('bi-star'); icon.classList.add('bi-star-fill');
+                        b.classList.add('faded');
+                    } else {
+                        icon.classList.remove('bi-star-fill'); icon.classList.add('bi-star');
+                        b.classList.remove('faded');
+                    }
+                });
+            });
+            btn.addEventListener('mouseleave', ()=>{
+                // restore actual selected stars
+                renderSelected();
+            });
+            btn.addEventListener('click', async ()=>{
+                scoreInput.value = n;
+                // submit via AJAX
+                stars.forEach(b=>b.disabled = true);
+                try{
+                    const res = await fetch(scoreForm.action, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:new FormData(scoreForm)});
+                    const data = await res.json();
+                    if (data && data.status === 'ok'){
+                        // update stars to selected
+                        setStars(data.score);
+                        // update badge and count
+                        if (badge) badge.textContent = 'Score ' + (Number(data.score_average).toFixed(1)) + '/5';
+                        if (countEl) countEl.textContent = `(${data.score_count})`;
+                    }
+                }catch(err){console.error(err);}finally{stars.forEach(b=>b.disabled=false)}
+            });
+        });
+        } else {
+            // owner: just render current selection and skip bindings
+            renderSelected();
+        }
+    }
+});
+</script>
 {% endblock %}
