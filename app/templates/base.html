@@ -220,12 +220,12 @@
                     </li>
                 </ul>
                 <ul class="navbar-nav">
-                    {% if current_user.is_authenticated %}
                     <li class="nav-item">
                         <a id="theme-toggle" class="nav-link" role="button" title="Toggle dark mode" aria-label="Toggle dark mode">
                             <i id="theme-icon" class="bi bi-moon-fill"></i>
                         </a>
                     </li>
+                    {% if current_user.is_authenticated %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i> {{ current_user.username }}
