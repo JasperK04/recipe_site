@@ -18,10 +18,8 @@ from flask import Flask
 
 from app import db
 from app.models import (
-    KitchenMachine,
     Recipe,
     User,
-    recipe_machines,
 )
 from app.recipe_generator import generate_recipes
 from config import BASE_DIR
@@ -186,10 +184,6 @@ def register_commands(app: Flask):
             flask seed-data --users 10 --recipes 50
         """
         # Clear association tables first to avoid unique-constraint leftovers
-        try:
-            db.session.execute(recipe_machines.delete())
-        except Exception:
-            pass
 
         Recipe.query.delete()  # noqa: F841
         _clear_recipe_images(app)
@@ -240,30 +234,6 @@ def register_commands(app: Flask):
 
         db.session.commit()
 
-        if KitchenMachine.query.count() == 0:
-            click.echo(click.style("Adding common kitchen machines...", fg="green"))
-            common_machines = [
-                ("kookplaat", "Elektrische of gas kookplaat"),
-                ("Oven", "Standaard oven voor bakken en braden"),
-                ("Magnetron", "Magnetron voor opwarmen en koken"),
-                ("Mixer", "Elektrische mixer voor deeg en beslag"),
-                ("Blender", "Blender voor smoothies en soepen"),
-                ("Staafmixer", "Handstaafmixer"),
-                ("Slowcooker", "Slowcooker voor langzaam garen"),
-                ("Airfryer", "Heteluchtfriteuse"),
-                ("Frituurpan", "voor frituren"),
-                ("Deegmachine", "Deegmachine voor pasta en bakken"),
-                ("Panini ijzer", "Elektrische grill voor broodjes en vlees"),
-                ("Sous-vide", "Sous-vide apparaat voor precisie koken"),
-            ]
-
-            for name, description in common_machines:
-                machine = KitchenMachine(name=name, description=description)  # type: ignore
-                db.session.add(machine)
-            db.session.commit()
-
-        all_machines = KitchenMachine.query.all()
-
         click.echo(f"\nMaak {recipes} recepten aan ...")
         generated = generate_recipes(n=recipes)
         measurements = ["g", "kg", "ml", "l", "el", "tl", "stuks"]
@@ -305,12 +275,6 @@ def register_commands(app: Flask):
                 recipe.status = "draft"
             else:
                 recipe.status = "deactivated"
-
-            if all_machines and fake.boolean(chance_of_getting_true=70):
-                num_req_machines = fake.random_int(min=1, max=min(3, len(all_machines)))
-                recipe.required_machines = fake.random_elements(
-                    elements=all_machines, length=num_req_machines, unique=True
-                )
 
             db.session.add(recipe)
 
@@ -362,7 +326,6 @@ def register_commands(app: Flask):
         num_creators = User.query.filter_by(role=User.ROLE_CREATOR).count()
         num_admins = User.query.filter_by(role=User.ROLE_ADMIN).count()
         num_recipes = Recipe.query.count()
-        num_machines = KitchenMachine.query.count()
 
         click.echo(click.style("\n=== Database Statistieken ===", fg="cyan", bold=True))
         click.echo(f"Gebruikers:         {num_users}")
@@ -372,7 +335,6 @@ def register_commands(app: Flask):
         click.echo(f"  - Creators:       {num_creators}")
         click.echo(f"  - Admins:         {num_admins}")
         click.echo(f"Recepten:           {num_recipes}")
-        click.echo(f"Keukenapparatuur:   {num_machines}")
 
         if num_users > 0:
             click.echo(
@@ -395,50 +357,6 @@ def register_commands(app: Flask):
                     click.echo(f"{username}: {count} recept(en)")
             else:
                 click.echo("Nog geen recepten aangemaakt.")
-
-    @app.cli.command("add-machine")
-    @click.argument("name")
-    @click.option(
-        "--description", default="", help="Description of the kitchen machine"
-    )
-    def add_machine(name, description):
-        """Add a kitchen machine to the database.
-
-        Usage:
-            flask add-machine "Oven"
-            flask add-machine "Mixer" --description "Electric hand mixer"
-        """
-        # Check if machine already exists
-        existing = KitchenMachine.query.filter_by(name=name).first()
-        if existing:
-            click.echo(
-                click.style(f'Fout: Keukenapparatuur "{name}" bestaat al.', fg="red")
-            )
-            return
-
-        machine = KitchenMachine(name=name, description=description)  # type: ignore
-        db.session.add(machine)
-        db.session.commit()
-
-        click.echo(click.style(f"✓ Keukenapparatuur toegevoegd: {name}", fg="green"))
-
-    @app.cli.command("list-machines")
-    def list_machines():
-        """List all kitchen machines in the database.
-
-        Usage:
-            flask list-machines
-        """
-        machines = KitchenMachine.query.order_by(KitchenMachine.name).all()
-
-        if not machines:
-            click.echo("Geen keukenapparatuur gevonden.")
-            return
-
-        click.echo(click.style("\n=== Keukenapparatuur ===", fg="cyan", bold=True))
-        for machine in machines:
-            desc = f" - {machine.description}" if machine.description else ""
-            click.echo(f"{machine.id}. {machine.name}{desc}")
 
     @app.cli.command("backup")
     def backup_database():

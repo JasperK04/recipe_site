@@ -7,7 +7,7 @@ A Flask application for managing cooking recipes.
 import os
 
 from app import create_app, db
-from app.models import KitchenMachine, Recipe, User
+from app.models import Recipe, User
 from utils import is_running_flask_db_command, sqlite_path_from_uri
 
 # Create the Flask application
@@ -28,7 +28,7 @@ if not is_running_flask_db_command():
 @app.shell_context_processor
 def make_shell_context():
     """Make database models available in Flask shell."""
-    return {"db": db, "User": User, "Recipe": Recipe, "KitchenMachine": KitchenMachine}
+    return {"db": db, "User": User, "Recipe": Recipe}
 
 
 if __name__ == "__main__":

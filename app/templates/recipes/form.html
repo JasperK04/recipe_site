@@ -151,26 +151,6 @@
                         <small class="form-text text-muted">Elke stap is één handeling. Sleep om te herschikken.</small>
                     </div>
                     
-                    <div class="mb-3">
-                        {{ form.required_machines.label(class="form-label") }}
-                        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-2">
-                            {% for subfield in form.required_machines %}
-                            <div class="col">
-                                <div class="form-check">
-                                    {{ subfield(class="form-check-input", id=subfield.id) }}
-                                    <label class="form-check-label" for="{{ subfield.id }}">{{ subfield.label.text }}</label>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        <small class="form-text text-muted">Selecteer de benodigde keukenapparatuur voor dit recept</small>
-                        {% if form.required_machines.errors %}
-                            <div class="text-danger">
-                                {% for error in form.required_machines.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
                     <div class="d-flex justify-content-between">
                         <a href="{{ url_for('recipes.list_recipes') }}" class="btn btn-secondary">Annuleren</a>
                         <div>

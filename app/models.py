@@ -6,18 +6,6 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
 
-# Association table for recipe <-> machine many-to-many relationship
-recipe_machines = db.Table(
-    "recipe_machines",
-    db.Column("recipe_id", db.Integer, db.ForeignKey("recipes.id"), primary_key=True),
-    db.Column(
-        "machine_id",
-        db.Integer,
-        db.ForeignKey("kitchen_machines.id"),
-        primary_key=True,
-    ),
-)
-
 # Association table for user <-> recipe favorites (many-to-many)
 users_favorites = db.Table(
     "users_favorites",
@@ -111,9 +99,6 @@ class User(UserMixin, db.Model):
         "RecipeScore", back_populates="user", cascade="all, delete-orphan"
     )
 
-    # Relationship with kitchen machines (many-to-many)
-    # Previously users could be linked to machines; this association was removed.
-
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
 
@@ -180,13 +165,6 @@ class Recipe(PaginationMixin, db.Model):
     # Foreign key to User
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
-    # Relationship with kitchen machines (many-to-many)
-    required_machines = db.relationship(
-        "KitchenMachine",
-        secondary=recipe_machines,
-        lazy="subquery",
-        backref=db.backref("recipes", lazy=True),
-    )
     scores = db.relationship(
         "RecipeScore", back_populates="recipe", cascade="all, delete-orphan"
     )
@@ -231,22 +209,6 @@ class Recipe(PaginationMixin, db.Model):
 
     def __repr__(self):
         return f"<Recipe {self.title}>"
-
-
-class KitchenMachine(db.Model):
-    """Kitchen machine/equipment model."""
-
-    __tablename__ = "kitchen_machines"
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
-    description = db.Column(db.String(200))
-
-    def __init__(self, **kwargs: Any):
-        super().__init__(**kwargs)
-
-    def __repr__(self):
-        return f"<KitchenMachine {self.name}>"
 
 
 class RecipeScore(db.Model):

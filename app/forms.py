@@ -91,12 +91,6 @@ class LoginForm(FlaskForm):
     submit = SubmitField("Inloggen")
 
 
-class ProfileForm(FlaskForm):
-    """User profile form for updating kitchen machines."""
-
-    submit = SubmitField("Opslaan")
-
-
 class ProfileEditForm(FlaskForm):
     """Edit profile form with optional password change."""
 
@@ -123,7 +117,6 @@ class ProfileEditForm(FlaskForm):
             ),
         ],
     )
-    # user-machine linking removed; users no longer select machines
 
     current_password = PasswordField(
         "Huidig wachtwoord",
@@ -236,13 +229,6 @@ class RecipeForm(FlaskForm):
             ("Drank", "Drank"),
             ("Overig", "Overig"),
         ],
-    )
-    required_machines = SelectMultipleField(
-        "Benodigde keukenapparatuur",
-        coerce=int,
-        validators=[Optional()],
-        widget=ListWidget(prefix_label=False),
-        option_widget=CheckboxInput(),
     )
     status = SelectField(
         "Status",

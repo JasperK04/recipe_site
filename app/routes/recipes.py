@@ -21,7 +21,7 @@ from app.image_store import (
     read_recipe_image_bytes,
     save_recipe_image,
 )
-from app.models import KitchenMachine, Recipe, RecipeScore
+from app.models import Recipe, RecipeScore
 from utils import (
     normalize_choice,
     parse_uploaded_text,
@@ -52,7 +52,6 @@ def list_recipes():
     page = request.args.get("page", 1, type=int)
     category = request.args.get("category", None)
     search = request.args.get("search", "")
-    filter_by_machines = request.args.get("filter_machines", "0")
 
     query = Recipe.query.filter_by(status=Recipe.STATUS_PUBLIC)
 
@@ -68,8 +67,6 @@ def list_recipes():
             )
         )
 
-    # No per-user machine filtering (assume users have needed machines)
-
     recipes = query.order_by(Recipe.created_at.desc()).paginate(
         page=page, per_page=12, error_out=False
     )
@@ -79,7 +76,6 @@ def list_recipes():
         recipes=recipes,
         category=category,
         search=search,
-        filter_by_machines=filter_by_machines,
     )
 
 
@@ -194,10 +190,6 @@ def add_recipe():
     else:
         form = RecipeForm()
 
-    # Populate kitchen machines choices
-    machines = KitchenMachine.query.order_by(KitchenMachine.name).all()
-    form.required_machines.choices = to_model_choices(machines)
-
     if form.validate_on_submit():
         ingredients = sanitize_recipe_ingredients(form.ingredients.data)
         instructions = sanitize_recipe_instructions(form.instructions.data)
@@ -218,12 +210,6 @@ def add_recipe():
             category=form.category.data if form.category.data else None,  # type: ignore
             status=requested_status,
             user_id=current_user.id,  # type: ignore
-        )
-
-        # Add required kitchen machines
-        recipe.required_machines = cast(  # pyright: ignore[reportAttributeAccessIssue]
-            list[KitchenMachine],
-            query_rows_by_ids(KitchenMachine, form.required_machines.data),
         )
 
         db.session.add(recipe)
@@ -309,10 +295,6 @@ def edit_recipe(recipe_id):
     # Build a fresh form instance and populate scalar fields and FieldLists
     form = RecipeForm()
 
-    # Populate kitchen machines choices
-    machines = KitchenMachine.query.order_by(KitchenMachine.name).all()
-    form.required_machines.choices = to_model_choices(machines)
-
     if request.method == "GET":
         # simple fields
         form.title.data = recipe.title
@@ -326,9 +308,6 @@ def edit_recipe(recipe_id):
         form.cook_time.data = recipe.cook_time
         form.servings.data = recipe.servings
         form.category.data = recipe.category if recipe.category else ""
-
-        # Pre-populate required machines
-        form.required_machines.data = [m.id for m in recipe.required_machines]
 
         # populate ingredients FieldList
         try:
@@ -374,12 +353,6 @@ def edit_recipe(recipe_id):
                 allowed=(Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC),
                 default=recipe.status,
             )
-
-        # Update required kitchen machines
-        recipe.required_machines = cast(  # pyright: ignore[reportAttributeAccessIssue]
-            list[KitchenMachine],
-            query_rows_by_ids(KitchenMachine, form.required_machines.data),
-        )
 
         previous_image_id = recipe.image_id
         image_ids_to_delete_after_commit = set()

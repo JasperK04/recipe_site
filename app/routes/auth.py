@@ -81,7 +81,6 @@ def edit_profile():
     """Edit profile and optionally change password."""
     form = ProfileEditForm(obj=current_user)
 
-    # No per-user machine selection — users are not linked to machines
     if request.method == "GET":
         pass
 
@@ -89,8 +88,6 @@ def edit_profile():
         # Update basic fields
         current_user.username = form.username.data  # type: ignore
         current_user.email = form.email.data  # type: ignore
-
-        # No per-user machines to update (association removed)
 
         # Optional password change
         if form.new_password.data:
