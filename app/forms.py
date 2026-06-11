@@ -7,7 +7,6 @@ from wtforms import (
     IntegerField,
     PasswordField,
     SelectField,
-    SelectMultipleField,
     StringField,
     SubmitField,
     TextAreaField,
@@ -21,7 +20,6 @@ from wtforms.validators import (
     Regexp,
     ValidationError,
 )
-from wtforms.widgets import CheckboxInput, ListWidget
 
 from app.models import User
 
@@ -304,9 +302,9 @@ class RecipeUploadForm(FlaskForm):
 
         if has_url + has_json_file + has_text_file != 1:
             error = "Vul een URL bestand in, maar niet beide."
-            self.url.errors.append(error)
-            self.json_file.errors.append(error)
-            self.text_file.errors.append(error)
+            self.url.errors.append(error)  # type: ignore[attr-defined]
+            self.json_file.errors.append(error)  # type: ignore[attr-defined]
+            self.text_file.errors.append(error)  # type: ignore[attr-defined]
             return False
 
         return True

@@ -24,12 +24,10 @@ from app.models import Recipe, RecipeScore
 from upload_utils import parse_uploaded_text, read_uploaded_page, validate_uploaded_json
 from utils import (
     normalize_choice,
-    query_rows_by_ids,
     require_active_admin,
     require_active_creator,
     sanitize_recipe_ingredients,
     sanitize_recipe_instructions,
-    to_model_choices,
 )
 
 recipes_bp = Blueprint("recipes", __name__)
@@ -242,23 +240,36 @@ def upload_recipe():
     require_active_creator(current_user)
     form = RecipeUploadForm()
 
+    def flash_(message, category="info"):
+        flash(message, category)
+        return render_template(
+            "recipes/upload.html", form=form, title="Recept uploaden"
+        )
+
     if form.validate_on_submit():
         match form.upload_type.data:
             case "url":
+                if not form.url.data:
+                    return flash_("URL is vereist voor deze uploadmethode.", "danger")
                 data = read_uploaded_page(form.url.data)
             case "text":
+                if not form.text_file.data:
+                    return flash_(
+                        "Tekstbestand is vereist voor deze uploadmethode.", "danger"
+                    )
                 data = parse_uploaded_text(form.text_file.data.read().decode("utf-8"))
             case "json":
+                if not form.json_file.data:
+                    return flash_(
+                        "JSON-bestand is vereist voor deze uploadmethode.", "danger"
+                    )
                 data = validate_uploaded_json(
                     json.load(form.json_file.data),
                     required_keys=["name", "ingredients", "instructions"],
                 )
             case _:
-                flash("Ongeldig uploadtype geselecteerd.", "danger")
-                return render_template(
-                    "recipes/upload.html", form=form, title="Recept uploaden"
-                )
-        print(data)
+                return flash_("Ongeldig uploadtype geselecteerd.", "danger")
+
         return redirect(
             url_for(
                 "recipes.add_recipe",

@@ -16,7 +16,7 @@ def sanitize_text(text: str) -> str:
     return text.capitalize()
 
 
-def normalize_servings(value: list | str | None) -> int | None:
+def normalize_servings(value: list[str] | str | None) -> int | None:
     if not value:
         return None
     if isinstance(value, list):
