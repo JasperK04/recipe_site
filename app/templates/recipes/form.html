@@ -106,18 +106,8 @@
                             {% for entry in form.ingredients.entries %}
                             <div class="list-group-item ingredient-item d-flex gap-2 align-items-start" data-index="{{ loop.index0 }}">
                                 <div class="flex-grow-1">
-                                    <div class="row g-2">
-                                        <div class="col-8">
-                                            {{ entry.name_(class="form-control", placeholder='Ingrediënt') }}
-                                        </div>
-                                        <div class="col-2">
-                                            {{ entry.quantity(class="form-control", placeholder='Aantal') }}
-                                        </div>
-                                        <div class="col-2">
-                                            {{ entry.measurement(class="form-select") }}
-                                        </div>
-                                    </div>
-                                </div>                                
+                                    {{ entry(class="form-control", placeholder='Ingrediënt') }}
+                                </div>                           
                             </div>
                             {% endfor %}
                         </div>
@@ -127,7 +117,7 @@
                                 {% for error in form.ingredients.errors %}{{ error }}{% endfor %}
                             </div>
                         {% endif %}
-                        <small class="form-text text-muted">Elke ingrediënt heeft naam, hoeveelheid en eenheid.</small>
+                        <small class="form-text text-muted">Ingrediënten hier, sleep om te herschikken.</small>
                     </div>
                     
                     <div class="mb-3">
@@ -175,37 +165,62 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
 function reindexList(container) {
-    const items = Array.from(container.children).filter(c => c.classList && c.classList.contains('list-group-item'));
+    const items = Array.from(container.children)
+        .filter(c => c.classList && c.classList.contains('list-group-item'));
+
     items.forEach((item, idx) => {
         item.dataset.index = idx;
+
         const inputs = item.querySelectorAll('input, select, textarea');
         inputs.forEach(inp => {
             if (!inp.name) return;
-            // handle names like 'ingredients-0-name_' and 'instructions-0'
-            inp.name = inp.name.replace(/-(\d+)-/, `-${idx}-`).replace(/-(\d+)$/, `-${idx}`);
-            if (inp.id) inp.id = inp.id.replace(/-(\d+)-/, `-${idx}-`).replace(/-(\d+)$/, `-${idx}`);
+
+            inp.name = inp.name
+                .replace(/-(\d+)-/, `-${idx}-`)
+                .replace(/-(\d+)$/, `-${idx}`);
+
+            if (inp.id) {
+                inp.id = inp.id
+                    .replace(/-(\d+)-/, `-${idx}-`)
+                    .replace(/-(\d+)$/, `-${idx}`);
+            }
         });
+
+        item.classList.remove('sortable-disabled');
     });
+
+    const last = items[items.length - 1];
+
+    if (last) {
+        const input = last.querySelector('input, textarea');
+
+        if (input && input.value.trim() === '') {
+            last.classList.add('sortable-disabled');
+        }
+    }
 }
 
-function ensureOneEmptyAtEnd(list, isIngredient=true) {
+function ensureOneEmptyAtEnd(list) {
     const items = Array.from(list.querySelectorAll('.list-group-item'));
-    // determine if there is at least one empty (by name only for ingredients, or by value for steps)
-    const emptyExists = items.some(it => {
-        if (isIngredient) {
-            const nameInput = it.querySelector('input[name*=\"name_\"]');
-            return nameInput && nameInput.value.trim() === '';
-        } else {
-            const inp = it.querySelector('input, textarea');
-            return inp && inp.value.trim() === '';
-        }
+
+    const emptyItems = items.filter(item => {
+        const input = item.querySelector('input, textarea');
+        return input && input.value.trim() === '';
     });
-    if (!emptyExists && items.length > 0) {
-        const last = items[items.length - 1];
-        const clone = last.cloneNode(true);
-        clone.querySelectorAll('input, textarea, select').forEach(i => i.value = '');
+
+    if (emptyItems.length === 0 && items.length > 0) {
+        const clone = items[items.length - 1].cloneNode(true);
+
+        clone.querySelectorAll('input, textarea').forEach(input => {
+            input.value = '';
+        });
+
         list.appendChild(clone);
         reindexList(list);
+    }
+
+    while (emptyItems.length > 1) {
+        emptyItems.pop().remove();
     }
 }
 
@@ -213,19 +228,35 @@ function attachListHandlers(listSelector, itemSelector, isIngredient=true) {
     const list = document.querySelector(listSelector);
     if (!list) return;
 
-    new Sortable(list, { animation: 150, handle: '.list-group-item' });
+    new Sortable(list, {
+        animation: 150,
+        handle: '.list-group-item',
+        onMove(evt) {
+            return !evt.dragged.classList.contains('sortable-disabled');
+        },
+        onEnd() {
+            reindexList(list);
+        }
+    });
 
     // auto-add when typing in the last empty name field
     list.addEventListener('input', function(e) {
         const target = e.target;
-        // for ingredients, only watch name_ inputs; for steps, watch any input
-        if (isIngredient && !target.name.includes('name_')) return;
+
         const items = Array.from(list.querySelectorAll(itemSelector));
         const last = items[items.length - 1];
-        if (!last) return;
-        if (target.closest(itemSelector) === last && target.value.trim() !== '') {
+
+        if (
+            last &&
+            target.closest(itemSelector) === last &&
+            target.value.trim() !== ''
+        ) {
             const clone = last.cloneNode(true);
-            clone.querySelectorAll('input, textarea, select').forEach(i => i.value = '');
+
+            clone.querySelectorAll('input, textarea, select').forEach(input => {
+                input.value = '';
+            });
+
             list.appendChild(clone);
             reindexList(list);
         }

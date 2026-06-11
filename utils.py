@@ -1,3 +1,4 @@
+import re
 import shutil
 import sys
 import zipfile
@@ -132,27 +133,37 @@ def count_files(directory: str | Path, *, pattern: str = "*") -> int:
     return sum(1 for path in dir_path.glob(pattern) if path.is_file())
 
 
-def sanitize_recipe_ingredients(raw_ingredients: Iterable[dict] | None) -> list[dict]:
+def ingredient_to_string(ingredient: dict) -> str:
+    parts = []
+
+    if ingredient.get("quantity") is not None:
+        parts.append(str(ingredient["quantity"]))
+
+    if ingredient.get("measurement"):
+        parts.append(ingredient["measurement"])
+
+    if ingredient.get("name_"):
+        parts.append(ingredient["name_"])
+
+    return " ".join(parts)
+
+
+def sanitize_recipe_ingredients(
+    raw_ingredients: list[str] | None,
+    plain_text: bool = False,
+) -> list[dict] | list[str]:
     """Normalize ingredient data from recipe forms."""
     ingredients = []
-    for ing in raw_ingredients or []:
-        ing = ing or {}
-        name = str(ing.get("name_") or "").strip()
-        qty_raw = str(ing.get("quantity") or "").strip()
-        measurement = str(ing.get("measurement") or "").strip()
-        if not name and not qty_raw and not measurement:
-            continue
+    for ingredient in raw_ingredients or []:
+        quantity, unit, name = parse_ingredient(ingredient)
+        if name:
+            if plain_text:
+                ingredients.append(f"{quantity or ''} {unit or ''} {name}".strip())
+            else:
+                ingredients.append(
+                    {"name": name, "quantity": quantity, "measurement": unit}
+                )
 
-        quantity: float | str | None = None
-        if qty_raw:
-            try:
-                quantity = float(qty_raw)
-            except (TypeError, ValueError):
-                quantity = qty_raw
-
-        ingredients.append(
-            {"name_": name, "quantity": quantity, "measurement": measurement}
-        )
     return ingredients
 
 
@@ -211,3 +222,86 @@ def require_active_creator(user) -> None:
         abort(401)
     if not getattr(user, "can_create_recipes", False):
         abort(403)
+
+
+def parse_ingredient(text: str) -> tuple[float | int | None, str | None, str]:
+    text = text.lower().strip()
+
+    number_words = {
+        "een": 1,
+        "één": 1,
+        "twee": 2,
+        "drie": 3,
+        "vier": 4,
+        "vijf": 5,
+        "zes": 6,
+        "zeven": 7,
+        "acht": 8,
+        "negen": 9,
+        "tien": 10,
+        "elf": 11,
+        "twaalf": 12,
+        "dozijn": 12,
+    }
+
+    unit_multipliers = {
+        "ons": ("g", 100),
+        "pond": ("g", 500),
+    }
+
+    fraction_chars = {
+        "½": 0.5,
+        "⅓": 1 / 3,
+        "¼": 0.25,
+        "¾": 0.75,
+    }
+
+    tokens = text.split()
+    if not tokens:
+        return None, None, ""
+
+    amount = None
+    consumed = 0
+
+    first = tokens[0]
+
+    if first in fraction_chars:
+        amount = fraction_chars[first]
+        consumed = 1
+
+    elif re.fullmatch(r"\d+/\d+", first):
+        num, den = map(int, first.split("/"))
+        amount = num / den
+        consumed = 1
+
+    elif re.fullmatch(r"\d+(?:[.,]\d+)?", first):
+        amount = float(first.replace(",", "."))
+        consumed = 1
+
+    elif first in number_words:
+        amount = number_words[first]
+        consumed = 1
+
+    if amount is None:
+        return None, None, text
+
+    unit = None
+
+    if len(tokens) > consumed:
+        next_token = tokens[consumed]
+
+        if next_token in unit_multipliers:
+            unit, multiplier = unit_multipliers[next_token]
+            amount *= multiplier
+            consumed += 1
+
+        elif re.fullmatch(r"[a-zA-Z]+", next_token):
+            unit = next_token
+            consumed += 1
+
+    name = " ".join(tokens[consumed:])
+
+    if isinstance(amount, float) and amount.is_integer():
+        amount = int(amount)
+
+    return amount, unit, name

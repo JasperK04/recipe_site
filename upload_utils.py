@@ -1,6 +1,5 @@
 import json
 import re
-from collections.abc import Iterable
 
 import requests
 from bs4 import BeautifulSoup
@@ -13,6 +12,7 @@ def sanitize_text(text: str) -> str:
     text = re.sub(r"\<p\>", "", text)
     text = re.sub(r"\<\/p\>", "", text)
     text = re.sub(r"\s+", " ", text).strip()
+    text = re.sub(r"\\*", "", text)
     return text.capitalize()
 
 
@@ -27,7 +27,7 @@ def normalize_servings(value: list[str] | str | None) -> int | None:
         return None
 
 
-def normalize_time(recipe: dict) -> tuple[int | None, int | None, int | None]:
+def parse_time(recipe: dict) -> tuple[int | None, int | None, int | None]:
 
     def extract_minutes(value: str | None) -> int | None:
         hours = re.findall(r"(\d+)h", value or "", re.IGNORECASE)
@@ -97,46 +97,13 @@ def normalize_category(value: list[str] | str | None) -> str | None:
     return allowed.get(normalized, "Overig")
 
 
-def normalize_ingredients(raw_ingredients: Iterable[str] | None) -> list[dict]:
-    """Normalize ingredient data from recipe forms."""
-
-    def get_quantity(ing: str) -> str | None:
-        matches = re.findall(r"(\d+)", ing[:5])
-        return matches[0] if matches else None
-
-    def get_measurement(ing: str, has_quantity: bool) -> tuple[str | None, str | None]:
-        mapped_units = {
-            "gr": "g",
-            "eetlepel": "el",
-            "theelepel": "tl",
-        }
-        units = ["gr", "g", "kg", "ml", "l", "el", "tl", "eetlepel", "theelepel"]
-        for unit in units:
-            if re.search(rf"\b{unit}\b", ing, re.IGNORECASE):
-                return mapped_units.get(unit, unit), unit
-        if has_quantity:
-            return "stuks", "stuks"
-        return None, None
-
-    def get_name(ing: str, quantity: str | None, measurement: str | None) -> str:
-        ing = re.sub(rf"\b{quantity or ''}", "", ing)
-        ing = re.sub(rf"{measurement or ''}\b", "", ing)
-        return ing.strip()
-
+def normalize_ingredient(ing: list | None) -> list[str]:
+    if not ing:
+        return [""]
     ingredients = []
-
-    for ing in raw_ingredients or []:
-        ing = sanitize_text(ing)
-        quantity = get_quantity(ing)
-        measurement, original_unit = get_measurement(ing, bool(quantity))
-        name_ = get_name(ing, quantity, original_unit)
-        ingredients.append(
-            {
-                "name_": name_,
-                "quantity": quantity,
-                "measurement": measurement,
-            }
-        )
+    for item in ing:
+        if isinstance(item, str):
+            ingredients.append(sanitize_text(item.strip()))
     return ingredients
 
 
@@ -186,11 +153,7 @@ Extract the relevant information and return it as a JSON object with the followi
     "prep_time": numerical string (minutes) | null,
     "cook_time": numerical string (minutes) | null,
     "total_time": numerical string (minutes) | null,
-    "ingredients": [{
-        "name_": string, 
-        "quantity": numerical string, 
-        "measurement": literal string (e.g. "g", "kg", "ml", "l", "el", "tl", "stuks")
-    }],
+    "ingredients": [string],
     "instructions": [string],
     "category": literal string (e.g. "Ontbijt", "Lunch", "Voorgerecht", "Hoofdgerecht", "Nagerecht", "Drank", "Snack" or "Overig") | null,
 }
@@ -255,7 +218,7 @@ def read_uploaded_page(url: str) -> dict:
         print("No Recipe type found in JSON-LD, falling back to LLM parsing.")
         return read_page_with_llm(soup)
     # print(recipe)
-    prep_time, cook_time, total_time = normalize_time(recipe)
+    prep_time, cook_time, total_time = parse_time(recipe)
     formatted_data = {
         "name": sanitize_text(recipe.get("name", "").strip()),
         "description": sanitize_text(recipe.get("description", "")),
@@ -263,7 +226,7 @@ def read_uploaded_page(url: str) -> dict:
         "cook_time": cook_time,
         "prep_time": prep_time,
         "total_time": total_time,
-        "ingredients": normalize_ingredients(recipe.get("recipeIngredient", [])),
+        "ingredients": normalize_ingredient(recipe.get("recipeIngredient", [])),
         "instructions": normalize_instructions(recipe.get("recipeInstructions", [])),
         "category": normalize_category(recipe.get("recipeCategory")),
     }

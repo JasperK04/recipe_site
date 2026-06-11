@@ -23,6 +23,7 @@ from app.image_store import (
 from app.models import Recipe, RecipeScore
 from upload_utils import parse_uploaded_text, read_uploaded_page, validate_uploaded_json
 from utils import (
+    ingredient_to_string,
     normalize_choice,
     require_active_admin,
     require_active_creator,
@@ -177,7 +178,10 @@ def add_recipe():
                 "cook_time": request.args.get("cook_time"),
                 "total_time": request.args.get("total_time"),
                 "servings": request.args.get("servings"),
-                "ingredients": json.loads(request.args.get("ingredients", "[]")),
+                "ingredients": sanitize_recipe_ingredients(
+                    json.loads(request.args.get("ingredients", "[]")),
+                    plain_text=True,
+                ),
                 "instructions": json.loads(request.args.get("instructions", "[]")),
                 "category": request.args.get("category"),
             }
@@ -317,19 +321,14 @@ def edit_recipe(recipe_id):
         form.servings.data = recipe.servings
         form.category.data = recipe.category if recipe.category else ""
 
-        # populate ingredients FieldList
         try:
             form.ingredients.entries.clear()
         except Exception:
             pass
-        for ing in recipe.ingredients or []:
-            form.ingredients.append_entry(
-                {
-                    "name_": ing.get("name_", ing.get("name", "")),
-                    "quantity": str(ing.get("quantity", "") or ""),
-                    "measurement": ing.get("measurement", "") or "",
-                }
-            )
+
+        for ing in recipe.ingredients:
+            form.ingredients.append_entry(ingredient_to_string(ing))
+
         if len(form.ingredients.entries) == 0:
             form.ingredients.append_entry()
 

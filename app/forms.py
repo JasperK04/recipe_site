@@ -3,7 +3,6 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField
 from wtforms import (
     FieldList,
-    FormField,
     IntegerField,
     PasswordField,
     SelectField,
@@ -11,7 +10,6 @@ from wtforms import (
     SubmitField,
     TextAreaField,
 )
-from wtforms import Form as NoCsrfForm
 from wtforms.validators import (
     DataRequired,
     EqualTo,
@@ -185,26 +183,10 @@ class RecipeForm(FlaskForm):
         ],
     )
 
-    # Ingredients: a dynamic list of subforms (name, quantity, measurement)
-    class IngredientForm(NoCsrfForm):
-        name_ = StringField("Naam", validators=[Optional()])
-        quantity = StringField("Hoeveelheid", validators=[Optional()])
-        measurement = SelectField(
-            "Eenheid",
-            choices=[
-                ("g", "g"),
-                ("kg", "kg"),
-                ("ml", "ml"),
-                ("l", "l"),
-                ("el", "el"),
-                ("tl", "tl"),
-                ("stuks", "stuks"),
-            ],
-            validators=[Optional()],
-        )
-
     ingredients = FieldList(
-        FormField(IngredientForm), min_entries=1, label="Ingrediënten"
+        StringField("Ingrediënt", validators=[Optional()]),
+        min_entries=1,
+        label="Ingrediënten",
     )
 
     # Instructions: a dynamic list of single-line steps

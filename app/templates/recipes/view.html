@@ -43,10 +43,22 @@
                     <div class="col-12 col-md-4 d-flex flex-column align-items-start align-items-md-end gap-2 mt-3 mt-md-0">
                         {% if can_edit_recipe %}
                         <div class="w-100 d-flex flex-column flex-md-row gap-2">
-                            <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary w-100 w-md-auto">
+                            <a 
+                            href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" 
+                            class="btn btn-sm btn-outline-primary w-100 w-md-auto"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="Recept bewerken">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <button type="button" class="btn btn-sm btn-outline-danger w-100 w-md-auto" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <button 
+                            type="button" 
+                            class="btn btn-sm btn-outline-danger w-100 w-md-auto" 
+                            data-bs-toggle="modal" 
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="Recept verwijderen"
+                            data-bs-target="#deleteModal">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
@@ -55,7 +67,12 @@
                         {% if can_moderate_recipe %}
                         <form method="POST" action="{{ url_for('recipes.reactivate_recipe', recipe_id=recipe.id) if recipe.status == 'deactivated' else url_for('recipes.deactivate_recipe', recipe_id=recipe.id) }}" class="w-100 moderate-form" data-recipe-status="{{ recipe.status }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                            <button type="submit" class="btn btn-sm {{ 'btn-outline-success' if recipe.status == 'deactivated' else 'btn-outline-danger' }} w-100 w-md-auto">
+                            <button 
+                            type="submit" 
+                            class="btn btn-sm {{ 'btn-outline-success' if recipe.status == 'deactivated' else 'btn-outline-danger' }} w-100 w-md-auto"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="{{ 'Recept reactiveren' if recipe.status == 'deactivated' else 'Recept deactiveren' }}">
                                 {% if recipe.status == 'deactivated' %}
                                 <i class="bi bi-eye"></i>
                                 {% else %}
@@ -69,17 +86,18 @@
                         {% set is_fav = current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
                         <form method="POST" action="{{ url_for('recipes.unfavorite_recipe', recipe_id=recipe.id) if is_fav else url_for('recipes.favorite_recipe', recipe_id=recipe.id) }}" class="w-100 fav-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                            <button type="submit" class="btn btn-sm btn-outline-primary w-100 w-md-auto">
+                            <button 
+                            type="submit" 
+                            class="btn btn-sm btn-outline-primary w-100 w-md-auto"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="{{ 'Verwijderen uit favorieten' if is_fav else 'Toevoegen aan favorieten' }}">
                                 <i class="bi {% if is_fav %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
                             </button>
                         </form>
                         {% endif %}
-
-                        
                     </div>
                 </div>
-
-                {# removed absolute fallback; favorite button will be rendered inline in header when no image #}
 
                 {% if recipe.description %}
                 {% if recipe.has_image %}
@@ -89,7 +107,13 @@
                     <form method="POST" action="{{ url_for('recipes.unfavorite_recipe', recipe_id=recipe.id) if (current_user.favorites.filter_by(id=recipe.id).count() > 0) else url_for('recipes.favorite_recipe', recipe_id=recipe.id) }}" class="position-absolute fav-form" style="top:8px;right:8px;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                         {% set is_fav_inline = current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
-                        <button type="submit" class="btn btn-sm fav-btn-overlay" aria-label="{% if is_fav_inline %}Verwijder favoriet{% else %}Voeg toe aan favorieten{% endif %}">
+                        <button 
+                        type="submit" 
+                        class="btn btn-sm fav-btn-overlay" 
+                        aria-label="{% if is_fav_inline %}Verwijder favoriet{% else %}Voeg toe aan favorieten{% endif %}"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        title="{% if is_fav_inline %}Verwijderen uit favorieten{% else %}Toevoegen aan favorieten{% endif %}">
                             <i class="bi {% if is_fav_inline %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
                         </button>
                     </form>
@@ -132,7 +156,18 @@
                         <label class="small text-muted mb-0 me-1"></label>
                         <div class="score-stars d-flex align-items-center">
                             {% for i in range(1, 6) %}
-                            <button type="button" class="btn btn-link score-star" data-score="{{ i }}" aria-label="{{ i }} sterren" {% if owner_is_author %}disabled aria-disabled="true" title="U kunt uw eigen recept niet beoordelen"{% endif %}>
+                            <button 
+                            type="button" 
+                            class="btn btn-link score-star" 
+                            data-score="{{ i }}" 
+                            aria-label="{{ i }} sterren" 
+                            {% if owner_is_author %}
+                                disabled aria-disabled="true" 
+                                title="U kunt uw eigen recept niet beoordelen"
+                            {% endif %}
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="Geef {{ i }} sterren">
                                 <i class="bi {% if my_score and my_score.score >= i %}bi-star-fill{% else %}bi-star{% endif %}"></i>
                             </button>
                             {% endfor %}
@@ -180,7 +215,7 @@
                     {% endif %}
                 </div>
 
-                <h3><i class="bi bi-basket"></i>Ingrediënten</h3>
+                <h3><i class="bi bi-basket"></i> Ingrediënten</h3>
                 <div class="bg-light p-3 rounded mb-4">
                     <ul class="mb-0">
                         {% for ingredient in recipe.ingredients %}
@@ -192,7 +227,7 @@
                     </ul>
                 </div>
 
-                <h3><i class="bi bi-list-ol"></i>Bereidingswijze</h3>
+                <h3><i class="bi bi-list-ol"></i> Bereidingswijze</h3>
                 <div class="recipe-instructions">
                     {% set instructions = recipe.instructions %}
                     <ol>
