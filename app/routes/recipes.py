@@ -1,5 +1,4 @@
 import json
-from typing import cast
 
 from flask import (
     Blueprint,
@@ -22,17 +21,15 @@ from app.image_store import (
     save_recipe_image,
 )
 from app.models import Recipe, RecipeScore
+from upload_utils import parse_uploaded_text, read_uploaded_page, validate_uploaded_json
 from utils import (
     normalize_choice,
-    parse_uploaded_text,
     query_rows_by_ids,
-    read_uploaded_page,
     require_active_admin,
     require_active_creator,
     sanitize_recipe_ingredients,
     sanitize_recipe_instructions,
     to_model_choices,
-    validate_uploaded_json,
 )
 
 recipes_bp = Blueprint("recipes", __name__)
