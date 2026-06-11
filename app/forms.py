@@ -212,11 +212,13 @@ class RecipeForm(FlaskForm):
             validators=[Optional()],
         )
 
-    ingredients = FieldList(FormField(IngredientForm), min_entries=1)
+    ingredients = FieldList(
+        FormField(IngredientForm), min_entries=1, label="Ingrediënten"
+    )
 
     # Instructions: a dynamic list of single-line steps
     instructions = FieldList(
-        StringField("Stap", validators=[Optional()]), min_entries=1
+        StringField("Stap", validators=[Optional()]), min_entries=1, label="Instructies"
     )
     prep_time = IntegerField("Bereidingstijd (minuten)", validators=[])
     cook_time = IntegerField("Kooktijd (minuten)", validators=[Optional()])
@@ -228,7 +230,7 @@ class RecipeForm(FlaskForm):
             ("Ontbijt", "Ontbijt"),
             ("Lunch", "Lunch"),
             ("Voorgerecht", "Voorgerecht"),
-            ("Hoofdgericht", "Hoofdgericht"),
+            ("Hoofdgerecht", "Hoofdgerecht"),
             ("Nagerecht", "Nagerecht"),
             ("Snack", "Snack"),
             ("Drank", "Drank"),
@@ -257,3 +259,68 @@ class RecipeForm(FlaskForm):
         ],
     )
     submit = SubmitField("Opslaan")
+
+
+class RecipeUploadForm(FlaskForm):
+    """Form for uploading recipes."""
+
+    upload_type = SelectField(
+        "Type",
+        choices=[
+            ("url", "URL"),
+            ("json", "JSON-bestand"),
+            ("text", "Tekstbestand"),
+        ],
+        validators=[DataRequired()],
+        default="url",
+    )
+
+    url = StringField(
+        "URL van het recept",
+        validators=[
+            Optional(),
+            Regexp(
+                r"^(https?://)?(www\.)?[\w-]+(\.[\w-]+)+[/#?]?.*$",
+                message="Voer een geldige URL in.",
+            ),
+        ],
+        description="www.example.com/recept",
+    )
+
+    json_file = FileField(
+        "JSON-bestand (export van een recept)",
+        validators=[
+            Optional(),
+            FileAllowed(["json", "jsonl"], "Only JSON files are allowed"),
+        ],
+    )
+    text_file = FileField(
+        "Tekstbestand (recept in tekstformaat)",
+        validators=[
+            Optional(),
+            FileAllowed(["txt"], "Only text files are allowed"),
+        ],
+    )
+
+    submit = SubmitField("Importeren")
+
+    def validate(self, extra_validators=None):
+        if not super().validate(extra_validators):
+            return False
+
+        has_url = bool(self.url.data and self.url.data.strip())
+        has_json_file = bool(self.json_file.data)
+        has_text_file = bool(self.text_file.data)
+
+        # print(
+        #     f"Validation: has_url={has_url}, has_json_file={has_json_file}, has_text_file={has_text_file}"
+        # )
+
+        if has_url + has_json_file + has_text_file != 1:
+            error = "Vul een URL bestand in, maar niet beide."
+            self.url.errors.append(error)
+            self.json_file.errors.append(error)
+            self.text_file.errors.append(error)
+            return False
+
+        return True

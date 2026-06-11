@@ -188,6 +188,20 @@
         .dark-mode .text-muted {
             color: rgba(201,209,217,0.40) !important;
         }
+        @media (min-width: 992px) {
+        .navbar .dropdown:hover .dropdown-menu {
+            display: block;
+            margin-top: 0;
+        }
+
+        .navbar .dropdown-toggle::after {
+            transition: transform 0.2s;
+        }
+
+        .navbar .dropdown:hover .dropdown-toggle::after {
+            transform: rotate(180deg);
+        }
+    }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -205,14 +219,48 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('main.index') }}">Startpagina</a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item d-lg-none">
                         <a class="nav-link" href="{{ url_for('recipes.list_recipes') }}">Alle recepten</a>
                     </li>
-                    {% if current_user.is_authenticated and current_user.can_create_recipes %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('recipes.add_recipe') }}">
-                            <i class="bi bi-plus-circle"></i> Recept toevoegen
+                    <li class="nav-item dropdown d-none d-lg-block">
+                        <a class="nav-link dropdown-toggle"
+                        href="{{ url_for('recipes.list_recipes') }}">
+                            Alle recepten
                         </a>
+                        <ul class="dropdown-menu">
+                            {% for category in ["Ontbijt", "Lunch", "Voorgerecht", "Hoofdgerecht", "Nagerecht", "Snack", "Drank", "Overig"] %}
+                            <li>
+                                <a class="dropdown-item"
+                                href="{{ url_for('recipes.list_recipes', category=category) }}">
+                                    <i class="bi bi-list"></i> {{ category }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    {% if current_user.is_authenticated and current_user.can_create_recipes %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle"
+                        href="#"
+                        id="recipeDropdown"
+                        role="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                            Receptbeheer
+                        </a>
+
+                        <ul class="dropdown-menu" aria-labelledby="recipeDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('recipes.add_recipe') }}">
+                                    <i class="bi bi-plus-circle"></i> Recept toevoegen
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('recipes.upload_recipe') }}">
+                                    <i class="bi bi-upload"></i> Recept uploaden
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     {% endif %}
                     <li class="nav-item">

@@ -3,6 +3,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
+
 from utils import ensure_directory, normalize_sqlite_uri, resolve_data_root
 
 load_dotenv()
@@ -15,8 +16,11 @@ class Config:
     """Base configuration."""
 
     SECRET_KEY = os.environ.get("SECRET_KEY")
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
     if not SECRET_KEY:
         raise ValueError("SECRET_KEY environment variable must be set")
+    if not OPENAI_API_KEY:
+        raise ValueError("OPENAI_API_KEY environment variable must be set")
 
     # Central data root for all generated data: db file, image files, backups.
     DATA_ROOT = resolve_data_root(os.environ.get("DATAROOT"), base_dir=BASE_DIR)

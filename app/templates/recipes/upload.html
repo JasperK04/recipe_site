@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Recepten{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-body">
+                <h2 class="card-title mb-4">{{ title }}</h2>
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    <div class="row justify-content-center">
+                        <div class="col-md-3 mb-3">
+                            {{ form.upload_type.label(class="form-label") }}
+                            {{ form.upload_type(class="form-control" + (" is-invalid" if form.upload_type.errors else "")) }}
+                            {% if form.upload_type.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.upload_type.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div id="blank-field" class="col-md-9 mb-3">
+                            <label class="form-label" for="blank" style="color: rgba(0, 0, 0, 1) !important;">nothing here</label>
+                            <input type="text" name="blank" class="form-control" value="" readonly focusable="false">
+                        </div>
+
+                        <div id="url-field" class="col-md-9 mb-3" style="display: none;">
+                            {{ form.url.label(class="form-label") }}
+                            {{ form.url(class="form-control" + (" is-invalid" if form.url.errors else "")) }}
+                            {% if form.url.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.url.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div id="json-field" class="col-md-9 mb-3" style="display: none;">
+                            {{ form.json_file.label(class="form-label") }}
+                            {{ form.json_file(class="form-control" + (" is-invalid" if form.json_file.errors else "")) }}
+                            {% if form.json_file.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.json_file.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div id="text-field" class="col-md-9 mb-3" style="display: none;">
+                            {{ form.text_file.label(class="form-label") }}
+                            {{ form.text_file(class="form-control" + (" is-invalid" if form.text_file.errors else "")) }}
+                            {% if form.text_file.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.text_file.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-12 mb-3" style="display: none;" id="example-json">
+                            <small class="form-text text-muted">Voorbeeld van de verwachte JSON structuur:</small>
+<pre class="mt-3 p-3 bg-light border rounded" style="max-height: 250px; overflow-y: auto;">
+<code>{
+    "name": string,
+    "description": string | null,
+    "servings": integer | null,
+    "prep_time": integer | null,
+    "cook_time": integer | null,
+    "total_time": integer | null,
+    "ingredients": [
+        {
+            "name_": string, 
+            "quantity": integer | null, 
+            "measurement": "g", "ml", "el", etc | null
+        }, ...
+    ],
+    "instructions": [string, ...]
+}</code>
+</pre>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('recipes.list_recipes') }}" class="btn btn-secondary">Annuleren</a>
+                        <div>
+                            {% if form.status %}
+                                <input type="hidden" name="status" id="status-field" value="{{ form.status.data or 'public' }}">
+                                <button type="submit" class="btn btn-secondary me-2" onclick="document.getElementById('status-field').value='draft'">Concept</button>
+                                <button type="submit" class="btn btn-primary" onclick="document.getElementById('status-field').value='public'">Publiceren</button>
+                            {% else %}
+                                {{ form.submit(class="btn btn-primary") }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+function showRelevantField() {
+    const uploadType = document.getElementById('upload_type').value;
+    document.getElementById('url-field').style.display = uploadType === 'url' ? 'block' : 'none';
+    document.getElementById('json-field').style.display = uploadType === 'json' ? 'block' : 'none';
+    document.getElementById('example-json').style.display = uploadType === 'json' ? 'block' : 'none';
+    document.getElementById('text-field').style.display = uploadType === 'text' ? 'block' : 'none';
+    document.getElementById('blank-field').style.display = uploadType === 'blank' ? 'block' : 'none';
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+    showRelevantField();
+});
+
+document.getElementById('upload_type').addEventListener('change', showRelevantField);
+</script>
+{% endblock %}
+
+{% endblock %}

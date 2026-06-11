@@ -1,3 +1,4 @@
+import json
 from typing import cast
 
 from flask import (
@@ -14,7 +15,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import or_
 
 from app import db
-from app.forms import RecipeForm
+from app.forms import RecipeForm, RecipeUploadForm
 from app.image_store import (
     delete_recipe_image,
     read_recipe_image_bytes,
@@ -23,12 +24,15 @@ from app.image_store import (
 from app.models import KitchenMachine, Recipe, RecipeScore
 from utils import (
     normalize_choice,
+    parse_uploaded_text,
     query_rows_by_ids,
+    read_uploaded_page,
     require_active_admin,
     require_active_creator,
     sanitize_recipe_ingredients,
     sanitize_recipe_instructions,
     to_model_choices,
+    validate_uploaded_json,
 )
 
 recipes_bp = Blueprint("recipes", __name__)
@@ -173,7 +177,22 @@ def unfavorite_recipe(recipe_id):
 def add_recipe():
     """Add a new recipe."""
     require_active_creator(current_user)
-    form = RecipeForm()
+    if request.method == "GET" and request.args.get("title"):
+        form = RecipeForm(
+            data={
+                "title": request.args.get("title"),
+                "description": request.args.get("description"),
+                "prep_time": request.args.get("prep_time"),
+                "cook_time": request.args.get("cook_time"),
+                "total_time": request.args.get("total_time"),
+                "servings": request.args.get("servings"),
+                "ingredients": json.loads(request.args.get("ingredients", "[]")),
+                "instructions": json.loads(request.args.get("instructions", "[]")),
+                "category": request.args.get("category"),
+            }
+        )
+    else:
+        form = RecipeForm()
 
     # Populate kitchen machines choices
     machines = KitchenMachine.query.order_by(KitchenMachine.name).all()
@@ -231,6 +250,47 @@ def add_recipe():
         return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
 
     return render_template("recipes/form.html", form=form, title="Recept toevoegen")
+
+
+@recipes_bp.route("/upload", methods=["GET", "POST"])
+@login_required
+def upload_recipe():
+    """Add a new recipe."""
+    require_active_creator(current_user)
+    form = RecipeUploadForm()
+
+    if form.validate_on_submit():
+        match form.upload_type.data:
+            case "url":
+                data = read_uploaded_page(form.url.data)
+            case "text":
+                data = parse_uploaded_text(form.text_file.data.read().decode("utf-8"))
+            case "json":
+                data = validate_uploaded_json(
+                    json.load(form.json_file.data),
+                    required_keys=["name", "ingredients", "instructions"],
+                )
+            case _:
+                flash("Ongeldig uploadtype geselecteerd.", "danger")
+                return render_template(
+                    "recipes/upload.html", form=form, title="Recept uploaden"
+                )
+        print(data)
+        return redirect(
+            url_for(
+                "recipes.add_recipe",
+                title=data.get("name", ""),
+                description=data.get("description", ""),
+                prep_time=data.get("prep_time", ""),
+                cook_time=data.get("cook_time", ""),
+                total_time=data.get("total_time", ""),
+                servings=data.get("servings", ""),
+                ingredients=json.dumps(data.get("ingredients", [])),
+                instructions=json.dumps(data.get("instructions", [])),
+                category=data.get("category", ""),
+            )
+        )
+    return render_template("recipes/upload.html", form=form, title="Recept uploaden")
 
 
 @recipes_bp.route("/<int:recipe_id>/edit", methods=["GET", "POST"])

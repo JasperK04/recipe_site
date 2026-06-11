@@ -210,3 +210,5 @@ __marimo__/
 *.db
 data/backup.zip
 data/recipe/
+*json
+*.txt
