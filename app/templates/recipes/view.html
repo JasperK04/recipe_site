@@ -289,13 +289,13 @@ document.addEventListener('DOMContentLoaded', function(){
                     btn.classList.remove('faded');
                     if (icon) icon.classList.remove('hover-fill');
                     if (data.favorited){
-                            icon.classList.remove('bi-heart');
-                            icon.classList.add('bi-heart-fill');
-                            btn.setAttribute('aria-label','Verwijder favoriet');
+                        icon.classList.remove('bi-heart');
+                        icon.classList.add('bi-heart-fill');
+                        favForm.action = favForm.action.replace('/favorite', '/unfavorite');
                     } else {
-                            icon.classList.remove('bi-heart-fill');
-                            icon.classList.add('bi-heart');
-                            btn.setAttribute('aria-label','Voeg toe aan favorieten');
+                        icon.classList.remove('bi-heart-fill');
+                        icon.classList.add('bi-heart');
+                        favForm.action = favForm.action.replace('/unfavorite', '/favorite');
                     }
                 } catch (err) {
                     console.error(err);
@@ -341,13 +341,15 @@ document.addEventListener('DOMContentLoaded', function(){
               const res = await fetch(form.action, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:new FormData(form)});
               const data = await res.json();
               if (data.new_status === 'deactivated'){
-                    btn.classList.remove('btn-outline-danger');
-                    btn.classList.add('btn-outline-success');
-                    btn.innerHTML = '<i class="bi bi-eye"></i>';
+                btn.classList.remove('btn-outline-danger');
+                btn.classList.add('btn-outline-success');
+                btn.innerHTML = '<i class="bi bi-eye"></i>';
+                form.action = form.action.replace('/deactivate', '/reactivate');
               } else {
-                    btn.classList.remove('btn-outline-success');
-                    btn.classList.add('btn-outline-danger');
-                    btn.innerHTML = '<i class="bi bi-eye-slash"></i>';
+                btn.classList.remove('btn-outline-success');
+                btn.classList.add('btn-outline-danger');
+                btn.innerHTML = '<i class="bi bi-eye-slash"></i>';
+                form.action = form.action.replace('/reactivate', '/deactivate');
               }
           } catch(err){
               console.error(err);
