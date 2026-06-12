@@ -234,6 +234,7 @@ class RecipeUploadForm(FlaskForm):
         "Type",
         choices=[
             ("url", "URL"),
+            ("textarea", "Tekst"),
             ("json", "JSON-bestand"),
             ("text", "Tekstbestand"),
         ],
@@ -253,6 +254,34 @@ class RecipeUploadForm(FlaskForm):
         description="www.example.com/recept",
     )
 
+    textarea = TextAreaField(
+        "Tekst van het recept",
+        validators=[
+            Optional(),
+            Length(
+                max=5000,
+                message="Tekst mag niet langer zijn dan 5.000 tekens.",
+            ),
+        ],
+        render_kw =
+        {"placeholder": """
+Spaghetti Bolognese voor 4 personen
+Een klassieke Italiaanse pastasaus met gehakt, tomaat en kruiden.
+
+INGREDIENTEN
+400 gram spaghetti
+een pond rundergehakt
+400 gram gepelde tomaten
+
+STAPPEN
+1. Kook de spaghetti volgens de aanwijzingen op de verpakking.
+2. Bak het gehakt rul in een grote pan.
+3. Voeg de gepelde tomaten toe en laat het geheel 20 minuten sudderen.
+""".strip(),
+        "style": "min-height: 250px;"
+        }, 
+    )
+
     json_file = FileField(
         "JSON-bestand (export van een recept)",
         validators=[
@@ -264,7 +293,7 @@ class RecipeUploadForm(FlaskForm):
         "Tekstbestand (recept in tekstformaat)",
         validators=[
             Optional(),
-            FileAllowed(["txt"], "Only text files are allowed"),
+            FileAllowed(["txt", "docs", "docx", "pdf"], "Only text files are allowed"),
         ],
     )
 
@@ -275,6 +304,7 @@ class RecipeUploadForm(FlaskForm):
             return False
 
         has_url = bool(self.url.data and self.url.data.strip())
+        has_textarea = bool(self.textarea.data and self.textarea.data.strip())
         has_json_file = bool(self.json_file.data)
         has_text_file = bool(self.text_file.data)
 
@@ -282,9 +312,10 @@ class RecipeUploadForm(FlaskForm):
         #     f"Validation: has_url={has_url}, has_json_file={has_json_file}, has_text_file={has_text_file}"
         # )
 
-        if has_url + has_json_file + has_text_file != 1:
-            error = "Vul een URL bestand in, maar niet beide."
+        if has_url + has_textarea + has_json_file + has_text_file != 1:
+            error = "Vul een URL, tekst, JSON-bestand of tekstbestand in."
             self.url.errors.append(error)  # type: ignore[attr-defined]
+            self.textarea.errors.append(error)  # type: ignore[attr-defined]
             self.json_file.errors.append(error)  # type: ignore[attr-defined]
             self.text_file.errors.append(error)  # type: ignore[attr-defined]
             return False

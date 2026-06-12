@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "components/base.html" %}
 
 {% block title %}Mijn recepten{% endblock %}
 
@@ -15,7 +15,7 @@
 {% if recipes.items %}
 <div class="row g-4">
     {% for recipe in recipes.items %}
-    <div class="col-md-4">
+    <!-- <div class="col-md-4">
         <div class="card recipe-card h-100 position-relative">
             {% if recipe.status == 'draft' %}
             <span class="position-absolute top-0 end-0 m-2 badge bg-warning text-dark">Concept</span>
@@ -63,7 +63,8 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
+        {% include 'components/recipe_card.html' with context %}
     {% endfor %}
 </div>
 

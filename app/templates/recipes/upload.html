@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "components/base.html" %}
 
 {% block title %}{{ title }} - Recepten{% endblock %}
 
@@ -11,7 +11,7 @@
                 <form method="POST" enctype="multipart/form-data">
                     {{ form.hidden_tag() }}
                     <div class="row justify-content-center">
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-3 mb-3 flex-grow-1">
                             {{ form.upload_type.label(class="form-label") }}
                             {{ form.upload_type(class="form-control" + (" is-invalid" if form.upload_type.errors else "")) }}
                             {% if form.upload_type.errors %}
@@ -77,6 +77,15 @@
 </pre>
                         </div>
                     </div>
+                    <div id="textarea-field" class="col-md-12 mb-3" style="display: none;">
+                        {{ form.textarea.label(class="form-label") }}
+                        {{ form.textarea(class="form-control" + (" is-invalid" if form.textarea.errors else "")) }}
+                        {% if form.textarea.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.textarea.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
                     
                     <div class="d-flex justify-content-between">
                         <a href="{{ url_for('recipes.list_recipes') }}" class="btn btn-secondary">Annuleren</a>
@@ -102,6 +111,7 @@
 function showRelevantField() {
     const uploadType = document.getElementById('upload_type').value;
     document.getElementById('url-field').style.display = uploadType === 'url' ? 'block' : 'none';
+    document.getElementById('textarea-field').style.display = uploadType === 'textarea' ? 'block' : 'none';
     document.getElementById('json-field').style.display = uploadType === 'json' ? 'block' : 'none';
     document.getElementById('example-json').style.display = uploadType === 'json' ? 'block' : 'none';
     document.getElementById('text-field').style.display = uploadType === 'text' ? 'block' : 'none';

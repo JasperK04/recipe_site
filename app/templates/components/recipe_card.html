@@ -1,0 +1,59 @@
+<div class="col-md-4">
+    <div class="card recipe-card h-100 position-relative">
+        {% if current_user.is_authenticated and current_user == recipe.author %}
+            {% if recipe.status == 'draft' %}
+            <span class="position-absolute top-0 start-0 m-2 badge bg-warning text-dark">Concept</span>
+            {% endif %}
+            {% if recipe.status == 'deactivated' %}
+            <span class="position-absolute top-0 start-0 m-2 badge bg-danger">Gedeactiveerd</span>
+            {% endif %}
+        {% endif %}
+        {% if recipe.has_image %}
+        <img src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="{{ recipe.title }}" class="card-img-top rounded-top" style="height:180px; object-fit:cover; width:100%;" />
+        {% else %}
+        <div class="card-img-top bg-light d-flex align-items-center justify-content-center text-muted rounded-top" style="height:180px; width:100%;">
+            <div class="text-center" aria-hidden="true"><i class="bi bi-image" style="font-size:2rem;"></i></div>
+        </div>
+        {% endif %}
+        <div class="card-body d-flex flex-column">
+            <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="stretched-link"></a>
+            <span class="position-absolute top-0 end-0 m-2 badge bg-primary">{% if recipe.score_count %}{{ '%.1f' % recipe.score_average }}{% else %}-{% endif %}/5</span>
+            <h5 class="card-title">{{ recipe.title }}</h5>
+            {% if recipe.description %}
+            <p class="card-text text-muted">{{ recipe.description[:100] }}{% if recipe.description|length > 100 %}...{% endif %}</p>
+            {% endif %}
+            <div class="mt-auto">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="bi bi-person"></i> {{ recipe.author.username }}
+                    </small>
+                    {% if recipe.category %}
+                    <span class="badge bg-secondary">{{ recipe.category }}</span>
+                    {% endif %}
+                </div>
+                {% if recipe.prep_time or recipe.cook_time %}
+                <div class="mt-2">
+                    {% if recipe.prep_time %}
+                    <small class="text-muted"><i class="bi bi-clock"></i> Prep: {{ recipe.prep_time }}m</small>
+                    {% endif %}
+                    {% if recipe.cook_time %}
+                    <small class="text-muted ms-2"><i class="bi bi-fire"></i> Cook: {{ recipe.cook_time }}m</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-footer bg-transparent">
+            {% if current_user.is_authenticated and current_user == recipe.author %}
+                <div class="btn-group w-100" role="group">
+                    <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">Bekijk</a>
+                    <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-secondary">Bewerk</a>
+                </div>
+            {% else %}
+                <div class="btn-group w-100" role="group">
+                    <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-primary w-100">Bekijk recept</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

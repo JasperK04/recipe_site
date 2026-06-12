@@ -256,6 +256,10 @@ def upload_recipe():
                 if not form.url.data:
                     return flash_("URL is vereist voor deze uploadmethode.", "danger")
                 data = read_uploaded_page(form.url.data)
+            case "textarea":
+                if not form.textarea.data:
+                    return flash_("Tekst is vereist voor deze uploadmethode.", "danger")
+                data = parse_uploaded_text(form.textarea.data)
             case "text":
                 if not form.text_file.data:
                     return flash_(

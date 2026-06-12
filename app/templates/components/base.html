@@ -280,7 +280,9 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">Mijn profiel</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('recipes.my_recipes') }}">Mijn recepten</a></li>
+                            {% if current_user.can_create_recipes %}
+                                <li><a class="dropdown-item" href="{{ url_for('recipes.my_recipes') }}">Mijn recepten</a></li>
+                            {% endif %}
                             <li><a class="dropdown-item" href="{{ url_for('recipes.favorites') }}">Favorieten</a></li>
                             {% if current_user.is_admin %}
                             <li><hr class="dropdown-divider"></li>
