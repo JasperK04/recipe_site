@@ -1,33 +1,11 @@
 ## recipes
-- Introduce three account roles: reviewer, creator, and admin with clearly scoped permissions.
-  - Logged out:
-    - View recipes
-    - Search recipes
-  - Viewers: 
-    - All of the above
-    - Score recipes
-    - Request to be become a Creator
-  - Creator:
-    - All of the above
-    - Create recipe drafts
-    - Publish their own drafts
-    - Edit their own recipes
-    - Unpublish or Delete their own recipes
-  - Admin:
-    - All of the above
-    - View unpublished/draft/deactivated recipes
-    - View Deactivated Users
-    - Deactivate recipes (become hidden) 
-    - Deactivate users
-      - Deactivates their recipes 
-      - Prevents creation of new recipes
-    - Reactivate users and recipes
-      - undoes the above
-    - Promote Viewers to Creators 
-    - Demote Creators to Viewers
-- DONE: Add draft/publish workflow so creators can stage recipes before public release.
-- DONE: Convert all uploaded images to WebP and resize on upload to reduce bandwidth.
-- DONE: Add a way to backup the db and restore it
-- DONE: Add dark mode
-- DONE: Add OpenGraph cards
-- DONE: Introduce list of favorite recipes 
+- Create an actual Logo/icon
+- OTC-link voor instant creator account
+- Sharing buttons
+- Check small screens (~300px)
+- Update about page
+- Mandatory field indicators (recipe form)
+- Email service en notificatie icon voor pending creators
+- Maybe auto moderation for recipes and usernames
+- Clientside validation, of all fields, such as images, and second password field 
+- Bij het bewerken van een recept verdwijnen de ingredienten
