@@ -128,7 +128,6 @@ class ProfileEditForm(FlaskForm):
     confirm_new_password = PasswordField(
         "Bevestig nieuw wachtwoord",
         validators=[
-            Optional(),
             EqualTo("new_password", message="Wachtwoorden moeten overeenkomen."),
         ],
     )
@@ -146,6 +145,16 @@ class ProfileEditForm(FlaskForm):
             raise ValidationError(
                 "E-mail al geregistreerd. Gebruik een ander e-mailadres."
             )
+        
+    def validate_new_password(self, field):
+        if field.data and not self.current_password.data:
+            raise ValidationError(
+                "Vul je huidige wachtwoord in om het wachtwoord te wijzigen."
+            )
+
+    def validate_confirm_new_password(self, field):
+        if self.new_password.data and not field.data:
+            raise ValidationError("Bevestig je nieuwe wachtwoord.")
 
     def validate(self, extra_validators=None):  # type: ignore[override]
         if not super().validate(extra_validators=extra_validators):
