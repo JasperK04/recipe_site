@@ -244,7 +244,7 @@ def register_commands(app: Flask):
                 qty = round(fake.random.uniform(1, 500), 2)
                 measurement = random.choice(measurements)
                 ingredient_list.append(
-                    {"name_": name, "quantity": qty, "measurement": measurement}
+                    {"name": name, "quantity": qty, "measurement": measurement}
                 )
 
             step_count = fake.random_int(min=2, max=5)

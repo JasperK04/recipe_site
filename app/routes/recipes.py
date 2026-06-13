@@ -331,6 +331,8 @@ def edit_recipe(recipe_id):
             pass
 
         for ing in recipe.ingredients:
+            print(ing)
+            print(ingredient_to_string(ing))
             form.ingredients.append_entry(ingredient_to_string(ing))
 
         if len(form.ingredients.entries) == 0:

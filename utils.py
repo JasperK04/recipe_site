@@ -142,8 +142,8 @@ def ingredient_to_string(ingredient: dict) -> str:
     if ingredient.get("measurement"):
         parts.append(ingredient["measurement"])
 
-    if ingredient.get("name_"):
-        parts.append(ingredient["name_"])
+    if ingredient.get("name"):
+        parts.append(ingredient["name"])
 
     return " ".join(parts)
 
@@ -241,12 +241,12 @@ def parse_ingredient(text: str) -> tuple[float | int | None, str | None, str]:
         "tien": 10,
         "elf": 11,
         "twaalf": 12,
-        "dozijn": 12,
     }
 
     unit_multipliers = {
         "ons": ("g", 100),
         "pond": ("g", 500),
+        "dozijn": ("st", 12),
     }
 
     fraction_chars = {
