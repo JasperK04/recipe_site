@@ -2,12 +2,24 @@
 
 {% block title %}Startpagina - Recepten{% endblock %}
 
+{% block extra_css %}
+    <style>
+        @media (max-width: 576px) {
+            div.jumbotron {
+                padding: 2rem !important;
+            }
+            h1.display-4 {
+                font-size: calc(0.9rem + 4.2vw);
+            }
+        }
+    </style>
+{% endblock extra_css %}
+
 {% block content %}
 <div class="jumbotron bg-light p-5 rounded-3 mb-4">
-    <h1 class="display-4">Welkom bij Recepten!</h1>
-    <p class="lead">Sla op, deel en ontdek heerlijke kookrecepten.</p>
+    <h1 class="display-4">Welkom bij het <span class="text-primary text-nowrap">Recepten Register</span></h1>
+    <p class="lead">Sla op, deel en ontdek heerlijke recepten.</p>
     <hr class="my-4">
-    <p>Maak een account aan om je favoriete recepten toe te voegen of blader door onze collectie.</p>
     <div class="mt-4">
         {% if current_user.is_authenticated %}
             {% if current_user.can_create_recipes %}
@@ -30,7 +42,7 @@
 
 <h2 class="mb-4">Recente recepten</h2>
 {% if recipes %}
-<div class="row g-4">
+<div class="recipe-grid">
     {% for recipe in recipes %}
         {% include 'components/recipe_card.html' with context %}
     {% endfor %}

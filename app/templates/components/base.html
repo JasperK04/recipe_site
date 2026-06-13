@@ -51,12 +51,57 @@
         main {
             flex: 1;
         }
+        @media (min-width: 576px) {
+            .container {
+                max-width: 92vw;
+            }
+        }
         .navbar-brand {
             font-weight: bold;
+        }
+        .recipe-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 320px));
+            gap: 1rem;
+            justify-content: center;
         }
         .recipe-card {
             transition: transform 0.2s;
             height: 100%;
+            width: 100%;
+            max-width: 320px;
+        }
+        @media (max-width: 1110px) {
+            .recipe-grid {
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 270px));
+            }
+            .recipe-card {
+                max-width: 270px;
+            }
+        }
+        @media (max-width: 940px) {
+            .recipe-grid {
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 320px));
+            }
+            .recipe-card {
+                max-width: 320px;
+            }
+        }
+        @media (max-width: 768px) {
+            .recipe-grid {
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 270px));
+            }
+            .recipe-card {
+                max-width: 270px;
+            }
+        }
+        @media (max-width: 632px) {
+            .recipe-grid {
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 320px));
+            }
+            .recipe-card {
+                max-width: 320px;
+            }
         }
         /* Make cards visually distinct from page background */
         .card {

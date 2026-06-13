@@ -13,7 +13,7 @@
 </div>
 
 {% if recipes.items %}
-<div class="row g-4">
+<div class="recipe-grid">
     {% for recipe in recipes.items %}
         {% include 'components/recipe_card.html' with context %}
     {% endfor %}

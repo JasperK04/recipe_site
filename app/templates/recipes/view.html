@@ -98,8 +98,6 @@
                         {% endif %}
                     </div>
                 </div>
-
-                {% if recipe.description %}
                 {% if recipe.has_image %}
                 <div class="mb-3 text-center position-relative recipe-image-wrapper">
                     <img src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="{{ recipe.title }}" class="img-fluid rounded" />
@@ -140,6 +138,7 @@
                 }
                 </style>
                 {% endif %}
+                {% if recipe.description %}
                 <p class="lead">{{ recipe.description }}</p>
                 {% endif %}
 
@@ -291,10 +290,12 @@ document.addEventListener('DOMContentLoaded', function(){
                     if (data.favorited){
                         icon.classList.remove('bi-heart');
                         icon.classList.add('bi-heart-fill');
+                        btn.setAttribute('title', 'Verwijderen uit favorieten');
                         favForm.action = favForm.action.replace('/favorite', '/unfavorite');
                     } else {
                         icon.classList.remove('bi-heart-fill');
                         icon.classList.add('bi-heart');
+                        btn.setAttribute('title', 'Toevoegen aan favorieten');
                         favForm.action = favForm.action.replace('/unfavorite', '/favorite');
                     }
                 } catch (err) {
@@ -344,11 +345,13 @@ document.addEventListener('DOMContentLoaded', function(){
                 btn.classList.remove('btn-outline-danger');
                 btn.classList.add('btn-outline-success');
                 btn.innerHTML = '<i class="bi bi-eye"></i>';
+                btn.setAttribute('title', 'Recept reactiveren');
                 form.action = form.action.replace('/deactivate', '/reactivate');
               } else {
                 btn.classList.remove('btn-outline-success');
                 btn.classList.add('btn-outline-danger');
                 btn.innerHTML = '<i class="bi bi-eye-slash"></i>';
+                btn.setAttribute('title', 'Recept deactiveren');
                 form.action = form.action.replace('/reactivate', '/deactivate');
               }
           } catch(err){
