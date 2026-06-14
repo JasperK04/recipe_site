@@ -26,7 +26,7 @@ class RegistrationForm(FlaskForm):
     """User registration form."""
 
     username = StringField(
-        "Gebruikersnaam",
+        "Gebruikersnaam *",
         validators=[
             DataRequired(),
             Length(
@@ -39,7 +39,7 @@ class RegistrationForm(FlaskForm):
         ],
     )
     email = StringField(
-        "E-mail",
+        "E-mail *",
         validators=[
             DataRequired(),
             Regexp(
@@ -49,14 +49,14 @@ class RegistrationForm(FlaskForm):
         ],
     )
     password = PasswordField(
-        "Wachtwoord",
+        "Wachtwoord *",
         validators=[
             DataRequired(),
             Length(min=6, message="Wachtwoord moet minimaal 6 tekens lang zijn."),
         ],
     )
     confirm_password = PasswordField(
-        "Bevestig wachtwoord",
+        "Bevestig wachtwoord *",
         validators=[
             DataRequired(),
             EqualTo("password", message="Wachtwoorden moeten overeenkomen."),
@@ -91,7 +91,7 @@ class ProfileEditForm(FlaskForm):
     """Edit profile form with optional password change."""
 
     username = StringField(
-        "Gebruikersnaam",
+        "Gebruikersnaam *",
         validators=[
             DataRequired(),
             Length(
@@ -104,7 +104,7 @@ class ProfileEditForm(FlaskForm):
         ],
     )
     email = StringField(
-        "E-mail",
+        "E-mail *",
         validators=[
             DataRequired(),
             Regexp(
@@ -179,7 +179,7 @@ class RecipeForm(FlaskForm):
     """Form for adding/editing recipes."""
 
     title = StringField(
-        "Titel",
+        "Titel *",
         validators=[
             DataRequired(),
             Length(max=200, message="Titel moet minder dan 200 tekens bevatten."),
@@ -195,12 +195,12 @@ class RecipeForm(FlaskForm):
     ingredients = FieldList(
         StringField("Ingrediënt", validators=[Optional()]),
         min_entries=1,
-        label="Ingrediënten",
+        label="Ingrediënten *",
     )
 
     # Instructions: a dynamic list of single-line steps
     instructions = FieldList(
-        StringField("Stap", validators=[Optional()]), min_entries=1, label="Instructies"
+        StringField("Stap", validators=[Optional()]), min_entries=1, label="Instructies *"
     )
     prep_time = IntegerField("Bereidingstijd (minuten)", validators=[])
     cook_time = IntegerField("Kooktijd (minuten)", validators=[Optional()])
@@ -317,16 +317,26 @@ STAPPEN
         has_json_file = bool(self.json_file.data)
         has_text_file = bool(self.text_file.data)
 
-        # print(
-        #     f"Validation: has_url={has_url}, has_json_file={has_json_file}, has_text_file={has_text_file}"
-        # )
-
-        if has_url + has_textarea + has_json_file + has_text_file != 1:
-            error = "Vul een URL, tekst, JSON-bestand of tekstbestand in."
-            self.url.errors.append(error)  # type: ignore[attr-defined]
-            self.textarea.errors.append(error)  # type: ignore[attr-defined]
-            self.json_file.errors.append(error)  # type: ignore[attr-defined]
-            self.text_file.errors.append(error)  # type: ignore[attr-defined]
-            return False
+        type_ = self.upload_type.data
+        match type_:
+            case "url":
+                if not has_url:
+                    self.url.errors.append("Vul een URL in.") # type: ignore
+                    return False
+            case "textarea":
+                if not has_textarea:
+                    self.textarea.errors.append("Vul de tekst van het recept in.") # type: ignore
+                    return False
+            case "json":
+                if not has_json_file:
+                    self.json_file.errors.append("Upload een JSON-bestand.") # type: ignore
+                    return False
+            case "text":
+                if not has_text_file:
+                    self.text_file.errors.append("Upload een tekstbestand.") # type: ignore
+                    return False
+            case _:
+                self.upload_type.errors.append("Ongeldig uploadtype.") # type: ignore
+                return False
 
         return True

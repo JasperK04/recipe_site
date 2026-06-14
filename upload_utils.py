@@ -8,7 +8,7 @@ from openai import OpenAI
 
 
 def sanitize_text(text: str) -> str:
-    """Sanitize text by removing extra whitespace and newlines."""
+    """Sanitize text by removing extra whitespace and unwanted characters."""
     text = re.sub(r"\<p\>", "", text)
     text = re.sub(r"\<\/p\>", "", text)
     text = re.sub(r"\s+", " ", text).strip()
@@ -153,8 +153,8 @@ Extract the relevant information and return it as a JSON object with the followi
     "prep_time": numerical string (minutes) | null,
     "cook_time": numerical string (minutes) | null,
     "total_time": numerical string (minutes) | null,
-    "ingredients": [string],
-    "instructions": [string],
+    "ingredients": [string, ...],
+    "instructions": [string, ...],
     "category": literal string (e.g. "Ontbijt", "Lunch", "Voorgerecht", "Hoofdgerecht", "Nagerecht", "Drank", "Snack" or "Overig") | null,
 }
 """

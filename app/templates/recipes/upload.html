@@ -65,13 +65,7 @@
     "prep_time": integer | null,
     "cook_time": integer | null,
     "total_time": integer | null,
-    "ingredients": [
-        {
-            "name": string, 
-            "quantity": integer | null, 
-            "measurement": "g", "ml", "el", etc | null
-        }, ...
-    ],
+    "ingredients": [string, ...],
     "instructions": [string, ...]
 }</code>
 </pre>
@@ -90,13 +84,7 @@
                     <div class="d-flex justify-content-between">
                         <a href="{{ url_for('recipes.list_recipes') }}" class="btn btn-secondary">Annuleren</a>
                         <div>
-                            {% if form.status %}
-                                <input type="hidden" name="status" id="status-field" value="{{ form.status.data or 'public' }}">
-                                <button type="submit" class="btn btn-secondary me-2" onclick="document.getElementById('status-field').value='draft'">Concept</button>
-                                <button type="submit" class="btn btn-primary" onclick="document.getElementById('status-field').value='public'">Publiceren</button>
-                            {% else %}
-                                {{ form.submit(class="btn btn-primary") }}
-                            {% endif %}
+                            {{ form.submit(class="btn btn-primary") }}
                         </div>
                     </div>
                     </div>
@@ -117,6 +105,8 @@ function showRelevantField() {
     document.getElementById('text-field').style.display = uploadType === 'text' ? 'block' : 'none';
     document.getElementById('blank-field').style.display = uploadType === 'blank' ? 'block' : 'none';
 }
+
+window.addEventListener('pageshow', showRelevantField);
 
 document.addEventListener('DOMContentLoaded', function(){
     showRelevantField();

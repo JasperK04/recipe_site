@@ -158,7 +158,7 @@ def sanitize_recipe_ingredients(
         quantity, unit, name = parse_ingredient(ingredient)
         if name:
             if plain_text:
-                ingredients.append(f"{quantity or ''} {unit or ''} {name}".strip())
+                ingredients.append(" ".join(filter(None, [str(quantity) if quantity is not None else None, unit, name])))
             else:
                 ingredients.append(
                     {"name": name, "quantity": quantity, "measurement": unit}
@@ -287,19 +287,24 @@ def parse_ingredient(text: str) -> tuple[float | int | None, str | None, str]:
 
     unit = None
 
-    if len(tokens) > consumed:
-        next_token = tokens[consumed]
+    remaining = tokens[consumed:]
 
-        if next_token in unit_multipliers:
-            unit, multiplier = unit_multipliers[next_token]
+    if len(remaining) == 1:
+        name = remaining[0]
+
+    elif len(remaining) >= 2:
+        first = remaining[0]
+
+        if first in unit_multipliers:
+            unit, multiplier = unit_multipliers[first]
             amount *= multiplier
-            consumed += 1
+        else:
+            unit = first
 
-        elif re.fullmatch(r"[a-zA-Z]+", next_token):
-            unit = next_token
-            consumed += 1
+        name = " ".join(remaining[1:])
 
-    name = " ".join(tokens[consumed:])
+    else:
+        name = ""
 
     if isinstance(amount, float) and amount.is_integer():
         amount = int(amount)
