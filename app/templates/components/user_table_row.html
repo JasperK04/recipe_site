@@ -1,0 +1,59 @@
+<tr
+    data-user-id="{{ user.id }}"
+    data-role="{{ user.role }}"
+    data-active="{{ user.is_active|lower }}"
+    data-current-user="{{ (user.id == current_user.id)|lower }}"
+>
+    <td>
+        <div class="fw-semibold">{{ user.username }}</div>
+        <small class="text-muted">{{ user.email }}</small>
+    </td>
+    <td>
+        <span class="badge {% if user.role == 6 %}bg-danger{% elif user.role in [2, 3, 4, 5] %}bg-primary{% else %}bg-secondary{% endif %}">
+            {{ user.get_role_label() }}
+        </span>
+    </td>
+    <td>
+        {% if user.is_active %}
+        <span class="badge bg-success">Actief</span>
+        {% else %}
+        <span class="badge bg-danger">Gedeactiveerd</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if user.creator_request_pending %}
+        <span class="badge bg-warning text-dark">Creator aangevraagd</span>
+        {% else %}
+        <span class="text-muted">-</span>
+        {% endif %}
+    </td>
+    <td class="text-end">
+        <div class="d-inline-flex gap-2 flex-wrap justify-content-end">
+
+            <button 
+                class="btn btn-sm btn-outline-primary promote-btn"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="promoveren">
+                <i class="bi bi-arrow-up"></i>
+            </button>
+
+            <button 
+                class="btn btn-sm btn-outline-secondary demote-btn"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="degraderen">
+                <i class="bi bi-arrow-down"></i>
+            </button>
+
+            <button 
+                class="btn btn-sm btn-outline-danger active-btn"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="deactiveren">
+                <i class="bi bi-x-lg"></i>
+            </button>
+
+        </div>
+    </td>
+</tr>

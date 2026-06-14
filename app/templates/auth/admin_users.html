@@ -24,66 +24,115 @@
                 </thead>
                 <tbody>
                     {% for user in users %}
-                    <tr>
-                        <td>
-                            <div class="fw-semibold">{{ user.username }}</div>
-                            <small class="text-muted">{{ user.email }}</small>
-                        </td>
-                        <td>
-                            <span class="badge {% if user.role == 'admin' %}bg-danger{% elif user.role == 'creator' %}bg-primary{% else %}bg-secondary{% endif %}">
-                                {{ user.role|capitalize }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if user.is_active %}
-                            <span class="badge bg-success">Actief</span>
-                            {% else %}
-                            <span class="badge bg-danger">Gedeactiveerd</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if user.creator_request_pending %}
-                            <span class="badge bg-warning text-dark">Creator aangevraagd</span>
-                            {% else %}
-                            <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-end">
-                            <div class="d-inline-flex gap-2 flex-wrap justify-content-end">
-                                {% if user.id != current_user.id and user.role != 'admin' %}
-                                    {% if user.is_active %}
-                                    <form method="POST" action="{{ url_for('auth.deactivate_user', user_id=user.id) }}">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Deactiveer</button>
-                                    </form>
-                                    {% else %}
-                                    <form method="POST" action="{{ url_for('auth.reactivate_user', user_id=user.id) }}">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                                        <button type="submit" class="btn btn-sm btn-outline-success">Reactiveer</button>
-                                    </form>
-                                    {% endif %}
-                                {% endif %}
-
-                                {% if user.role == 'reviewer' and user.id != current_user.id %}
-                                <form method="POST" action="{{ url_for('auth.promote_user', user_id=user.id) }}">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                                    <button type="submit" class="btn btn-sm btn-outline-primary">Promoveer</button>
-                                </form>
-                                {% endif %}
-
-                                {% if user.role == 'creator' and user.id != current_user.id %}
-                                <form method="POST" action="{{ url_for('auth.demote_user', user_id=user.id) }}">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Degradeer</button>
-                                </form>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
+                        {% include "/components/user_table_row.html" %}
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function updateButtons(row) {
+        const role = Number(row.dataset.role)
+        const active = row.dataset.active === "true"
+        const isCurrentUser = row.dataset.currentUser === "true"
+
+        const promoteBtn = row.querySelector(".promote-btn")
+        const demoteBtn = row.querySelector(".demote-btn")
+        const activeBtn = row.querySelector(".active-btn")
+
+        promoteBtn.disabled =
+            role >= 5 || isCurrentUser
+
+        demoteBtn.disabled =
+            role <= 1 || role === 6 || isCurrentUser
+
+        activeBtn.hidden =
+            isCurrentUser || role === 6
+
+        if (!active) {
+            activeBtn.innerHTML = '<i class="bi bi-check-lg"></i>'
+            activeBtn.classList.remove(
+                "btn-outline-danger"
+            )
+            activeBtn.classList.add(
+                "btn-outline-success"
+            )
+            activeBtn.setAttribute('title', 'activeren')
+        } else {
+            activeBtn.innerHTML = '<i class="bi bi-x-lg"></i>'
+            activeBtn.classList.remove(
+                "btn-outline-success"
+            )
+            activeBtn.classList.add(
+                "btn-outline-danger"
+            )
+            activeBtn.setAttribute('title', 'deactiveren')
+        }
+    }
+
+    document.querySelectorAll("tbody tr")
+        .forEach(updateButtons)
+    
+    async function postAction(url) {
+        const csrf = document.querySelector(
+            'meta[name="csrf-token"]'
+        ).content
+
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrf,
+                "Content-Type": "application/json"
+            },
+            credentials: "same-origin"
+        })
+
+        return response.json()
+    }
+
+    document.addEventListener("click", async e => {
+        const btn = e.target.closest("button")
+
+        if (!btn) {
+            return
+        }
+
+        const row = btn.closest("tr")
+        const id = row.dataset.userId
+
+        let endpoint
+
+            if (btn.classList.contains("promote-btn")) {
+            endpoint = `/auth/admin/users/${id}/promote`
+        }
+
+        if (btn.classList.contains("demote-btn")) {
+            endpoint = `/auth/admin/users/${id}/demote`
+        }
+
+        if (btn.classList.contains("active-btn")) {
+            endpoint =
+                row.dataset.active === "true"
+                ? `/auth/admin/users/${id}/deactivate`
+                : `/auth/admin/users/${id}/reactivate`
+        }
+
+        const data = await postAction(endpoint)
+
+        if (data.status === "ok") {
+            const template = document.createElement("template")
+            template.innerHTML = data.html.trim()
+
+            const newRow = template.content.firstElementChild
+
+            row.replaceWith(newRow)
+
+            updateButtons(newRow)
+        }
+    })
+</script>
 {% endblock %}

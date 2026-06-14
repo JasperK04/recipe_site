@@ -3,6 +3,7 @@ from typing import Any, cast
 
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
+from sqlalchemy import text
 
 from app import db
 
@@ -59,21 +60,23 @@ class User(UserMixin, db.Model):
     """User model for authentication."""
 
     __tablename__ = "users"
-    ROLE_REVIEWER = "reviewer"
-    ROLE_CREATOR = "creator"
-    ROLE_ADMIN = "admin"
-    VALID_ROLES = (ROLE_REVIEWER, ROLE_CREATOR, ROLE_ADMIN)
+    ROLE_FIJNPROEVER = 1
+    ROLE_LEERLING_KOK = 2
+    ROLE_ZELFSTANDIG_KOK = 3
+    ROLE_CHEF_DE_PARTIE = 4
+    ROLE_SOUS_CHEF = 5
+    ROLE_CHEF_DE_CUISINE = 6
+    VALID_ROLES = (ROLE_FIJNPROEVER, ROLE_LEERLING_KOK, ROLE_ZELFSTANDIG_KOK, ROLE_CHEF_DE_PARTIE, ROLE_SOUS_CHEF, ROLE_CHEF_DE_CUISINE)
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(
-        db.String(20),
+        db.Integer,
         nullable=False,
-        default=ROLE_REVIEWER,
-        server_default=ROLE_REVIEWER,
-        index=True,
+        default=ROLE_FIJNPROEVER,
+        server_default=text(str(ROLE_FIJNPROEVER)),
     )
     is_active = db.Column(  # pyright: ignore[reportIncompatibleMethodOverride]
         db.Boolean, nullable=False, default=True, server_default=db.true()
@@ -109,14 +112,25 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         """Check if the provided password matches the hash."""
         return check_password_hash(self.password_hash, password)
+    
+    def get_role_label(self):
+        role_labels = {
+            self.ROLE_FIJNPROEVER: "Fijnproever",
+            self.ROLE_LEERLING_KOK: "Leerling Kok",
+            self.ROLE_ZELFSTANDIG_KOK: "Zelfstandig Kok",
+            self.ROLE_CHEF_DE_PARTIE: "Chef de Partie",
+            self.ROLE_SOUS_CHEF: "Sous Chef",
+            self.ROLE_CHEF_DE_CUISINE: "Chef de Cuisine",
+        }
+        return role_labels.get(self.role, "Onbekend")
 
     @property
     def is_admin(self):
-        return self.role == self.ROLE_ADMIN
+        return self.role == self.ROLE_CHEF_DE_CUISINE
 
     @property
     def is_creator(self):
-        return self.role in (self.ROLE_CREATOR, self.ROLE_ADMIN)
+        return self.role >= self.ROLE_LEERLING_KOK
 
     @property
     def can_create_recipes(self):
@@ -124,7 +138,7 @@ class User(UserMixin, db.Model):
 
     @property
     def can_score_recipes(self):
-        return bool(self.is_active and self.role in self.VALID_ROLES)
+        return bool(self.is_active and self.role >= self.ROLE_FIJNPROEVER)
 
     def __repr__(self):
         return f"<User {self.username}>"

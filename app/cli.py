@@ -118,7 +118,7 @@ def register_commands(app: Flask):
             return
 
         # Create new user
-        user = User(username=username, email=email, role=User.ROLE_REVIEWER)  # type: ignore
+        user = User(username=username, email=email, role=User.ROLE_FIJNPROEVER)  # type: ignore
         user.set_password(password)
 
         db.session.add(user)
@@ -159,7 +159,7 @@ def register_commands(app: Flask):
             return
 
         # Create new admin user
-        user = User(username=username, email=email, role=User.ROLE_ADMIN)  # type: ignore
+        user = User(username=username, email=email, role=User.ROLE_CHEF_DE_CUISINE)  # type: ignore
         user.set_password(password)
 
         db.session.add(user)
@@ -207,7 +207,7 @@ def register_commands(app: Flask):
                 email = fake.email()
                 counter += 1
 
-            user = User(username=username, email=email, role=User.ROLE_REVIEWER)  # type: ignore
+            user = User(username=username, email=email, role=User.ROLE_FIJNPROEVER)  # type: ignore
             user.set_password("password123")
             db.session.add(user)
             created_users.append(user)
@@ -216,7 +216,7 @@ def register_commands(app: Flask):
         admin_email = os.getenv("admin_email", "admin@example.com")
         admin_password = os.getenv("admin_password", "admin123")
 
-        admin = User(username=admin_username, email=admin_email, role=User.ROLE_ADMIN)  # type: ignore
+        admin = User(username=admin_username, email=admin_email, role=User.ROLE_CHEF_DE_CUISINE)  # type: ignore
         admin.set_password(admin_password)
         db.session.add(admin)
         created_users.append(admin)
@@ -226,11 +226,11 @@ def register_commands(app: Flask):
         reviewers = [
             user
             for user in created_users
-            if user.role == User.ROLE_REVIEWER and user.username != admin_username
+            if user.role == User.ROLE_FIJNPROEVER and user.username != admin_username
         ]
         creator_count = min(len(reviewers), max(1, users // 4))
         for creator in random.sample(reviewers, k=creator_count) if reviewers else []:
-            creator.role = User.ROLE_CREATOR
+            creator.role = User.ROLE_LEERLING_KOK
 
         db.session.commit()
 
@@ -263,7 +263,7 @@ def register_commands(app: Flask):
                     [
                         u
                         for u in created_users
-                        if u.role in (User.ROLE_CREATOR, User.ROLE_ADMIN)
+                        if u.role >= User.ROLE_LEERLING_KOK
                     ]
                 ).id,
             )
@@ -322,9 +322,16 @@ def register_commands(app: Flask):
         num_users = User.query.count()
         num_active_users = User.query.filter_by(is_active=True).count()
         num_deactivated_users = User.query.filter_by(is_active=False).count()
-        num_reviewers = User.query.filter_by(role=User.ROLE_REVIEWER).count()
-        num_creators = User.query.filter_by(role=User.ROLE_CREATOR).count()
-        num_admins = User.query.filter_by(role=User.ROLE_ADMIN).count()
+        num_reviewers = User.query.filter_by(role=User.ROLE_FIJNPROEVER).count()
+        num_creators = 0
+        for role in [
+            User.ROLE_LEERLING_KOK,
+            User.ROLE_ZELFSTANDIG_KOK,
+            User.ROLE_CHEF_DE_PARTIE,
+            User.ROLE_SOUS_CHEF,
+        ]:
+            num_creators += User.query.filter_by(role=role).count()
+        num_admins = User.query.filter_by(role=User.ROLE_CHEF_DE_CUISINE).count()
         num_recipes = Recipe.query.count()
 
         click.echo(click.style("\n=== Database Statistieken ===", fg="cyan", bold=True))

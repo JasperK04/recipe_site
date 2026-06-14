@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for, jsonify
 from flask_login import current_user, login_required, login_user, logout_user
 
 from app import db, login_manager
@@ -105,7 +105,7 @@ def edit_profile():
 def request_creator():
     if not current_user.is_active:
         abort(403)
-    if current_user.role != User.ROLE_REVIEWER:
+    if current_user.role != User.ROLE_FIJNPROEVER:
         flash("Alleen reviewers kunnen een creator-aanvraag doen.", "info")
         return redirect(url_for("auth.profile"))
     if current_user.creator_request_pending:
@@ -126,47 +126,74 @@ def admin_users():
     return render_template("auth/admin_users.html", users=users)
 
 
+def admin_user_row_response(user):
+    return jsonify(
+        {
+            "status": "ok",
+            "html": render_template(
+                "components/user_table_row.html",
+                user=user,
+                current_user=current_user,
+            ),
+        }
+    )
+
+
 @auth_bp.route("/admin/users/<int:user_id>/deactivate", methods=["POST"])
 @login_required
 def deactivate_user(user_id):
     require_active_admin(current_user)
+
     target = User.query.get_or_404(user_id)
 
     if target.id == current_user.id:
-        flash("Je kunt je eigen account niet deactiveren.", "warning")
-        return redirect(url_for("auth.admin_users"))
-    if target.role == User.ROLE_ADMIN:
-        flash("Andere admins deactiveren is niet toegestaan.", "warning")
-        return redirect(url_for("auth.admin_users"))
+        return jsonify(
+            {
+                "status": "error",
+                "message": "Je kunt je eigen account niet deactiveren.",
+            }
+        ), 400
+
+    if target.role == User.ROLE_CHEF_DE_CUISINE:
+        return jsonify(
+            {
+                "status": "error",
+                "message": "Andere admins deactiveren is niet toegestaan.",
+            }
+        ), 400
+
     if not target.is_active:
-        flash(f"{target.username} is al gedeactiveerd.", "info")
-        return redirect(url_for("auth.admin_users"))
+        return admin_user_row_response(target)
 
     target.is_active = False
     target.creator_request_pending = False
+
     for recipe in target.recipes.all():
         if recipe.status != Recipe.STATUS_DEACTIVATED:
             recipe.status_before_deactivation = recipe.status
             recipe.status = Recipe.STATUS_DEACTIVATED
 
     db.session.commit()
-    flash(f"Gebruiker {target.username} is gedeactiveerd.", "success")
-    return redirect(url_for("auth.admin_users"))
+
+    return admin_user_row_response(target)
 
 
 @auth_bp.route("/admin/users/<int:user_id>/reactivate", methods=["POST"])
 @login_required
 def reactivate_user(user_id):
     require_active_admin(current_user)
+
     target = User.query.get_or_404(user_id)
+
     if target.is_active:
-        flash(f"{target.username} is al actief.", "info")
-        return redirect(url_for("auth.admin_users"))
+        return admin_user_row_response(target)
 
     target.is_active = True
+
     for recipe in target.recipes.all():
         if recipe.status != Recipe.STATUS_DEACTIVATED:
             continue
+
         if recipe.status_before_deactivation in (
             Recipe.STATUS_PUBLIC,
             Recipe.STATUS_DRAFT,
@@ -174,48 +201,61 @@ def reactivate_user(user_id):
             recipe.status = recipe.status_before_deactivation
         else:
             recipe.status = Recipe.STATUS_DRAFT
+
         recipe.status_before_deactivation = None
 
     db.session.commit()
-    flash(f"Gebruiker {target.username} is opnieuw geactiveerd.", "success")
-    return redirect(url_for("auth.admin_users"))
+
+    return admin_user_row_response(target)
 
 
 @auth_bp.route("/admin/users/<int:user_id>/promote", methods=["POST"])
 @login_required
 def promote_user(user_id):
     require_active_admin(current_user)
+
     target = User.query.get_or_404(user_id)
 
-    if target.role == User.ROLE_ADMIN:
-        flash("Admins kunnen niet gepromoveerd worden.", "info")
-        return redirect(url_for("auth.admin_users"))
-    if target.role == User.ROLE_CREATOR:
-        flash(f"{target.username} is al creator.", "info")
-        return redirect(url_for("auth.admin_users"))
+    if target.role == User.ROLE_CHEF_DE_CUISINE:
+        return jsonify(
+            {
+                "status": "error",
+                "message": "Admins kunnen niet gepromoveerd worden.",
+            }
+        ), 400
 
-    target.role = User.ROLE_CREATOR
+    if target.role >= User.ROLE_SOUS_CHEF:
+        return admin_user_row_response(target)
+
+    target.role += 1
     target.creator_request_pending = False
+
     db.session.commit()
-    flash(f"{target.username} is gepromoveerd naar creator.", "success")
-    return redirect(url_for("auth.admin_users"))
+
+    return admin_user_row_response(target)
 
 
 @auth_bp.route("/admin/users/<int:user_id>/demote", methods=["POST"])
 @login_required
 def demote_user(user_id):
     require_active_admin(current_user)
+
     target = User.query.get_or_404(user_id)
 
-    if target.role == User.ROLE_ADMIN:
-        flash("Admins kunnen niet gedegradeerd worden via deze actie.", "warning")
-        return redirect(url_for("auth.admin_users"))
-    if target.role == User.ROLE_REVIEWER:
-        flash(f"{target.username} is al reviewer.", "info")
-        return redirect(url_for("auth.admin_users"))
+    if target.role == User.ROLE_CHEF_DE_CUISINE:
+        return jsonify(
+            {
+                "status": "error",
+                "message": "Admins kunnen niet gedegradeerd worden via deze actie.",
+            }
+        ), 400
 
-    target.role = User.ROLE_REVIEWER
+    if target.role == User.ROLE_FIJNPROEVER:
+        return admin_user_row_response(target)
+
+    target.role -= 1
     target.creator_request_pending = False
+
     db.session.commit()
-    flash(f"{target.username} is gedegradeerd naar reviewer.", "success")
-    return redirect(url_for("auth.admin_users"))
+
+    return admin_user_row_response(target)

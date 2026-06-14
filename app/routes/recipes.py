@@ -526,7 +526,7 @@ def admin_recipes():
             )
         )
     recipes = query.order_by(Recipe.created_at.desc()).paginate(
-        page=page, per_page=20, error_out=False
+        page=page, per_page=24, error_out=False
     )
     return render_template(
         "recipes/admin_list.html", recipes=recipes, status=status, search=search
