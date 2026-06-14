@@ -1,30 +1,37 @@
 {% extends "components/base.html" %}
 
-{% block title %}Over - Recepten{% endblock %}
+{% block title %}Over - Het Recepten Register{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Over Recepten</h1>
+<h1 class="mb-4">Over het Recepten Register</h1>
 
 <div class="row">
     <div class="col-lg-8">
-        <p class="lead">Recepten is jouw persoonlijke kookboek in de cloud.</p>
+        <p class="lead">Het Recepten Register is jouw persoonlijke kookboek in de cloud.</p>
         
         <h3 class="mt-4">Kenmerken</h3>
         <ul class="list-group list-group-flush">
-            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Voeg je favoriete recepten toe en organiseer ze</li>
-            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Bewerk en update recepten wanneer je wilt</li>
-            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Blader recepten per categorie</li>
+            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Blader recepten door</li>
             <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Zoek naar specifieke gerechten</li>
-            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Houd bereidingstijd en kooktijd bij</li>
-            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Veilige gebruikersauthenticatie</li>
+            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Voeg recepten toe aan je favorieten</li>
+            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Beoordeel recepten van anderen</li>
+            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Voeg je eigen recepten toe</li>
+            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Deel jouw recepten met anderen</li>
         </ul>
 
         <h3 class="mt-4">Aan de slag</h3>
         <ol>
-            <li><a href="{{ url_for('auth.register') }}">Maak een account aan</a></li>
-            <li><a href="{{ url_for('auth.login') }}">Log in</a> op je account</li>
-            <li><a href="{{ url_for('recipes.add_recipe') }}">Voeg je eerste recept toe</a></li>
-            <li>Begin met het samenstellen van je persoonlijke kookboek!</li>
+            {% if current_user.is_authenticated %}
+                <li><a href="{{ url_for('recipes.list_recipes') }}">Blader door de recepten</a></li>
+                <li>Vind jouw favoriete recepten</li>
+                {% if current_user.can_create_recipes %}
+                    <li><a href="{{ url_for('recipes.add_recipe') }}">Voeg een nieuw recept toe</a></li>
+                {% endif %}
+            {% else %}
+                <li><a href="{{ url_for('auth.register') }}">Maak een account aan</a></li>
+                <li><a href="{{ url_for('auth.login') }}">Log in</a> op je account</li>
+            {% endif %}
+            <li>Begin met het samenstellen van jouw persoonlijke recepten register</li>
         </ol>
     </div>
     
@@ -38,6 +45,10 @@
                     <li><i class="bi bi-check"></i> Flask-Login - Authenticatie</li>
                     <li><i class="bi bi-check"></i> Flask-Session - Sessiebeheer</li>
                     <li><i class="bi bi-check"></i> Bootstrap 5 - UI-framework</li>
+                    <li><i class="bi bi-check"></i> Pillow - Afbeeldingsverwerking</li>
+                    <li><i class="bi bi-check"></i> BeautifulSoup - Web scraping</li>
+                    <li><i class="bi bi-check"></i> OpenAI API - Text verwerking</li>
+                    <li><i class="bi bi-check"></i> Docker - Container voor deployment</li>
                 </ul>
             </div>
         </div>
