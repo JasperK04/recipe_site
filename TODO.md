@@ -1,11 +1,8 @@
 ## recipes
 - Create an actual Logo/icon
 - OTC-link voor instant creator account
-- Sharing buttons
-- Check small screens (~300px)
-- Update about page
-- Mandatory field indicators (recipe form)
+- Sharing buttons (maybe a modal)
 - Email service en notificatie icon voor pending creators
 - Maybe auto moderation for recipes and usernames
-- Clientside validation, of all fields, such as images, and second password field 
-- Bij het bewerken van een recept verdwijnen de ingredienten
+- Image edit modal for recipe form (cropping)
+- Small screen for admin pages
