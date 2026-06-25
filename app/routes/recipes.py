@@ -1,4 +1,5 @@
 import json
+from typing import cast
 
 from flask import (
     Blueprint,
@@ -28,6 +29,7 @@ from app.api import (
 from app.forms import RecipeForm, RecipeUploadForm
 from app.image_store import read_recipe_image_bytes
 from app.models import Recipe
+from app.models import User
 from upload_utils import parse_uploaded_text, read_uploaded_page, validate_uploaded_json
 from utils import (
     ingredient_to_string,
@@ -135,9 +137,10 @@ def recipe_image(recipe_id):
 @login_required
 def favorite_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
+    user = cast(User, current_user)
     try:
         created = toggle_recipe_favorite(
-            user=current_user, recipe=recipe, favorite=True
+            user=user, recipe=recipe, favorite=True
         )
     except ApiError as error:
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -156,9 +159,10 @@ def favorite_recipe(recipe_id):
 @login_required
 def unfavorite_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
+    user = cast(User, current_user)
     try:
         removed = toggle_recipe_favorite(
-            user=current_user, recipe=recipe, favorite=False
+            user=user, recipe=recipe, favorite=False
         )
     except ApiError as error:
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -178,6 +182,8 @@ def unfavorite_recipe(recipe_id):
 def add_recipe():
     """Add a new recipe."""
     require_active_creator(current_user)
+    user = cast(User, current_user)
+    validate_on_load = request.args.get("source") == "upload"
     if request.method == "GET" and request.args.get("title"):
         form = RecipeForm(
             data={
@@ -201,7 +207,7 @@ def add_recipe():
     if form.validate_on_submit():
         try:
             recipe = create_recipe(
-                author=current_user,
+                author=user,
                 title=form.title.data,  # type: ignore[arg-type]
                 description=form.description.data,  # type: ignore[arg-type]
                 ingredients=form.ingredients.data,
@@ -218,7 +224,10 @@ def add_recipe():
         except ApiError as error:
             flash(error.message, "danger")
             return render_template(
-                "recipes/form.html", form=form, title="Recept toevoegen"
+                "recipes/form.html",
+                form=form,
+                title="Recept toevoegen",
+                validate_on_load=validate_on_load,
             )
 
         if recipe.status == Recipe.STATUS_PUBLIC:
@@ -227,7 +236,12 @@ def add_recipe():
             flash("Concept opgeslagen.", "success")
         return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
 
-    return render_template("recipes/form.html", form=form, title="Recept toevoegen")
+    return render_template(
+        "recipes/form.html",
+        form=form,
+        title="Recept toevoegen",
+        validate_on_load=validate_on_load,
+    )
 
 
 @recipes_bp.route("/upload", methods=["GET", "POST"])
@@ -274,6 +288,7 @@ def upload_recipe():
         return redirect(
             url_for(
                 "recipes.add_recipe",
+                source="upload",
                 title=data.get("name", ""),
                 description=data.get("description", ""),
                 prep_time=data.get("prep_time", ""),
@@ -359,7 +374,11 @@ def edit_recipe(recipe_id):
         except ApiError as error:
             flash(error.message, "danger")
             return render_template(
-                "recipes/form.html", form=form, title="Recept bewerken", recipe=recipe
+                "recipes/form.html",
+                form=form,
+                title="Recept bewerken",
+                recipe=recipe,
+                validate_on_load=False,
             )
 
         if recipe.status == Recipe.STATUS_PUBLIC:
@@ -369,7 +388,11 @@ def edit_recipe(recipe_id):
         return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
 
     return render_template(
-        "recipes/form.html", form=form, title="Recept bewerken", recipe=recipe
+        "recipes/form.html",
+        form=form,
+        title="Recept bewerken",
+        recipe=recipe,
+        validate_on_load=False,
     )
 
 
@@ -426,9 +449,12 @@ def score_recipe(recipe_id):
     if not current_user.can_score_recipes:
         abort(403)
     score_value = request.form.get("score", type=int)
+    if score_value is None:
+        abort(400)
+    user = cast(User, current_user)
     try:
         stats = record_recipe_score(
-            user=current_user, recipe=recipe, score_value=score_value
+            user=user, recipe=recipe, score_value=score_value
         )
     except ApiError as error:
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":

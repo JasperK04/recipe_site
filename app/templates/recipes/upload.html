@@ -8,7 +8,7 @@
         <div class="card shadow">
             <div class="card-body">
                 <h2 class="card-title mb-4">{{ title }}</h2>
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" enctype="multipart/form-data" data-client-validation="upload" novalidate>
                     {{ form.hidden_tag() }}
                     <div class="row justify-content-center">
                         <div class="col-md-3 mb-3 flex-grow-1">
@@ -38,7 +38,7 @@
 
                         <div id="json-field" class="col-md-9 mb-3" style="display: none;">
                             {{ form.json_file.label(class="form-label") }}
-                            {{ form.json_file(class="form-control" + (" is-invalid" if form.json_file.errors else "")) }}
+                            {{ form.json_file(class="form-control" + (" is-invalid" if form.json_file.errors else ""), accept=".json,.jsonl") }}
                             {% if form.json_file.errors %}
                                 <div class="invalid-feedback">
                                     {% for error in form.json_file.errors %}{{ error }}{% endfor %}
@@ -48,7 +48,7 @@
 
                         <div id="text-field" class="col-md-9 mb-3" style="display: none;">
                             {{ form.text_file.label(class="form-label") }}
-                            {{ form.text_file(class="form-control" + (" is-invalid" if form.text_file.errors else "")) }}
+                            {{ form.text_file(class="form-control" + (" is-invalid" if form.text_file.errors else ""), accept=".txt,.docs,.docx,.pdf") }}
                             {% if form.text_file.errors %}
                                 <div class="invalid-feedback">
                                     {% for error in form.text_file.errors %}{{ error }}{% endfor %}
@@ -94,7 +94,8 @@
     </div>
 </div>
 
-{% block scripts %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/validation.js') }}" defer></script>
 <script>
 function showRelevantField() {
     const uploadType = document.getElementById('upload_type').value;

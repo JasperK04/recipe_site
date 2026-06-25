@@ -1,0 +1,225 @@
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f8f9fa;
+}
+
+main {
+    flex: 1;
+}
+
+@media (min-width: 576px) {
+    .container {
+        max-width: 92vw;
+    }
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+.recipe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 320px));
+    gap: 1rem;
+    justify-content: center;
+}
+
+.recipe-card {
+    transition: transform 0.2s;
+    height: 100%;
+    width: 100%;
+    max-width: 320px;
+}
+
+@media (max-width: 1110px) {
+    .recipe-grid {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 270px));
+    }
+
+    .recipe-card {
+        max-width: 270px;
+    }
+}
+
+@media (max-width: 940px) {
+    .recipe-grid {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 320px));
+    }
+
+    .recipe-card {
+        max-width: 320px;
+    }
+}
+
+@media (max-width: 768px) {
+    .recipe-grid {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 270px));
+    }
+
+    .recipe-card {
+        max-width: 270px;
+    }
+}
+
+@media (max-width: 632px) {
+    .recipe-grid {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 320px));
+    }
+
+    .recipe-card {
+        max-width: 320px;
+    }
+}
+
+.card {
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 0.5rem;
+}
+
+.recipe-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+footer {
+    background-color: #f8f9fa;
+    margin-top: auto;
+}
+
+.dark-mode {
+    --bs-body-bg: #0D1119;
+    --bs-body-color: #c9d1d9;
+    --bs-card-bg: #0f1720;
+    --bs-card-color: #c9d1d9;
+    --bs-navbar-bg: #0b1220;
+    --bs-link-color: #58a6ff;
+    --bs-primary: #1f6feb;
+}
+
+.dark-mode,
+.dark-mode body,
+.dark-mode main,
+.dark-mode .container {
+    background-color: var(--bs-body-bg) !important;
+    color: var(--bs-body-color) !important;
+}
+
+.dark-mode .navbar .container,
+.dark-mode .navbar .container-fluid,
+.dark-mode footer .container,
+.navbar .container,
+.navbar .container-fluid,
+footer .container {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+
+.dark-mode .card,
+.dark-mode .bg-light,
+.dark-mode .card-body,
+.dark-mode .alert {
+    background-color: var(--bs-card-bg) !important;
+    color: var(--bs-card-color) !important;
+}
+
+.dark-mode .card {
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+.dark-mode .navbar {
+    background-color: #0d6efd !important;
+    color: #fff !important;
+}
+
+.dark-mode .navbar .nav-link,
+.dark-mode .navbar .navbar-brand,
+.dark-mode .navbar .dropdown-item {
+    color: #fff !important;
+}
+
+.dark-mode footer {
+    background-color: var(--bs-navbar-bg) !important;
+    color: var(--bs-body-color) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.dark-mode a,
+.dark-mode .nav-link,
+.dark-mode .navbar-brand,
+.dark-mode .dropdown-item,
+.dark-mode .page-link {
+    color: var(--bs-link-color) !important;
+}
+
+.dark-mode .btn-primary,
+.dark-mode .btn-outline-primary {
+    background-color: var(--bs-primary) !important;
+    border-color: var(--bs-primary) !important;
+    color: #fff !important;
+}
+
+.dark-mode p,
+.dark-mode li,
+.dark-mode h1,
+.dark-mode h2,
+.dark-mode h3,
+.dark-mode small,
+.dark-mode label,
+.dark-mode input,
+.dark-mode textarea,
+.dark-mode select {
+    color: var(--bs-body-color) !important;
+}
+
+.form-control::placeholder,
+textarea.form-control::placeholder {
+    color: rgba(0, 0, 0, 0.5);
+    opacity: 1;
+}
+
+.dark-mode .form-control::placeholder,
+.dark-mode textarea.form-control::placeholder {
+    color: rgba(201, 209, 217, 0.4) !important;
+    opacity: 1 !important;
+}
+
+.dropdown-menu .dropdown-item:hover,
+.dropdown-menu .dropdown-item:focus {
+    background-color: rgba(13, 110, 253, 0.06);
+    color: inherit;
+}
+
+.dark-mode .dropdown-menu {
+    background-color: var(--bs-card-bg) !important;
+    color: var(--bs-card-color) !important;
+    border: 1px solid rgba(255, 255, 255, 0.04) !important;
+}
+
+.dark-mode .dropdown-menu .dropdown-item:hover,
+.dark-mode .dropdown-menu .dropdown-item:focus {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    color: var(--bs-card-color) !important;
+}
+
+.dark-mode .form-text.text-muted,
+.dark-mode .text-muted {
+    color: rgba(201, 209, 217, 0.4) !important;
+}
+
+@media (min-width: 992px) {
+    .navbar .dropdown:hover .dropdown-menu {
+        display: block;
+        margin-top: 0;
+    }
+
+    .navbar .dropdown-toggle::after {
+        transition: transform 0.2s;
+    }
+
+    .navbar .dropdown:hover .dropdown-toggle::after {
+        transform: rotate(180deg);
+    }
+}

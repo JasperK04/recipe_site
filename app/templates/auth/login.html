@@ -8,7 +8,7 @@
         <div class="card shadow">
             <div class="card-body">
                 <h2 class="card-title text-center mb-4">Inloggen</h2>
-                <form method="POST" action="{{ url_for('auth.login') }}">
+                <form method="POST" action="{{ url_for('auth.login') }}" data-client-validation="login" novalidate>
                     {{ form.hidden_tag() }}
                     
                     <div class="mb-3">
@@ -44,4 +44,8 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/validation.js') }}" defer></script>
 {% endblock %}

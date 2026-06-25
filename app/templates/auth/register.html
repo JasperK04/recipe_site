@@ -8,7 +8,7 @@
         <div class="card shadow">
             <div class="card-body">
                 <h2 class="card-title text-center mb-4">Account aanmaken</h2>
-                <form method="POST" action="{{ api_submit_url }}" data-api-form="1">
+                <form method="POST" action="{{ api_submit_url }}" data-api-form="1" data-client-validation="register" novalidate>
                     {{ form.hidden_tag() }}
                     
                     <div class="mb-3">
@@ -64,4 +64,8 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/validation.js') }}" defer></script>
 {% endblock %}
