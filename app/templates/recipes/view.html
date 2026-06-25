@@ -65,7 +65,7 @@
                         {% endif %}
 
                         {% if can_moderate_recipe %}
-                        <form method="POST" action="{{ url_for('recipes.reactivate_recipe', recipe_id=recipe.id) if recipe.status == 'deactivated' else url_for('recipes.deactivate_recipe', recipe_id=recipe.id) }}" class="w-100 moderate-form" data-recipe-status="{{ recipe.status }}">
+                        <form method="POST" action="{{ url_for('api.reactivate_recipe_endpoint', recipe_id=recipe.id) if recipe.status == 'deactivated' else url_for('api.deactivate_recipe_endpoint', recipe_id=recipe.id) }}" class="w-100 moderate-form" data-recipe-status="{{ recipe.status }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                             <button 
                             type="submit" 
@@ -84,7 +84,7 @@
 
                         {% if current_user.is_authenticated and recipe.status == 'public' and not recipe.has_image %}
                         {% set is_fav = current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
-                        <form method="POST" action="{{ url_for('recipes.unfavorite_recipe', recipe_id=recipe.id) if is_fav else url_for('recipes.favorite_recipe', recipe_id=recipe.id) }}" class="w-100 fav-form">
+                        <form method="POST" action="{{ url_for('api.unfavorite_recipe_endpoint', recipe_id=recipe.id) if is_fav else url_for('api.favorite_recipe_endpoint', recipe_id=recipe.id) }}" class="w-100 fav-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                             <button 
                             type="submit" 
@@ -102,7 +102,7 @@
                 <div class="mb-3 text-center position-relative recipe-image-wrapper">
                     <img src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="{{ recipe.title }}" class="img-fluid rounded" />
                     {% if current_user.is_authenticated and recipe.status == 'public' %}
-                    <form method="POST" action="{{ url_for('recipes.unfavorite_recipe', recipe_id=recipe.id) if (current_user.favorites.filter_by(id=recipe.id).count() > 0) else url_for('recipes.favorite_recipe', recipe_id=recipe.id) }}" class="position-absolute fav-form" style="top:8px;right:8px;">
+                    <form method="POST" action="{{ url_for('api.unfavorite_recipe_endpoint', recipe_id=recipe.id) if (current_user.favorites.filter_by(id=recipe.id).count() > 0) else url_for('api.favorite_recipe_endpoint', recipe_id=recipe.id) }}" class="position-absolute fav-form" style="top:8px;right:8px;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                         {% set is_fav_inline = current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
                         <button 
@@ -149,7 +149,7 @@
                     </div>
                     {% set owner_is_author = current_user.is_authenticated and (current_user.id == recipe.user_id) and recipe.status == 'public' %}
                     {% if can_score_recipe or owner_is_author %}
-                    <form id="score-form" method="POST" action="{{ url_for('recipes.score_recipe', recipe_id=recipe.id) }}" class="d-flex align-items-center gap-2 score-form" {% if owner_is_author %}data-owner-disabled="1"{% endif %}>
+                    <form id="score-form" method="POST" action="{{ url_for('api.score_recipe_endpoint', recipe_id=recipe.id) }}" class="d-flex align-items-center gap-2 score-form" {% if owner_is_author %}data-owner-disabled="1"{% endif %}>
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                         <input type="hidden" name="score" id="score-input" value="{% if my_score %}{{ my_score.score }}{% endif %}" />
                         <label class="small text-muted mb-0 me-1"></label>
@@ -262,7 +262,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
-                <form method="POST" action="{{ url_for('recipes.delete_recipe', recipe_id=recipe.id) }}" style="display: inline;">
+                <form method="POST" action="{{ url_for('api.delete_recipe_endpoint', recipe_id=recipe.id) }}" style="display: inline;" data-api-form="1">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <button type="submit" class="btn btn-danger">Verwijderen</button>
                 </form>
@@ -283,6 +283,9 @@ document.addEventListener('DOMContentLoaded', function(){
                 try {
                     const res = await fetch(favForm.action, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:new FormData(favForm)});
                     const data = await res.json();
+                    if (!res.ok || data.status !== 'ok') {
+                        throw new Error(data.message || 'Actie mislukt.');
+                    }
                     const icon = btn.querySelector('i.bi');
                     // clear any hover-only state
                     btn.classList.remove('faded');
@@ -341,6 +344,9 @@ document.addEventListener('DOMContentLoaded', function(){
           try {
               const res = await fetch(form.action, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:new FormData(form)});
               const data = await res.json();
+              if (!res.ok || data.status !== 'ok') {
+                  throw new Error(data.message || 'Actie mislukt.');
+              }
               if (data.new_status === 'deactivated'){
                 btn.classList.remove('btn-outline-danger');
                 btn.classList.add('btn-outline-success');
@@ -418,13 +424,14 @@ document.addEventListener('DOMContentLoaded', function(){
                 try{
                     const res = await fetch(scoreForm.action, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:new FormData(scoreForm)});
                     const data = await res.json();
-                    if (data && data.status === 'ok'){
-                        // update stars to selected
-                        setStars(data.score);
-                        // update badge and count
-                        if (badge) badge.textContent = 'Score ' + (Number(data.score_average).toFixed(1)) + '/5';
-                        if (countEl) countEl.textContent = `(${data.score_count})`;
+                    if (!res.ok || !data || data.status !== 'ok') {
+                        throw new Error(data.message || 'Actie mislukt.');
                     }
+                    // update stars to selected
+                    setStars(data.score);
+                    // update badge and count
+                    if (badge) badge.textContent = 'Score ' + (Number(data.score_average).toFixed(1)) + '/5';
+                    if (countEl) countEl.textContent = `(${data.score_count})`;
                 }catch(err){console.error(err);}finally{stars.forEach(b=>b.disabled=false)}
             });
         });

@@ -1,8 +1,7 @@
 from datetime import datetime
 
 from flask import Flask, flash, redirect, request, url_for
-from flask_login import LoginManager
-from flask_login import current_user, logout_user
+from flask_login import LoginManager, current_user, logout_user
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect, generate_csrf
@@ -14,6 +13,9 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 session = Session()
 migrate = Migrate()
+
+from app.api import api_bp
+from app.routes import admin_bp, auth_bp, main_bp, recipes_bp
 
 
 def create_app(config_name="default"):
@@ -35,9 +37,9 @@ def create_app(config_name="default"):
     login_manager.login_message = "Please log in to access this page."
 
     # Register blueprints
-    from app.routes import auth_bp, main_bp, recipes_bp
-
+    app.register_blueprint(api_bp)
     app.register_blueprint(main_bp)
+    app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(recipes_bp, url_prefix="/recipes")
 

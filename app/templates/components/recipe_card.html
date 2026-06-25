@@ -43,15 +43,13 @@
         </div>
     </div>
     <div class="card-footer bg-transparent">
+        <div class="btn-group w-100" role="group" style="z-index: 2;">
         {% if current_user.is_authenticated and current_user == recipe.author %}
-            <div class="btn-group w-100" role="group">
-                <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">Bekijk</a>
-                <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-secondary">Bewerk</a>
-            </div>
+            <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-primary">Bekijk</a>
+            <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-secondary">Bewerk</a>
         {% else %}
-            <div class="btn-group w-100" role="group">
-                <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-primary w-100">Bekijk recept</a>
-            </div>
+            <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-primary w-100">Bekijk recept</a>
         {% endif %}
+        </div>
     </div>
 </div>

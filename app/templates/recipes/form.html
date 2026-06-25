@@ -3,12 +3,70 @@
 {% block title %}{{ title }} - Recepten{% endblock %}
 
 {% block content %}
+<style>
+/* ===== drag handle styling ===== */
+.input-group {
+    flex-wrap: nowrap;
+}
+
+.drag-handle {
+    cursor: grab;
+    background-color: var(--bs-navbar-bg);
+    color: var(--bs-card-color);
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+/* ===== List Items styling ===== */
+#ingredients-list .list-group-item, #instructions-list .list-group-item {
+    border: none;
+    padding: 6px 10px 0px 10px;
+}
+
+#ingredients-list .list-group-item:last-child, #instructions-list .list-group-item:last-child {
+    padding: 6px 10px;
+}
+
+@media (max-width: 768px) {
+    #ingredients-list .list-group-item, #instructions-list .list-group-item {
+        border: none;
+        padding: 4px 6px 0px 6px;
+    }
+
+    #ingredients-list .list-group-item:last-child, #instructions-list .list-group-item:last-child {
+        padding: 4px 6px;
+    }
+}
+
+@media (max-width: 576px) {
+    #ingredients-list .list-group-item, #instructions-list .list-group-item {
+        border: none;
+        padding: 4px 4px 0px 4px;
+    }
+
+    #ingredients-list .list-group-item:last-child, #instructions-list .list-group-item:last-child {
+        padding: 4px;
+    }
+}
+
+#ingredients-list, #instructions-list {
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+}
+</style>
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="card shadow">
             <div class="card-body">
                 <h2 class="card-title mb-4">{{ title }}</h2>
-                <form method="POST" enctype="multipart/form-data">
+                <form
+                    method="POST"
+                    enctype="multipart/form-data"
+                    action="{{ url_for('api.update_recipe_endpoint', recipe_id=recipe.id) if recipe else url_for('api.create_recipe_endpoint') }}"
+                    data-api-form="1"
+                >
                     {{ form.hidden_tag() }}
                         <div class="mb-3 text-center">
                             <div id="image-preview-wrap" class="text-center">
@@ -104,10 +162,13 @@
                         {{ form.ingredients.label(class="form-label") }}
                         <div id="ingredients-list" class="list-group">
                             {% for entry in form.ingredients.entries %}
-                            <div class="list-group-item ingredient-item d-flex gap-2 align-items-start" data-index="{{ loop.index0 }}">
-                                <div class="flex-grow-1">
-                                    {{ entry(class="form-control", placeholder='Ingrediënt') }}
-                                </div>                           
+                            <div class="list-group-item ingredient-item d-flex gap-0 align-items-start" data-index="{{ loop.index0 }}">
+                                <div class="input-group">
+                                    {{ entry(class="form-control", placeholder='Ingrediënt') }} 
+                                    <span class="input-group-text drag-handle">
+                                        <i class="bi bi-grip-vertical"></i>
+                                    </span> 
+                                </div>                      
                             </div>
                             {% endfor %}
                         </div>
@@ -125,10 +186,12 @@
                         <div id="instructions-list" class="list-group">
                             {% for entry in form.instructions.entries %}
                             <div class="list-group-item instruction-item d-flex gap-2 align-items-start" data-index="{{ loop.index0 }}">
-                                <div class="flex-grow-1">
+                                <div class="input-group">
                                     {{ entry(class="form-control", placeholder='Stap beschrijving') }}
+                                    <span class="input-group-text drag-handle">
+                                        <i class="bi bi-grip-vertical"></i>
+                                    </span>
                                 </div>
-                                
                             </div>
                             {% endfor %}
                         </div>
@@ -203,25 +266,35 @@ function reindexList(container) {
 function ensureOneEmptyAtEnd(list) {
     const items = Array.from(list.querySelectorAll('.list-group-item'));
 
-    const emptyItems = items.filter(item => {
+    const empties = [];
+    const filled = [];
+
+    items.forEach(item => {
         const input = item.querySelector('input, textarea');
-        return input && input.value.trim() === '';
+
+        if (!input || input.value.trim() === '')
+            empties.push(item);
+        else
+            filled.push(item);
     });
 
-    if (emptyItems.length === 0 && items.length > 0) {
-        const clone = items[items.length - 1].cloneNode(true);
+    empties.forEach(e => e.remove());
 
-        clone.querySelectorAll('input, textarea').forEach(input => {
-            input.value = '';
+    let empty;
+
+    if (empties.length > 0) {
+        empty = empties[0];
+    } else {
+        empty = items[items.length - 1].cloneNode(true);
+
+        empty.querySelectorAll('input, textarea, select').forEach(inp => {
+            inp.value = '';
         });
-
-        list.appendChild(clone);
-        reindexList(list);
     }
 
-    while (emptyItems.length > 1) {
-        emptyItems.pop().remove();
-    }
+    list.appendChild(empty);
+
+    reindexList(list);
 }
 
 function attachListHandlers(listSelector, itemSelector, isIngredient=true) {
@@ -230,12 +303,12 @@ function attachListHandlers(listSelector, itemSelector, isIngredient=true) {
 
     new Sortable(list, {
         animation: 150,
-        handle: '.list-group-item',
+        handle: '.drag-handle',
         onMove(evt) {
             return !evt.dragged.classList.contains('sortable-disabled');
         },
         onEnd() {
-            reindexList(list);
+            ensureOneEmptyAtEnd(list);
         }
     });
 
@@ -258,35 +331,24 @@ function attachListHandlers(listSelector, itemSelector, isIngredient=true) {
             });
 
             list.appendChild(clone);
-            reindexList(list);
+            ensureOneEmptyAtEnd(list);
         }
     });
 
     // on blur, remove empty items if there are 2 or more empty items (keep exactly one)
     list.addEventListener('focusout', function(e) {
         const input = e.target;
-        if (!(input.matches('input, textarea, select'))) return;
-        setTimeout(()=>{
-            const items = Array.from(list.querySelectorAll(itemSelector));
-            // count empties (by name for ingredients, by value for steps)
-            const empties = items.filter(it => {
-                if (isIngredient) {
-                    const nameInput = it.querySelector('input[name*=\"name_\"]');
-                    return nameInput && nameInput.value.trim() === '';
-                } else {
-                    const inp = it.querySelector('input, textarea');
-                    return inp && inp.value.trim() === '';
-                }
-            });
-            const currentItem = input.closest(itemSelector);
-            if (!currentItem) return;
-            const currentIsEmpty = (isIngredient ? (currentItem.querySelector('input[name*=\"name_\"]').value.trim() === '') : (currentItem.querySelector('input, textarea').value.trim() === ''));
-            if (currentIsEmpty && empties.length >= 2) {
-                // remove the current empty item
-                currentItem.remove();
-                reindexList(list);
-            }
-        }, 120);
+
+        if (!input.matches('input, textarea, select'))
+            return;
+
+        if (input.value.trim() !== '')
+            return;
+
+
+        setTimeout(() => {
+            ensureOneEmptyAtEnd(list);
+        }, 50);
     });
 }
 

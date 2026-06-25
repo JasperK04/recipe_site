@@ -13,22 +13,26 @@ from flask import (
 from flask_login import current_user, login_required
 from sqlalchemy import or_
 
-from app import db
-from app.forms import RecipeForm, RecipeUploadForm
-from app.image_store import (
-    delete_recipe_image,
-    read_recipe_image_bytes,
-    save_recipe_image,
+from app.api import (
+    ApiError,
+    create_recipe,
+    record_recipe_score,
+    toggle_recipe_favorite,
 )
-from app.models import Recipe, RecipeScore
+from app.api import (
+    delete_recipe as api_delete_recipe,
+)
+from app.api import (
+    update_recipe as api_update_recipe,
+)
+from app.forms import RecipeForm, RecipeUploadForm
+from app.image_store import read_recipe_image_bytes
+from app.models import Recipe
 from upload_utils import parse_uploaded_text, read_uploaded_page, validate_uploaded_json
 from utils import (
     ingredient_to_string,
-    normalize_choice,
-    require_active_admin,
     require_active_creator,
     sanitize_recipe_ingredients,
-    sanitize_recipe_instructions,
 )
 
 recipes_bp = Blueprint("recipes", __name__)
@@ -131,14 +135,16 @@ def recipe_image(recipe_id):
 @login_required
 def favorite_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
-    if recipe.status != Recipe.STATUS_PUBLIC:
-        abort(403)
-    # add to favorites if not already present
-    created = False
-    if not current_user.favorites.filter_by(id=recipe.id).first():
-        current_user.favorites.append(recipe)
-        db.session.commit()
-        created = True
+    try:
+        created = toggle_recipe_favorite(
+            user=current_user, recipe=recipe, favorite=True
+        )
+    except ApiError as error:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify(
+                {"status": "error", "message": error.message}
+            ), error.status_code
+        abort(error.status_code)
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"status": "ok", "favorited": created})
@@ -150,13 +156,16 @@ def favorite_recipe(recipe_id):
 @login_required
 def unfavorite_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
-    if recipe.status != Recipe.STATUS_PUBLIC:
-        abort(403)
-    removed = False
-    if current_user.favorites.filter_by(id=recipe.id).first():
-        current_user.favorites.remove(recipe)
-        db.session.commit()
-        removed = True
+    try:
+        removed = toggle_recipe_favorite(
+            user=current_user, recipe=recipe, favorite=False
+        )
+    except ApiError as error:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify(
+                {"status": "error", "message": error.message}
+            ), error.status_code
+        abort(error.status_code)
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"status": "ok", "favorited": not removed})
@@ -190,44 +199,28 @@ def add_recipe():
         form = RecipeForm()
 
     if form.validate_on_submit():
-        ingredients = sanitize_recipe_ingredients(form.ingredients.data)
-        instructions = sanitize_recipe_instructions(form.instructions.data)
-        requested_status = normalize_choice(
-            form.status.data,
-            allowed=(Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC),
-            default=Recipe.STATUS_DRAFT,
-        )
-
-        recipe = Recipe(
-            title=form.title.data,  # type: ignore
-            description=form.description.data,  # type: ignore
-            ingredients=ingredients,
-            instructions=instructions,
-            prep_time=form.prep_time.data,  # type: ignore
-            cook_time=form.cook_time.data,  # type: ignore
-            servings=form.servings.data,  # type: ignore
-            category=form.category.data if form.category.data else None,  # type: ignore
-            status=requested_status,
-            user_id=current_user.id,  # type: ignore
-        )
-
-        db.session.add(recipe)
-        uploaded_image_id = None
-        # Handle uploaded image (store as DATAROOT/recipe/<image_id>.webp).
-        if getattr(form, "image", None) and form.image.data:
-            try:
-                uploaded_image_id = save_recipe_image(form.image.data)
-                recipe.image_id = uploaded_image_id
-            except Exception:
-                pass
-
         try:
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            if uploaded_image_id:
-                delete_recipe_image(uploaded_image_id)
-            raise
+            recipe = create_recipe(
+                author=current_user,
+                title=form.title.data,  # type: ignore[arg-type]
+                description=form.description.data,  # type: ignore[arg-type]
+                ingredients=form.ingredients.data,
+                instructions=form.instructions.data,
+                prep_time=form.prep_time.data,
+                cook_time=form.cook_time.data,
+                servings=form.servings.data,
+                category=form.category.data if form.category.data else None,
+                status=form.status.data,
+                image_file=form.image.data
+                if getattr(form, "image", None) and form.image.data
+                else None,
+            )
+        except ApiError as error:
+            flash(error.message, "danger")
+            return render_template(
+                "recipes/form.html", form=form, title="Recept toevoegen"
+            )
+
         if recipe.status == Recipe.STATUS_PUBLIC:
             flash("Recept succesvol gepubliceerd!", "success")
         else:
@@ -331,8 +324,6 @@ def edit_recipe(recipe_id):
             pass
 
         for ing in recipe.ingredients:
-            print(ing)
-            print(ingredient_to_string(ing))
             form.ingredients.append_entry(ingredient_to_string(ing))
 
         if len(form.ingredients.entries) == 0:
@@ -348,55 +339,29 @@ def edit_recipe(recipe_id):
         if len(form.instructions.entries) == 0:
             form.instructions.append_entry()
     if form.validate_on_submit():
-        ingredients = sanitize_recipe_ingredients(form.ingredients.data)
-        instructions = sanitize_recipe_instructions(form.instructions.data)
-
-        recipe.title = form.title.data
-        recipe.description = form.description.data
-        recipe.ingredients = ingredients
-        recipe.instructions = instructions
-        recipe.prep_time = form.prep_time.data
-        recipe.cook_time = form.cook_time.data
-        recipe.servings = form.servings.data
-        recipe.category = form.category.data if form.category.data else None
-        # status update
-        if getattr(form, "status", None):
-            recipe.status = normalize_choice(
-                form.status.data,
-                allowed=(Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC),
-                default=recipe.status,
+        try:
+            recipe = api_update_recipe(
+                recipe=recipe,
+                title=form.title.data,  # type: ignore[arg-type]
+                description=form.description.data,  # type: ignore[arg-type]
+                ingredients=form.ingredients.data,
+                instructions=form.instructions.data,
+                prep_time=form.prep_time.data,
+                cook_time=form.cook_time.data,
+                servings=form.servings.data,
+                category=form.category.data if form.category.data else None,
+                status=form.status.data,
+                image_file=form.image.data
+                if getattr(form, "image", None) and form.image.data
+                else None,
+                remove_image=request.form.get("remove_image") == "1",
+            )
+        except ApiError as error:
+            flash(error.message, "danger")
+            return render_template(
+                "recipes/form.html", form=form, title="Recept bewerken", recipe=recipe
             )
 
-        previous_image_id = recipe.image_id
-        image_ids_to_delete_after_commit = set()
-        uploaded_image_id = None
-
-        # handle uploaded image replacement
-        if getattr(form, "image", None) and form.image.data:
-            try:
-                uploaded_image_id = save_recipe_image(form.image.data)
-                recipe.image_id = uploaded_image_id
-                if previous_image_id:
-                    image_ids_to_delete_after_commit.add(previous_image_id)
-            except Exception:
-                pass
-
-        # handle image removal requested by the form
-        if request.form.get("remove_image") == "1":
-            if recipe.image_id:
-                image_ids_to_delete_after_commit.add(recipe.image_id)
-            recipe.image_id = None
-
-        try:
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            if uploaded_image_id:
-                delete_recipe_image(uploaded_image_id)
-            raise
-        for image_id in image_ids_to_delete_after_commit:
-            if image_id != recipe.image_id:
-                delete_recipe_image(image_id)
         if recipe.status == Recipe.STATUS_PUBLIC:
             flash("Recept succesvol bijgewerkt en gepubliceerd.", "success")
         else:
@@ -419,10 +384,7 @@ def delete_recipe(recipe_id):
     if recipe.user_id != current_user.id:
         abort(403)
 
-    image_id = recipe.image_id
-    db.session.delete(recipe)
-    db.session.commit()
-    delete_recipe_image(image_id)
+    api_delete_recipe(recipe)
     flash("Recept succesvol verwijderd!", "success")
     return redirect(url_for("recipes.list_recipes"))
 
@@ -463,114 +425,19 @@ def score_recipe(recipe_id):
         abort(404)
     if not current_user.can_score_recipes:
         abort(403)
-    # Prevent authors from scoring their own recipes
-    if current_user.id == recipe.user_id:
+    score_value = request.form.get("score", type=int)
+    try:
+        stats = record_recipe_score(
+            user=current_user, recipe=recipe, score_value=score_value
+        )
+    except ApiError as error:
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return jsonify(
-                {
-                    "status": "error",
-                    "message": "U kunt uw eigen recept niet beoordelen.",
-                }
-            ), 403
-        return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
-    if recipe.status != Recipe.STATUS_PUBLIC:
-        abort(403)
-
-    score_value = request.form.get("score", type=int)
-    if score_value not in [1, 2, 3, 4, 5]:
-        flash("Score moet tussen 1 en 5 liggen.", "danger")
+                {"status": "error", "message": error.message}
+            ), error.status_code
+        flash(error.message, "danger")
         return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
 
-    existing = RecipeScore.query.filter_by(
-        recipe_id=recipe.id, user_id=current_user.id
-    ).first()
-    if existing:
-        existing.score = score_value
-    else:
-        db.session.add(
-            RecipeScore(recipe_id=recipe.id, user_id=current_user.id, score=score_value)
-        )
-    db.session.commit()
-    # Prepare updated stats
-    score_average = recipe.score_average
-    score_count = recipe.score_count
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify(
-            {
-                "status": "ok",
-                "score": score_value,
-                "score_average": score_average,
-                "score_count": score_count,
-            }
-        )
+        return jsonify({"status": "ok", **stats})
     return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
-
-
-@recipes_bp.route("/admin")
-@login_required
-def admin_recipes():
-    require_active_admin(current_user)
-    page = request.args.get("page", 1, type=int)
-    status = request.args.get("status", "all")
-    search = request.args.get("search", "")
-
-    query = Recipe.query
-    if status in Recipe.VALID_STATUSES:
-        query = query.filter_by(status=status)
-    if search:
-        search_pattern = f"%{search}%"
-        query = query.filter(
-            or_(
-                Recipe.title.ilike(search_pattern),
-                Recipe.description.ilike(search_pattern),
-            )
-        )
-    recipes = query.order_by(Recipe.created_at.desc()).paginate(
-        page=page, per_page=24, error_out=False
-    )
-    return render_template(
-        "recipes/admin_list.html", recipes=recipes, status=status, search=search
-    )
-
-
-@recipes_bp.route("/admin/<int:recipe_id>/deactivate", methods=["POST"])
-@login_required
-def deactivate_recipe(recipe_id):
-    require_active_admin(current_user)
-    recipe = Recipe.query.get_or_404(recipe_id)
-    if recipe.status == Recipe.STATUS_DEACTIVATED:
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return jsonify({"status": "ok", "new_status": recipe.status})
-        flash("Recept is al gedeactiveerd.", "info")
-        return redirect(request.referrer or url_for("recipes.admin_recipes"))
-
-    recipe.status_before_deactivation = recipe.status
-    recipe.status = Recipe.STATUS_DEACTIVATED
-    db.session.commit()
-    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify({"status": "ok", "new_status": recipe.status})
-    flash("Recept gedeactiveerd.", "success")
-    return redirect(request.referrer or url_for("recipes.admin_recipes"))
-
-
-@recipes_bp.route("/admin/<int:recipe_id>/reactivate", methods=["POST"])
-@login_required
-def reactivate_recipe(recipe_id):
-    require_active_admin(current_user)
-    recipe = Recipe.query.get_or_404(recipe_id)
-    if recipe.status != Recipe.STATUS_DEACTIVATED:
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return jsonify({"status": "ok", "new_status": recipe.status})
-        flash("Recept is al actief.", "info")
-        return redirect(request.referrer or url_for("recipes.admin_recipes"))
-
-    if recipe.status_before_deactivation in (Recipe.STATUS_PUBLIC, Recipe.STATUS_DRAFT):
-        recipe.status = recipe.status_before_deactivation
-    else:
-        recipe.status = Recipe.STATUS_DRAFT
-    recipe.status_before_deactivation = None
-    db.session.commit()
-    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify({"status": "ok", "new_status": recipe.status})
-    flash("Recept opnieuw geactiveerd.", "success")
-    return redirect(request.referrer or url_for("recipes.admin_recipes"))

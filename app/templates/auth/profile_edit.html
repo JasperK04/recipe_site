@@ -12,7 +12,7 @@
                     <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary">Annuleren</a>
                 </div>
 
-                <form method="POST" action="{{ url_for('auth.edit_profile') }}">
+                <form method="POST" action="{{ api_submit_url }}" data-api-form="1">
                     {{ form.hidden_tag() }}
 
                     <div class="mb-3">

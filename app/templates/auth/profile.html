@@ -54,7 +54,7 @@
 
                 {% if current_user.is_admin %}
                 <hr>
-                <a href="{{ url_for('auth.admin_users') }}" class="btn btn-outline-danger">Gebruikersbeheer</a>
+                <a href="{{ url_for('admin.users') }}" class="btn btn-outline-danger">Gebruikersbeheer</a>
                 {% endif %}
 
             </div>

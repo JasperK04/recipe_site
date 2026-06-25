@@ -91,7 +91,12 @@
             credentials: "same-origin"
         })
 
-        return response.json()
+        const data = await response.json()
+        if (!response.ok || data.status !== "ok") {
+            throw new Error(data.message || "Actie mislukt.")
+        }
+
+        return data
     }
 
     document.addEventListener("click", async e => {
@@ -107,21 +112,31 @@
         let endpoint
 
             if (btn.classList.contains("promote-btn")) {
-            endpoint = `/auth/admin/users/${id}/promote`
+            endpoint = `/api/users/${id}/promote`
         }
 
         if (btn.classList.contains("demote-btn")) {
-            endpoint = `/auth/admin/users/${id}/demote`
+            endpoint = `/api/users/${id}/demote`
         }
 
         if (btn.classList.contains("active-btn")) {
             endpoint =
                 row.dataset.active === "true"
-                ? `/auth/admin/users/${id}/deactivate`
-                : `/auth/admin/users/${id}/reactivate`
+                ? `/api/users/${id}/deactivate`
+                : `/api/users/${id}/reactivate`
         }
 
-        const data = await postAction(endpoint)
+        if (!endpoint) {
+            return
+        }
+
+        let data
+        try {
+            data = await postAction(endpoint)
+        } catch (error) {
+            window.alert(error.message || "Actie mislukt.")
+            return
+        }
 
         if (data.status === "ok") {
             const template = document.createElement("template")
