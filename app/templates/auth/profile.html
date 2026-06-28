@@ -54,7 +54,10 @@
 
                 {% if current_user.is_admin %}
                 <hr>
-                <a href="{{ url_for('admin.users') }}" class="btn btn-outline-danger">Gebruikersbeheer</a>
+                <div class="d-flex flex-column flex-sm-row gap-2">
+                    <a href="{{ url_for('admin.users') }}" class="btn btn-outline-danger">Gebruikersbeheer</a>
+                    <a href="{{ url_for('auth.manage_otc') }}" class="btn btn-outline-primary">OTC-beheer</a>
+                </div>
                 {% endif %}
 
             </div>

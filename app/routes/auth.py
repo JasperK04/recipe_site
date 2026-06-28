@@ -1,15 +1,20 @@
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from datetime import datetime
+
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
-from app import login_manager
+from app import db, login_manager
 from app.api import (
     ApiError,
+    cleanup_expired_otc_codes,
+    create_registration_otc,
     register_user,
     submit_creator_request,
     update_profile,
 )
-from app.forms import LoginForm, ProfileEditForm, RegistrationForm
-from app.models import User
+from app.forms import LoginForm, OTCCreateForm, ProfileEditForm, RegistrationForm
+from app.models import OTC, User
+from utils import require_active_admin
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -26,13 +31,18 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for("main.index"))
 
-    form = RegistrationForm()
+    form = RegistrationForm(
+        data={
+            "otc": request.args.get("otc", "") or request.args.get("OTC", ""),
+        }
+    )
     if form.validate_on_submit():
         try:
             register_user(
                 username=form.username.data,
                 email=form.email.data,
                 password=form.password.data,
+                one_time_code=form.otc.data,
             )
         except ApiError as error:
             flash(error.message, "danger")
@@ -129,3 +139,58 @@ def request_creator():
 
     flash("Je aanvraag om creator te worden is verstuurd.", "success")
     return redirect(url_for("auth.profile"))
+
+
+@auth_bp.route("/profile/otc", methods=["GET", "POST"])
+@login_required
+def manage_otc():
+    """Create and inspect OTCs for learner registrations."""
+    require_active_admin(current_user)
+    cleanup_expired_otc_codes()
+
+    form = OTCCreateForm()
+    created_otc = session.pop("created_otc", None)
+    registration_link = session.pop("registration_link", None)
+
+    if created_otc:
+        created_otc["expires_at"] = datetime.fromisoformat(created_otc["expires_at"])
+
+    if form.validate_on_submit():
+        try:
+            created_otc = create_registration_otc(
+                expires_in_hours=form.expires_in_hours.data,
+                purpose=form.purpose.data,
+            )
+        except ApiError as error:
+            flash(error.message, "danger")
+        else:
+            registration_link = url_for("auth.register", otc=created_otc.code, _external=True)
+            session["created_otc"] = {
+                "code": created_otc.code,
+                "purpose": created_otc.purpose,
+                "expires_at": created_otc.expires_at.isoformat(),
+            }
+            session["registration_link"] = registration_link
+            flash("OTC aangemaakt voor een leerling kok-registratie.", "success")
+            return redirect(url_for("auth.manage_otc"))
+
+    active_otcs = OTC.query.order_by(OTC.expires_at.asc(), OTC.created_at.desc()).all()
+    return render_template(
+        "auth/otc_admin.html",
+        form=form,
+        active_otcs=active_otcs,
+        created_otc=created_otc,
+        registration_link=registration_link,
+    )
+
+
+@auth_bp.route("/profile/otc/<string:code>/delete", methods=["POST"])
+@login_required
+def delete_otc(code: str):
+    """Delete an OTC from the dashboard."""
+    require_active_admin(current_user)
+    otc = OTC.query.get_or_404(code)
+    db.session.delete(otc)
+    db.session.commit()
+    flash(f"OTC {code} verwijderd.", "success")
+    return redirect(url_for("auth.manage_otc"))

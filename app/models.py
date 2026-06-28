@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 from typing import Any, cast
 
 from flask_login import UserMixin
-from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy import text
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
 
@@ -66,7 +66,14 @@ class User(UserMixin, db.Model):
     ROLE_CHEF_DE_PARTIE = 4
     ROLE_SOUS_CHEF = 5
     ROLE_CHEF_DE_CUISINE = 6
-    VALID_ROLES = (ROLE_FIJNPROEVER, ROLE_LEERLING_KOK, ROLE_ZELFSTANDIG_KOK, ROLE_CHEF_DE_PARTIE, ROLE_SOUS_CHEF, ROLE_CHEF_DE_CUISINE)
+    VALID_ROLES = (
+        ROLE_FIJNPROEVER,
+        ROLE_LEERLING_KOK,
+        ROLE_ZELFSTANDIG_KOK,
+        ROLE_CHEF_DE_PARTIE,
+        ROLE_SOUS_CHEF,
+        ROLE_CHEF_DE_CUISINE,
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
@@ -112,7 +119,7 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         """Check if the provided password matches the hash."""
         return check_password_hash(self.password_hash, password)
-    
+
     def get_role_label(self):
         role_labels = {
             self.ROLE_FIJNPROEVER: "Fijnproever",
@@ -259,3 +266,23 @@ class RecipeScore(db.Model):
 
     def __repr__(self):
         return f"<RecipeScore recipe={self.recipe_id} user={self.user_id} score={self.score}>"
+
+
+class OTC(db.Model):
+    """One-Time Code model for user registration."""
+
+    __tablename__ = "otc"
+    __table_args__ = (db.Index("ix_otc_expires_at", "expires_at"),)
+    code = db.Column(db.String(8), primary_key=True, unique=True, nullable=False)
+    purpose = db.Column(db.String(50), nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    expires_at = db.Column(db.DateTime, nullable=False)
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+
+    def is_expired(self):
+        return datetime.now(timezone.utc) >= self.expires_at
+
+    def __repr__(self):
+        return f"<OTC code={self.code} expires_at={self.expires_at}>"

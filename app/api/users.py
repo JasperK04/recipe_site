@@ -1,19 +1,88 @@
 from __future__ import annotations
 
+import secrets
+import string
+from datetime import datetime, timedelta, timezone
+
 from app import db
 from app.api.common import ApiError
-from app.models import Recipe, User
+from app.models import OTC, Recipe, User
+from app.services.email import send_creator_request_notification
 
 
-def register_user(*, username: str, email: str, password: str) -> User:
+def cleanup_expired_otc_codes() -> int:
+    """Delete expired OTC records and return the number removed."""
+    now = datetime.now(timezone.utc)
+    removed = OTC.query.filter(OTC.expires_at <= now).delete(synchronize_session=False)
+    if removed:
+        db.session.commit()
+    return removed
+
+
+def _normalize_otc_code(value: str | None) -> str | None:
+    code = (value or "").strip()
+    return code or None
+
+
+def generate_otc_code() -> str:
+    """Generate an 8 character OTC code."""
+    alphabet = string.ascii_lowercase + string.digits
+    token = "".join(secrets.choice(alphabet) for _ in range(8))
+    return token
+
+
+def create_registration_otc(
+    *, expires_in_hours: int, purpose: str | None = None
+) -> OTC:
+    """Create a new OTC for leerling kok registration."""
+    cleanup_expired_otc_codes()
+
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=expires_in_hours)
+
+    for _ in range(20):
+        code = generate_otc_code()
+        if OTC.query.filter_by(code=code).first():
+            continue
+
+        otc = OTC(
+            code=code,
+            purpose=(purpose or "").strip() or None,
+            expires_at=expires_at,
+        )
+        db.session.add(otc)
+        db.session.commit()
+        return otc
+
+    raise ApiError("Kon geen unieke OTC-code genereren. Probeer het opnieuw.", 500)
+
+
+def register_user(
+    *,
+    username: str,
+    email: str,
+    password: str,
+    one_time_code: str | None = None,
+) -> User:
     """Create a new user account."""
     if User.query.filter_by(username=username).first():
         raise ApiError("Gebruikersnaam al in gebruik. Kies een andere.", 400)
     if User.query.filter_by(email=email).first():
         raise ApiError("E-mail al geregistreerd. Gebruik een ander e-mailadres.", 400)
 
+    otc: OTC | None = None
+    normalized_code = _normalize_otc_code(one_time_code)
+    if normalized_code:
+        cleanup_expired_otc_codes()
+        otc = OTC.query.filter_by(code=normalized_code).first()
+        if not otc:
+            raise ApiError("Ongeldige of verlopen OTC-code.", 400)
+
     user = User(username=username, email=email)
     user.set_password(password)
+    if otc:
+        user.role = User.ROLE_LEERLING_KOK
+        db.session.delete(otc)
+
     db.session.add(user)
     db.session.commit()
     return user
@@ -63,6 +132,7 @@ def submit_creator_request(user: User) -> User:
 
     user.creator_request_pending = True
     db.session.commit()
+    send_creator_request_notification(user)
     return user
 
 

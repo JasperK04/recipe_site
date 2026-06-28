@@ -10,6 +10,13 @@
                 <h2 class="card-title text-center mb-4">Account aanmaken</h2>
                 <form method="POST" action="{{ api_submit_url }}" data-api-form="1" data-client-validation="register" novalidate>
                     {{ form.hidden_tag() }}
+                    {{ form.otc(type="hidden") }}
+
+                    {% if form.otc.data %}
+                    <div class="alert alert-info">
+                        Deze registratie-link is gekoppeld aan een uitnodiging voor een leerling kok.
+                    </div>
+                    {% endif %}
                     
                     <div class="mb-3">
                         {{ form.username.label(class="form-label") }}

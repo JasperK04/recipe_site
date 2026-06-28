@@ -1,0 +1,257 @@
+{% extends "components/base.html" %}
+
+{% block title %}OTC-beheer - Recepten{% endblock %}
+
+{% block content %}
+<div class="otc-dashboard">
+    <div class="otc-hero card shadow-sm mb-4">
+        <div class="card-body p-4 p-lg-5">
+            <div class="d-flex flex-column flex-lg-row justify-content-between gap-4">
+                <div class="otc-hero-copy">
+                    <h1 class="display-6 mb-3">OTC-beheer</h1>
+                    <p class="lead text-muted mb-0">
+                        Maak uitnodigingscodes voor leerling kok-registraties en deel direct een link.
+                    </p>
+                </div>
+
+                <div class="otc-hero-actions">
+                    <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary btn-lg w-100">Terug naar profiel</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if created_otc and registration_link %}
+    <div class="alert alert-success otc-created shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between gap-3 align-items-md-center">
+            <div>
+                <div class="fw-semibold mb-1">Nieuwe OTC aangemaakt</div>
+                <div class="text-body-secondary">
+                    Code <code>{{ created_otc.code }}</code><br/> vervalt op <strong>{{ created_otc.expires_at.strftime('%Y-%m-%d %H:%M') }}</strong>
+                </div>
+                {% if created_otc.purpose %}
+                <div class="text-body-secondary mt-1">
+                    Voor: <strong>{{ created_otc.purpose }}</strong>
+                </div>
+                {% endif %}
+            </div>
+            <div class="d-flex flex-column flex-sm-row gap-2">
+                <button
+                    type="button"
+                    class="btn btn-success"
+                    data-copy-link
+                    data-copy-value="{{ registration_link }}"
+                >
+                    Link kopiëren
+                </button>
+            </div>
+        </div>
+        <div class="mt-3">
+            <label class="form-label mb-1" for="otc-link">Deelbare link</label>
+            <input
+                id="otc-link"
+                class="form-control"
+                type="text"
+                value="{{ registration_link }}"
+                readonly
+            >
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5">
+            <div class="card shadow-sm otc-panel h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h2 class="h4 mb-1">Nieuwe OTC</h2>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('auth.manage_otc') }}" novalidate>
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ form.purpose.label(class="form-label") }}
+                            {{ form.purpose(class="form-control" + (" is-invalid" if form.purpose.errors else "")) }}
+                            {% if form.purpose.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.purpose.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.expires_in_hours.label(class="form-label") }}
+                            {{ form.expires_in_hours(class="form-control" + (" is-invalid" if form.expires_in_hours.errors else "")) }}
+                            <div class="form-text">Standaard blijft een code 24 uur geldig.</div>
+                            {% if form.expires_in_hours.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.expires_in_hours.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card shadow-sm otc-panel h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h2 class="h4 mb-1">Actieve OTC's</h2>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary-emphasis">
+                            {{ active_otcs|length }} actief
+                        </span>
+                    </div>
+
+                    {% if active_otcs %}
+                    <div class="d-grid gap-3">
+                        {% for otc in active_otcs %}
+                        {% set registration_link = url_for('auth.register', otc=otc.code, _external=True) %}
+                        <div class="card otc-item shadow-sm">
+                            <div class="card-body p-4 otc-item-body">
+                                <div class="d-flex flex-column flex-xl-row justify-content-between gap-4">
+                                    <div class="otc-item-summary">
+                                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                            <code class="otc-code">{{ otc.code }}</code>
+                                            <span class="badge bg-secondary-subtle text-secondary-emphasis">Leerling Kok</span>
+                                        </div>
+
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="otc-label">Voor</div>
+                                                {% if otc.purpose %}
+                                                <div class="fw-semibold">{{ otc.purpose }}</div>
+                                                {% else %}
+                                                <div class="text-muted">Geen doel ingevuld</div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="otc-label">Verloopt</div>
+                                                <div class="fw-semibold">{{ otc.expires_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                                                <div class="text-muted small">Aangemaakt {{ otc.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="otc-item-actions">
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for('auth.delete_otc', code=otc.code) }}"
+                                            onsubmit="return confirm('Weet je zeker dat je OTC {{ otc.code }} wilt verwijderen?');"
+                                        >
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <hr class="my-4">
+
+                                <div class="otc-link-row">
+                                    <label class="form-label mb-2">Registratielink</label>
+                                    <div class="otc-link-controls">
+                                        <input
+                                            class="form-control otc-link-input"
+                                            type="text"
+                                            value="{{ registration_link }}"
+                                            readonly
+                                        >
+                                        <button
+                                            type="button"
+                                            class="btn btn-outline-primary"
+                                            data-copy-link
+                                            data-copy-value="{{ registration_link }}"
+                                        >
+                                            Kopiëren
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="otc-empty text-center py-5">
+                        <div class="otc-empty-icon mb-3">
+                            <i class="bi bi-ticket-perforated"></i>
+                        </div>
+                        <h3 class="h5 mb-2">Nog geen actieve OTC's</h3>
+                        <p class="text-muted mb-0">Maak hierboven een code aan om een directe registratie-link te genereren.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const statusText = {
+        idle: "Link kopiëren",
+        done: "Gekopieerd",
+        fail: "Kopiëren mislukt",
+    };
+
+    async function copyText(value) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(value);
+        }
+
+        const temp = document.createElement("textarea");
+        temp.value = value;
+        temp.setAttribute("readonly", "readonly");
+        temp.style.position = "absolute";
+        temp.style.left = "-9999px";
+        document.body.appendChild(temp);
+        temp.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(temp);
+
+        if (!ok) {
+            throw new Error("copy failed");
+        }
+    }
+
+    document.addEventListener("click", async (event) => {
+        const button = event.target.closest("[data-copy-link]");
+        if (!button) {
+            return;
+        }
+
+        const value = button.dataset.copyValue || "";
+        const original = button.textContent;
+        const originalClasses = button.dataset.originalClasses || button.className;
+        button.dataset.originalClasses = originalClasses;
+
+        try {
+            await copyText(value);
+            button.textContent = statusText.done;
+            button.classList.remove("btn-outline-primary", "btn-success");
+            button.classList.add("btn-success");
+        } catch (error) {
+            button.textContent = statusText.fail;
+            button.classList.remove("btn-outline-primary", "btn-success");
+            button.classList.add("btn-outline-danger");
+        } finally {
+            window.setTimeout(() => {
+                button.textContent = original;
+                button.className = originalClasses;
+            }, 1200);
+        }
+    });
+})();
+</script>
+{% endblock %}

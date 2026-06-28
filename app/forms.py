@@ -14,6 +14,7 @@ from wtforms.validators import (
     DataRequired,
     EqualTo,
     Length,
+    NumberRange,
     Optional,
     Regexp,
     ValidationError,
@@ -24,6 +25,18 @@ from app.models import User
 
 class RegistrationForm(FlaskForm):
     """User registration form."""
+
+    otc = StringField(
+        "One Time Code",
+        validators=[
+            Optional(),
+            Length(min=8, max=8, message="One Time Code moet exact 8 tekens zijn."),
+            Regexp(
+                r"^[a-z0-9]+$",
+                message="One Time Code mag alleen cijfers en letters bevatten.",
+            ),
+        ],
+    )
 
     username = StringField(
         "Gebruikersnaam *",
@@ -145,7 +158,7 @@ class ProfileEditForm(FlaskForm):
             raise ValidationError(
                 "E-mail al geregistreerd. Gebruik een ander e-mailadres."
             )
-        
+
     def validate_new_password(self, field):
         if field.data and not self.current_password.data:
             raise ValidationError(
@@ -175,6 +188,31 @@ class ProfileEditForm(FlaskForm):
         return True
 
 
+class OTCCreateForm(FlaskForm):
+    """Admin form for creating one-time registration codes."""
+
+    purpose = StringField(
+        "Voor",
+        validators=[
+            Optional(),
+            Length(
+                max=80,
+                message="Maximaal 80 tekens lang.",
+            ),
+        ],
+        render_kw={"placeholder": "Bijv. naam of reden voor de code"},
+    )
+    expires_in_hours = IntegerField(
+        "Geldigheid in uren",
+        validators=[
+            DataRequired(message="Vul een geldige geldigheidsduur in."),
+            NumberRange(min=1, message="Kies een duur van minimaal 1 uur."),
+        ],
+        default=24,
+    )
+    submit = SubmitField("Aanmaken")
+
+
 class RecipeForm(FlaskForm):
     """Form for adding/editing recipes."""
 
@@ -200,7 +238,9 @@ class RecipeForm(FlaskForm):
 
     # Instructions: a dynamic list of single-line steps
     instructions = FieldList(
-        StringField("Stap", validators=[Optional()]), min_entries=1, label="Instructies *"
+        StringField("Stap", validators=[Optional()]),
+        min_entries=1,
+        label="Instructies *",
     )
     prep_time = IntegerField("Bereidingstijd (minuten)", validators=[])
     cook_time = IntegerField("Kooktijd (minuten)", validators=[Optional()])
@@ -272,8 +312,8 @@ class RecipeUploadForm(FlaskForm):
                 message="Tekst mag niet langer zijn dan 5.000 tekens.",
             ),
         ],
-        render_kw =
-        {"placeholder": """
+        render_kw={
+            "placeholder": """
 Spaghetti Bolognese voor 4 personen
 Een klassieke Italiaanse pastasaus met gehakt, tomaat en kruiden.
 
@@ -287,8 +327,8 @@ STAPPEN
 2. Bak het gehakt rul in een grote pan.
 3. Voeg de gepelde tomaten toe en laat het geheel 20 minuten sudderen.
 """.strip(),
-        "style": "min-height: 250px;"
-        }, 
+            "style": "min-height: 250px;",
+        },
     )
 
     json_file = FileField(
@@ -321,22 +361,22 @@ STAPPEN
         match type_:
             case "url":
                 if not has_url:
-                    self.url.errors.append("Vul een URL in.") # type: ignore
+                    self.url.errors.append("Vul een URL in.")  # type: ignore
                     return False
             case "textarea":
                 if not has_textarea:
-                    self.textarea.errors.append("Vul de tekst van het recept in.") # type: ignore
+                    self.textarea.errors.append("Vul de tekst van het recept in.")  # type: ignore
                     return False
             case "json":
                 if not has_json_file:
-                    self.json_file.errors.append("Upload een JSON-bestand.") # type: ignore
+                    self.json_file.errors.append("Upload een JSON-bestand.")  # type: ignore
                     return False
             case "text":
                 if not has_text_file:
-                    self.text_file.errors.append("Upload een tekstbestand.") # type: ignore
+                    self.text_file.errors.append("Upload een tekstbestand.")  # type: ignore
                     return False
             case _:
-                self.upload_type.errors.append("Ongeldig uploadtype.") # type: ignore
+                self.upload_type.errors.append("Ongeldig uploadtype.")  # type: ignore
                 return False
 
         return True

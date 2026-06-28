@@ -15,6 +15,8 @@ from app.api.recipes import (  # noqa: E402
     update_recipe,
 )
 from app.api.users import (  # noqa: E402
+    cleanup_expired_otc_codes,
+    create_registration_otc,
     deactivate_user,
     demote_user,
     promote_user,
@@ -37,6 +39,8 @@ __all__ = [
     "register_user",
     "update_profile",
     "submit_creator_request",
+    "cleanup_expired_otc_codes",
+    "create_registration_otc",
     "deactivate_user",
     "reactivate_user",
     "promote_user",

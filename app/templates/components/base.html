@@ -119,6 +119,7 @@
                             <li><a class="dropdown-item" href="{{ url_for('recipes.favorites') }}">Favorieten</a></li>
                             {% if current_user.is_admin %}
                             <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.manage_otc') }}">OTC-beheer</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('admin.recipes') }}">Receptmoderatie</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('admin.users') }}">Gebruikersbeheer</a></li>
                             {% endif %}
