@@ -218,10 +218,16 @@ def demote_user(target: User) -> User:
     return target
 
 
+def pending_creator_request_count() -> int:
+    """Return the number of open creator promotion requests."""
+    return User.query.filter_by(creator_request_pending=True).count()
+
+
 def _user_row_response(user: User):
     return jsonify(
         {
             "status": "ok",
+            "pending_creator_requests": pending_creator_request_count(),
             "html": render_template(
                 "components/user_table_row.html",
                 user=user,

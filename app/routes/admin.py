@@ -16,6 +16,7 @@ from app.api import (
     reactivate_recipe,
     reactivate_user,
 )
+from app.api.users import pending_creator_request_count
 from app.models import Recipe, User
 from utils import require_active_admin
 
@@ -26,6 +27,7 @@ def _user_row_response(user: User):
     return jsonify(
         {
             "status": "ok",
+            "pending_creator_requests": pending_creator_request_count(),
             "html": render_template(
                 "components/user_table_row.html",
                 user=user,

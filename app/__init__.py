@@ -14,8 +14,8 @@ login_manager = LoginManager()
 session = Session()
 migrate = Migrate()
 
-from app.api import api_bp
-from app.routes import admin_bp, auth_bp, main_bp, recipes_bp
+from app.api import api_bp  # noqa: E402
+from app.routes import admin_bp, auth_bp, main_bp, recipes_bp  # noqa: E402
 
 
 def create_app(config_name="default"):
@@ -70,5 +70,17 @@ def create_app(config_name="default"):
     @app.context_processor
     def inject_year():
         return dict(current_year=datetime.now().year)
+
+    @app.context_processor
+    def inject_pending_creator_requests():
+        from flask_login import current_user as flask_current_user
+
+        from app.api.users import pending_creator_request_count
+
+        pending_creator_requests = 0
+        if flask_current_user.is_authenticated and flask_current_user.is_admin:
+            pending_creator_requests = pending_creator_request_count()
+
+        return dict(pending_creator_requests=pending_creator_requests)
 
     return app

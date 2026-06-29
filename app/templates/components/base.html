@@ -121,7 +121,16 @@
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('auth.manage_otc') }}">OTC-beheer</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('admin.recipes') }}">Receptmoderatie</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('admin.users') }}">Gebruikersbeheer</a></li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between gap-2" href="{{ url_for('admin.users') }}">
+                                    <span>Gebruikersbeheer</span>
+                                    <span
+                                        class="creator-request-dot ms-2 creator-request-badge {% if pending_creator_requests == 0 %}d-none{% endif %}"
+                                        data-creator-request-badge
+                                        aria-hidden="true"
+                                    ></span>
+                                </a>
+                            </li>
                             {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Uitloggen</a></li>

@@ -19,6 +19,16 @@ main {
     font-weight: bold;
 }
 
+.creator-request-dot {
+    display: inline-block;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 999px;
+    background: #fd7e14;
+    box-shadow: 0 0 0 0.12rem rgba(253, 126, 20, 0.18);
+    flex: 0 0 auto;
+}
+
 .recipe-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 320px));

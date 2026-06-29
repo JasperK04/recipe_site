@@ -81,6 +81,13 @@
         }
     }
 
+    function updateCreatorRequestBadges(pendingCount) {
+        document.querySelectorAll("[data-creator-request-badge]")
+            .forEach(badge => {
+                badge.classList.toggle("d-none", pendingCount <= 0)
+            })
+    }
+
     document.querySelectorAll("tbody tr")
         .forEach(updateButtons)
     
@@ -154,6 +161,9 @@
             row.replaceWith(newRow)
 
             updateButtons(newRow)
+            if (typeof data.pending_creator_requests === "number") {
+                updateCreatorRequestBadges(data.pending_creator_requests)
+            }
         }
     })
 </script>
