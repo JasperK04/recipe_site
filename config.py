@@ -12,6 +12,20 @@ load_dotenv()
 BASE_DIR = Path(__file__).parent.resolve()
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.environ.get(name)
+    if value is None or value == "":
+        return default
+    return value.lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(name: str, default: int) -> int:
+    value = os.environ.get(name)
+    if value is None or value == "":
+        return default
+    return int(value)
+
+
 class Config:
     """Base configuration."""
 
@@ -21,6 +35,18 @@ class Config:
         raise ValueError("SECRET_KEY environment variable must be set")
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY environment variable must be set")
+
+    # Optional mail configuration for creator-request notifications.
+    MAIL_SERVER = os.environ.get("MAIL_SERVER")
+    MAIL_PORT = _env_int("MAIL_PORT", 587)
+    MAIL_USE_TLS = _env_bool("MAIL_USE_TLS", True)
+    MAIL_USE_SSL = _env_bool("MAIL_USE_SSL", False)
+    MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
+    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
+    MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER") or MAIL_USERNAME
+    CREATOR_REQUEST_NOTIFICATION_EMAIL = os.environ.get(
+        "CREATOR_REQUEST_NOTIFICATION_EMAIL"
+    ) or os.environ.get("admin_email")
 
     # Central data root for all generated data: db file, image files, backups.
     DATA_ROOT = resolve_data_root(os.environ.get("DATAROOT"), base_dir=BASE_DIR)

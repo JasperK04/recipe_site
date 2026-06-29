@@ -138,6 +138,7 @@ def recipe_image(recipe_id):
 def favorite_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     user = cast(User, current_user)
+    created = False
     try:
         created = toggle_recipe_favorite(
             user=user, recipe=recipe, favorite=True
@@ -160,6 +161,7 @@ def favorite_recipe(recipe_id):
 def unfavorite_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     user = cast(User, current_user)
+    removed = False
     try:
         removed = toggle_recipe_favorite(
             user=user, recipe=recipe, favorite=False
@@ -454,7 +456,7 @@ def score_recipe(recipe_id):
     user = cast(User, current_user)
     try:
         stats = record_recipe_score(
-            user=user, recipe=recipe, score_value=score_value
+            user=user, recipe=recipe, score_value=int(score_value)
         )
     except ApiError as error:
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":

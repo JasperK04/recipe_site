@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, cast
 
 from flask import abort, jsonify, request, url_for
 from flask_login import current_user, login_required
@@ -75,13 +75,14 @@ def create_recipe(
 @api_bp.route("/recipes", methods=["POST"])
 @login_required
 def create_recipe_endpoint():
-    require_active_creator(current_user)
+    user = cast(User, current_user)
+    require_active_creator(user)
     form = RecipeForm()
     if not form.validate_on_submit():
         return jsonify({"status": "error", "message": "Controleer de invoer.", "errors": form.errors}), 400
 
     recipe = create_recipe(
-        author=current_user,
+        author=user,
         title=form.title.data,  # type: ignore[arg-type]
         description=form.description.data,  # type: ignore[arg-type]
         ingredients=form.ingredients.data,
@@ -164,9 +165,10 @@ def update_recipe(
 @api_bp.route("/recipes/<int:recipe_id>", methods=["POST"])
 @login_required
 def update_recipe_endpoint(recipe_id):
-    require_active_creator(current_user)
+    user = cast(User, current_user)
+    require_active_creator(user)
     recipe = Recipe.query.get_or_404(recipe_id)
-    if recipe.user_id != current_user.id:
+    if recipe.user_id != user.id:
         abort(403)
     if recipe.status == Recipe.STATUS_DEACTIVATED:
         abort(403)
@@ -204,9 +206,10 @@ def delete_recipe(recipe: Recipe) -> str | None:
 @api_bp.route("/recipes/<int:recipe_id>/delete", methods=["POST"])
 @login_required
 def delete_recipe_endpoint(recipe_id):
-    require_active_creator(current_user)
+    user = cast(User, current_user)
+    require_active_creator(user)
     recipe = Recipe.query.get_or_404(recipe_id)
-    if recipe.user_id != current_user.id:
+    if recipe.user_id != user.id:
         abort(403)
 
     delete_recipe(recipe)
@@ -238,8 +241,9 @@ def toggle_recipe_favorite(*, user: User, recipe: Recipe, favorite: bool) -> boo
 @login_required
 def favorite_recipe_endpoint(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
+    user = cast(User, current_user)
     try:
-        created = toggle_recipe_favorite(user=current_user, recipe=recipe, favorite=True)
+        created = toggle_recipe_favorite(user=user, recipe=recipe, favorite=True)
     except ApiError as error:
         return jsonify({"status": "error", "message": error.message}), error.status_code
     return jsonify({"status": "ok", "favorited": created})
@@ -249,8 +253,9 @@ def favorite_recipe_endpoint(recipe_id):
 @login_required
 def unfavorite_recipe_endpoint(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
+    user = cast(User, current_user)
     try:
-        removed = toggle_recipe_favorite(user=current_user, recipe=recipe, favorite=False)
+        removed = toggle_recipe_favorite(user=user, recipe=recipe, favorite=False)
     except ApiError as error:
         return jsonify({"status": "error", "message": error.message}), error.status_code
     return jsonify({"status": "ok", "favorited": not removed})
@@ -293,12 +298,16 @@ def score_recipe_endpoint(recipe_id):
         abort(404)
     if not current_user.can_score_recipes:
         abort(403)
+    user = cast(User, current_user)
 
     try:
+        score_value = request.form.get("score", type=int)
+        if score_value is None:
+            abort(400)
         stats = record_recipe_score(
-            user=current_user,
+            user=user,
             recipe=recipe,
-            score_value=request.form.get("score", type=int),
+            score_value=score_value,
         )
     except ApiError as error:
         return jsonify({"status": "error", "message": error.message}), error.status_code

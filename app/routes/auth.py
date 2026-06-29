@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import cast
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
@@ -38,11 +39,17 @@ def register():
     )
     if form.validate_on_submit():
         try:
+            username = form.username.data
+            email = form.email.data
+            password = form.password.data
+            otc = form.otc.data
+            if not username or not email or not password:
+                raise ApiError("Controleer de invoer.", 400)
             register_user(
-                username=form.username.data,
-                email=form.email.data,
-                password=form.password.data,
-                one_time_code=form.otc.data,
+                username=username,
+                email=email,
+                password=password,
+                one_time_code=otc,
             )
         except ApiError as error:
             flash(error.message, "danger")
@@ -98,14 +105,19 @@ def profile():
 @login_required
 def edit_profile():
     """Edit profile and optionally change password."""
-    form = ProfileEditForm(obj=current_user)
+    user = cast(User, current_user)
+    form = ProfileEditForm(obj=user)
 
     if form.validate_on_submit():
         try:
+            username = form.username.data
+            email = form.email.data
+            if not username or not email:
+                raise ApiError("Controleer de invoer.", 400)
             update_profile(
-                user=current_user,
-                username=form.username.data,
-                email=form.email.data,
+                user=user,
+                username=username,
+                email=email,
                 current_password=form.current_password.data,
                 new_password=form.new_password.data,
             )
@@ -132,7 +144,7 @@ def request_creator():
         return redirect(url_for("auth.profile"))
 
     try:
-        submit_creator_request(current_user)
+        submit_creator_request(cast(User, current_user))
     except ApiError as error:
         flash(error.message, "danger")
         return redirect(url_for("auth.profile"))
@@ -145,7 +157,8 @@ def request_creator():
 @login_required
 def manage_otc():
     """Create and inspect OTCs for learner registrations."""
-    require_active_admin(current_user)
+    admin_user = cast(User, current_user)
+    require_active_admin(admin_user)
     cleanup_expired_otc_codes()
 
     form = OTCCreateForm()
@@ -157,8 +170,11 @@ def manage_otc():
 
     if form.validate_on_submit():
         try:
+            expires_in_hours = form.expires_in_hours.data
+            if expires_in_hours is None:
+                raise ApiError("Controleer de invoer.", 400)
             created_otc = create_registration_otc(
-                expires_in_hours=form.expires_in_hours.data,
+                expires_in_hours=expires_in_hours,
                 purpose=form.purpose.data,
             )
         except ApiError as error:
@@ -188,7 +204,8 @@ def manage_otc():
 @login_required
 def delete_otc(code: str):
     """Delete an OTC from the dashboard."""
-    require_active_admin(current_user)
+    admin_user = cast(User, current_user)
+    require_active_admin(admin_user)
     otc = OTC.query.get_or_404(code)
     db.session.delete(otc)
     db.session.commit()

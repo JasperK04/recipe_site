@@ -38,6 +38,8 @@
     function updateButtons(row) {
         const role = Number(row.dataset.role)
         const active = row.dataset.active === "true"
+        const creatorRequestPending =
+            row.dataset.creatorRequestPending === "true"
         const isCurrentUser = row.dataset.currentUser === "true"
 
         const promoteBtn = row.querySelector(".promote-btn")
@@ -48,7 +50,12 @@
             role >= 5 || isCurrentUser
 
         demoteBtn.disabled =
-            role <= 1 || role === 6 || isCurrentUser
+            (role <= 1 && !creatorRequestPending) || role === 6 || isCurrentUser
+
+        demoteBtn.setAttribute(
+            "title",
+            creatorRequestPending ? "afwijzen" : "degraderen"
+        )
 
         activeBtn.hidden =
             isCurrentUser || role === 6
@@ -91,6 +98,11 @@
             credentials: "same-origin"
         })
 
+        const contentType = response.headers.get("content-type") || ""
+        if (!contentType.includes("application/json")) {
+            throw new Error("Server antwoordde niet met JSON.")
+        }
+
         const data = await response.json()
         if (!response.ok || data.status !== "ok") {
             throw new Error(data.message || "Actie mislukt.")
@@ -107,23 +119,18 @@
         }
 
         const row = btn.closest("tr")
-        const id = row.dataset.userId
 
         let endpoint
 
-            if (btn.classList.contains("promote-btn")) {
-            endpoint = `/api/users/${id}/promote`
-        }
-
-        if (btn.classList.contains("demote-btn")) {
-            endpoint = `/api/users/${id}/demote`
-        }
-
-        if (btn.classList.contains("active-btn")) {
+        if (btn.classList.contains("promote-btn")) {
+            endpoint = btn.dataset.endpoint
+        } else if (btn.classList.contains("demote-btn")) {
+            endpoint = btn.dataset.endpoint
+        } else if (btn.classList.contains("active-btn")) {
             endpoint =
                 row.dataset.active === "true"
-                ? `/api/users/${id}/deactivate`
-                : `/api/users/${id}/reactivate`
+                ? btn.dataset.deactivateEndpoint
+                : btn.dataset.reactivateEndpoint
         }
 
         if (!endpoint) {

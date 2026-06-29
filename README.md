@@ -86,7 +86,11 @@ recipe_site/
    
    Edit `.env` and update the following:
    - `SECRET_KEY`: Generate a secure secret key
+   - `OPENAI_API_KEY`: Required by the app configuration
    - `DATABASE_URL`: (Optional)
+   - `CREATOR_REQUEST_NOTIFICATION_EMAIL`: Where creator requests are sent
+   - `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`: SMTP settings for notifications
+   - If SMTP settings are omitted, creator requests still work but no email is sent
 
 4. **Initialize the database**
    ```bash

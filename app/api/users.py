@@ -3,11 +3,17 @@ from __future__ import annotations
 import secrets
 import string
 from datetime import datetime, timedelta, timezone
+from typing import cast
+
+from flask import jsonify, render_template
+from flask_login import current_user, login_required
 
 from app import db
+from app.api import api_bp
 from app.api.common import ApiError
 from app.models import OTC, Recipe, User
 from app.services.email import send_creator_request_notification
+from utils import require_active_admin
 
 
 def cleanup_expired_otc_codes() -> int:
@@ -145,7 +151,7 @@ def deactivate_user(*, actor: User, target: User) -> User:
     if not target.is_active:
         return target
 
-    target.is_active = False
+    setattr(target, "is_active", False)
     target.creator_request_pending = False
 
     for recipe in target.recipes.all():
@@ -162,7 +168,7 @@ def reactivate_user(target: User) -> User:
     if target.is_active:
         return target
 
-    target.is_active = True
+    setattr(target, "is_active", True)
 
     for recipe in target.recipes.all():
         if recipe.status != Recipe.STATUS_DEACTIVATED:
@@ -199,6 +205,10 @@ def demote_user(target: User) -> User:
     """Demote a non-admin user."""
     if target.role == User.ROLE_CHEF_DE_CUISINE:
         raise ApiError("Admins kunnen niet gedegradeerd worden via deze actie.", 400)
+    if target.role == User.ROLE_FIJNPROEVER and target.creator_request_pending:
+        target.creator_request_pending = False
+        db.session.commit()
+        return target
     if target.role == User.ROLE_FIJNPROEVER:
         return target
 
@@ -206,3 +216,76 @@ def demote_user(target: User) -> User:
     target.creator_request_pending = False
     db.session.commit()
     return target
+
+
+def _user_row_response(user: User):
+    return jsonify(
+        {
+            "status": "ok",
+            "html": render_template(
+                "components/user_table_row.html",
+                user=user,
+                current_user=current_user,
+            ),
+        }
+    )
+
+
+def _json_error(error: ApiError):
+    return jsonify({"status": "error", "message": error.message}), error.status_code
+
+
+@api_bp.route("/users/<int:user_id>/deactivate", methods=["POST"])
+@login_required
+def deactivate_user_endpoint(user_id):
+    actor = cast(User, current_user)
+    require_active_admin(actor)
+    target = User.query.get_or_404(user_id)
+
+    try:
+        deactivate_user(actor=actor, target=target)
+    except ApiError as error:
+        return _json_error(error)
+
+    return _user_row_response(target)
+
+
+@api_bp.route("/users/<int:user_id>/reactivate", methods=["POST"])
+@login_required
+def reactivate_user_endpoint(user_id):
+    actor = cast(User, current_user)
+    require_active_admin(actor)
+    target = User.query.get_or_404(user_id)
+
+    reactivate_user(target)
+    return _user_row_response(target)
+
+
+@api_bp.route("/users/<int:user_id>/promote", methods=["POST"])
+@login_required
+def promote_user_endpoint(user_id):
+    actor = cast(User, current_user)
+    require_active_admin(actor)
+    target = User.query.get_or_404(user_id)
+
+    try:
+        promote_user(target)
+    except ApiError as error:
+        return _json_error(error)
+
+    return _user_row_response(target)
+
+
+@api_bp.route("/users/<int:user_id>/demote", methods=["POST"])
+@login_required
+def demote_user_endpoint(user_id):
+    actor = cast(User, current_user)
+    require_active_admin(actor)
+    target = User.query.get_or_404(user_id)
+
+    try:
+        demote_user(target)
+    except ApiError as error:
+        return _json_error(error)
+
+    return _user_row_response(target)

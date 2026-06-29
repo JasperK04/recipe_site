@@ -2,6 +2,7 @@
     data-user-id="{{ user.id }}"
     data-role="{{ user.role }}"
     data-active="{{ user.is_active|lower }}"
+    data-creator-request-pending="{{ user.creator_request_pending|lower }}"
     data-current-user="{{ (user.id == current_user.id)|lower }}"
 >
     <td>
@@ -32,6 +33,7 @@
 
             <button 
                 class="btn btn-sm btn-outline-primary promote-btn"
+                data-endpoint="{{ url_for('api.promote_user_endpoint', user_id=user.id) }}"
                 data-bs-toggle="tooltip"
                 data-bs-placement="top"
                 title="promoveren">
@@ -40,14 +42,17 @@
 
             <button 
                 class="btn btn-sm btn-outline-secondary demote-btn"
+                data-endpoint="{{ url_for('api.demote_user_endpoint', user_id=user.id) }}"
                 data-bs-toggle="tooltip"
                 data-bs-placement="top"
-                title="degraderen">
+                title="{% if user.creator_request_pending %}afwijzen{% else %}degraderen{% endif %}">
                 <i class="bi bi-arrow-down"></i>
             </button>
 
             <button 
                 class="btn btn-sm btn-outline-danger active-btn"
+                data-deactivate-endpoint="{{ url_for('api.deactivate_user_endpoint', user_id=user.id) }}"
+                data-reactivate-endpoint="{{ url_for('api.reactivate_user_endpoint', user_id=user.id) }}"
                 data-bs-toggle="tooltip"
                 data-bs-placement="top"
                 title="deactiveren">

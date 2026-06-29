@@ -200,6 +200,7 @@ def read_uploaded_page(url: str) -> dict:
     soup = BeautifulSoup(page.content, "html.parser")
     raw_scripts = soup.find_all("script", {"type": "application/ld+json"})
     found_recipe = False
+    recipe: dict | None = None
     for script in raw_scripts:
         if not script or not script.string:
             continue
@@ -216,6 +217,8 @@ def read_uploaded_page(url: str) -> dict:
 
     else:
         print("No Recipe type found in JSON-LD, falling back to LLM parsing.")
+        return read_page_with_llm(soup)
+    if recipe is None:
         return read_page_with_llm(soup)
     # print(recipe)
     prep_time, cook_time, total_time = parse_time(recipe)

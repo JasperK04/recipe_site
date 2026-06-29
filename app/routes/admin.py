@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import cast
+
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import or_
@@ -48,11 +50,12 @@ def users():
 @admin_bp.route("/users/<int:user_id>/deactivate", methods=["POST"])
 @login_required
 def deactivate_user_route(user_id):
-    require_active_admin(current_user)
+    admin_user = cast(User, current_user)
+    require_active_admin(admin_user)
     target = User.query.get_or_404(user_id)
 
     try:
-        deactivate_user(actor=current_user, target=target)
+        deactivate_user(actor=admin_user, target=target)
     except ApiError as error:
         return _json_error(error)
 
@@ -62,7 +65,8 @@ def deactivate_user_route(user_id):
 @admin_bp.route("/users/<int:user_id>/reactivate", methods=["POST"])
 @login_required
 def reactivate_user_route(user_id):
-    require_active_admin(current_user)
+    admin_user = cast(User, current_user)
+    require_active_admin(admin_user)
     target = User.query.get_or_404(user_id)
 
     reactivate_user(target)
@@ -72,7 +76,8 @@ def reactivate_user_route(user_id):
 @admin_bp.route("/users/<int:user_id>/promote", methods=["POST"])
 @login_required
 def promote_user_route(user_id):
-    require_active_admin(current_user)
+    admin_user = cast(User, current_user)
+    require_active_admin(admin_user)
     target = User.query.get_or_404(user_id)
 
     try:
@@ -86,7 +91,8 @@ def promote_user_route(user_id):
 @admin_bp.route("/users/<int:user_id>/demote", methods=["POST"])
 @login_required
 def demote_user_route(user_id):
-    require_active_admin(current_user)
+    admin_user = cast(User, current_user)
+    require_active_admin(admin_user)
     target = User.query.get_or_404(user_id)
 
     try:
