@@ -5,31 +5,33 @@
     data-creator-request-pending="{{ user.creator_request_pending|lower }}"
     data-current-user="{{ (user.id == current_user.id)|lower }}"
 >
-    <td>
+    <td data-label="Gebruiker">
         <div class="fw-semibold">{{ user.username }}</div>
         <small class="text-muted">{{ user.email }}</small>
     </td>
-    <td>
+    <td data-label="Rol">
         <span class="badge {% if user.role == 6 %}bg-danger{% elif user.role in [2, 3, 4, 5] %}bg-primary{% else %}bg-secondary{% endif %}">
             {{ user.get_role_label() }}
         </span>
     </td>
-    <td>
+    <td data-label="Status">
         {% if user.is_active %}
         <span class="badge bg-success">Actief</span>
         {% else %}
         <span class="badge bg-danger">Gedeactiveerd</span>
         {% endif %}
     </td>
-    <td>
+    <td data-label="Aanvraag">
         {% if user.creator_request_pending %}
-        <span class="badge bg-warning text-dark">Creator aangevraagd</span>
+        <span class="badge bg-warning text-dark">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+        </span>
         {% else %}
         <span class="text-muted">-</span>
         {% endif %}
     </td>
-    <td class="text-end">
-        <div class="d-inline-flex gap-2 flex-wrap justify-content-end">
+    <td class="text-end" data-label="Acties">
+        <div class="d-inline-flex gap-2 flex-nowrap justify-content-end">
 
             <button 
                 class="btn btn-sm btn-outline-primary promote-btn"

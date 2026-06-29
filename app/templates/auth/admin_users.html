@@ -3,7 +3,7 @@
 {% block title %}Gebruikersbeheer - Recepten{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4">
     <h1>Gebruikersbeheer</h1>
     <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary">Terug naar profiel</a>
 </div>
@@ -11,8 +11,8 @@
 <div class="card shadow">
     <div class="card-body">
         <p class="text-muted mb-3">Bekijk actieve en gedeactiveerde gebruikers, behandel creator-aanvragen en beheer rollen.</p>
-        <div class="table-responsive">
-            <table class="table align-middle">
+        <div class="table-responsive admin-table-responsive">
+            <table class="table align-middle admin-table-stack">
                 <thead>
                     <tr>
                         <th>Gebruiker</th>

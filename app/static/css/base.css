@@ -436,4 +436,261 @@ textarea.form-control::placeholder {
         font-size: 0.92rem;
         word-break: break-word;
     }
+
+    .admin-search-form {
+        width: 100%;
+    }
+
+    .admin-search-form .form-control,
+    .admin-search-form .btn {
+        width: 100%;
+    }
+
+    .admin-filter-col {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .admin-table-responsive {
+        overflow-x: auto;
+    }
+
+    .admin-table-stack,
+    .admin-table-stack tbody,
+    .admin-table-stack tr,
+    .admin-table-stack td {
+        display: block;
+        width: 100%;
+    }
+
+    .admin-table-stack thead {
+        display: none;
+    }
+
+    .admin-table-stack tr {
+        margin-bottom: 1rem;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 0.75rem;
+        overflow: visible;
+        background: #ffffff;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.04);
+    }
+
+    .dark-mode .admin-table-stack tr {
+        border-color: rgba(255, 255, 255, 0.08);
+        background: var(--bs-card-bg) !important;
+        box-shadow: none;
+    }
+
+    .admin-table-stack td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.1rem;
+        padding: 0.5rem 0.5rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        text-align: right;
+    }
+
+    .dark-mode .admin-table-stack td {
+        border-top-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .admin-table-stack td:first-child {
+        border-top: 0;
+    }
+
+    .admin-table-stack td::before {
+        content: attr(data-label);
+        flex: 0 0 42%;
+        max-width: 42%;
+        font-weight: 700;
+        color: var(--bs-secondary-color, #6c757d);
+        text-align: left;
+    }
+
+    .admin-table-stack td[data-label="Gebruiker"] {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .admin-table-stack td[data-label="Gebruiker"] > div {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.1rem;
+        text-align: left;
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .admin-table-stack td[data-label="Gebruiker"] .fw-semibold,
+    .admin-table-stack td[data-label="Gebruiker"] small {
+        display: block;
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: clip;
+    }
+
+    .admin-table-stack td[data-label="Acties"] {
+        flex-direction: row;
+        align-items: center;
+        text-align: left;
+        gap: 0.75rem;
+    }
+
+    .admin-table-stack td[data-label="Acties"]::before {
+        max-width: none;
+        flex-basis: auto;
+        margin-bottom: 0;
+    }
+
+    .admin-action-group {
+        width: auto;
+        justify-content: flex-start !important;
+    }
+
+    .admin-action-group > * {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .admin-table-stack td .badge {
+        white-space: normal;
+        text-align: right;
+    }
+
+    .admin-filter-col {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+
+@media (min-width: 576px) and (max-width: 730px) {
+    .admin-search-form {
+        flex-direction: column;
+    }
+
+    .admin-search-form .form-control,
+    .admin-search-form .btn {
+        width: 100%;
+    }
+
+    .admin-filter-col {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .admin-table-responsive {
+        overflow-x: auto;
+    }
+
+    .admin-table-stack,
+    .admin-table-stack tbody,
+    .admin-table-stack tr,
+    .admin-table-stack td {
+        display: block;
+        width: 100%;
+    }
+
+    .admin-table-stack thead {
+        display: none;
+    }
+
+    .admin-table-stack tr {
+        margin-bottom: 1rem;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 0.75rem;
+        overflow: visible;
+        background: #ffffff;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.04);
+    }
+
+    .dark-mode .admin-table-stack tr {
+        border-color: rgba(255, 255, 255, 0.08);
+        background: var(--bs-card-bg) !important;
+        box-shadow: none;
+    }
+
+    .admin-table-stack td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.25rem;
+        padding: 0.75rem 1rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        text-align: right;
+    }
+
+    .dark-mode .admin-table-stack td {
+        border-top-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .admin-table-stack td:first-child {
+        border-top: 0;
+    }
+
+    .admin-table-stack td::before {
+        content: attr(data-label);
+        flex: 0 0 42%;
+        max-width: 42%;
+        font-weight: 700;
+        color: var(--bs-secondary-color, #6c757d);
+        text-align: left;
+    }
+
+    .admin-table-stack td[data-label="Gebruiker"] {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .admin-table-stack td[data-label="Gebruiker"] > div {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.1rem;
+        text-align: left;
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .admin-table-stack td[data-label="Gebruiker"] .fw-semibold,
+    .admin-table-stack td[data-label="Gebruiker"] small {
+        display: block;
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: clip;
+    }
+
+    .admin-table-stack td[data-label="Acties"] {
+        flex-direction: row;
+        align-items: center;
+        text-align: left;
+        gap: 0.75rem;
+    }
+
+    .admin-table-stack td[data-label="Acties"]::before {
+        max-width: none;
+        flex-basis: auto;
+        margin-bottom: 0;
+    }
+
+    .admin-action-group {
+        width: auto;
+        justify-content: flex-start !important;
+    }
+
+    .admin-action-group > * {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .admin-table-stack td .badge {
+        white-space: normal;
+        text-align: right;
+    }
 }

@@ -3,4 +3,3 @@
 - Sharing buttons (maybe a modal)
 - Maybe auto moderation for recipes and usernames
 - Image edit modal for recipe form (cropping)
-- Small screen for admin pages
