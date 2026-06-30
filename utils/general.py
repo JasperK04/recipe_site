@@ -158,7 +158,18 @@ def sanitize_recipe_ingredients(
         quantity, unit, name = parse_ingredient(ingredient)
         if name:
             if plain_text:
-                ingredients.append(" ".join(filter(None, [str(quantity) if quantity is not None else None, unit, name])))
+                ingredients.append(
+                    " ".join(
+                        filter(
+                            None,
+                            [
+                                str(quantity) if quantity is not None else None,
+                                unit,
+                                name,
+                            ],
+                        )
+                    )
+                )
             else:
                 ingredients.append(
                     {"name": name, "quantity": quantity, "measurement": unit}

@@ -4,7 +4,6 @@ import re
 import requests
 from bs4 import BeautifulSoup
 from flask import flash
-from openai import OpenAI
 
 
 def sanitize_text(text: str) -> str:
@@ -143,6 +142,8 @@ def normalize_instructions(raw_steps: list | None) -> list[str]:
 
 def parse_uploaded_text(text: str) -> dict:
     """Parse a text file with recipe data in a simple custom format."""
+    from openai import OpenAI
+
     system_prompt = """
 The text contains information about a recipe like Name, Description, Servings, Prep Time, Ingredients, and Instructions. 
 Extract the relevant information and return it as a JSON object with the following structure:

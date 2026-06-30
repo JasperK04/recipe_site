@@ -28,14 +28,13 @@ from app.api import (
 )
 from app.forms import RecipeForm, RecipeUploadForm
 from app.image_store import read_recipe_image_bytes
-from app.models import Recipe
-from app.models import User
-from upload_utils import parse_uploaded_text, read_uploaded_page, validate_uploaded_json
+from app.models import Recipe, User
 from utils import (
     ingredient_to_string,
     require_active_creator,
     sanitize_recipe_ingredients,
 )
+from utils.upload import parse_uploaded_text, read_uploaded_page, validate_uploaded_json
 
 recipes_bp = Blueprint("recipes", __name__)
 
@@ -140,9 +139,7 @@ def favorite_recipe(recipe_id):
     user = cast(User, current_user)
     created = False
     try:
-        created = toggle_recipe_favorite(
-            user=user, recipe=recipe, favorite=True
-        )
+        created = toggle_recipe_favorite(user=user, recipe=recipe, favorite=True)
     except ApiError as error:
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return jsonify(
@@ -163,9 +160,7 @@ def unfavorite_recipe(recipe_id):
     user = cast(User, current_user)
     removed = False
     try:
-        removed = toggle_recipe_favorite(
-            user=user, recipe=recipe, favorite=False
-        )
+        removed = toggle_recipe_favorite(user=user, recipe=recipe, favorite=False)
     except ApiError as error:
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return jsonify(

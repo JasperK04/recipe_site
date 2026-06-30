@@ -12,9 +12,10 @@ from app.api.common import ApiError
 from app.forms import RecipeForm
 from app.image_store import delete_recipe_image, save_recipe_image
 from app.models import Recipe, RecipeScore, User
-from utils import require_active_admin, require_active_creator
 from utils import (
     normalize_choice,
+    require_active_admin,
+    require_active_creator,
     sanitize_recipe_ingredients,
     sanitize_recipe_instructions,
 )
@@ -79,7 +80,13 @@ def create_recipe_endpoint():
     require_active_creator(user)
     form = RecipeForm()
     if not form.validate_on_submit():
-        return jsonify({"status": "error", "message": "Controleer de invoer.", "errors": form.errors}), 400
+        return jsonify(
+            {
+                "status": "error",
+                "message": "Controleer de invoer.",
+                "errors": form.errors,
+            }
+        ), 400
 
     recipe = create_recipe(
         author=user,
@@ -92,9 +99,16 @@ def create_recipe_endpoint():
         servings=form.servings.data,
         category=form.category.data if form.category.data else None,
         status=form.status.data,
-        image_file=form.image.data if getattr(form, "image", None) and form.image.data else None,
+        image_file=form.image.data
+        if getattr(form, "image", None) and form.image.data
+        else None,
     )
-    return jsonify({"status": "ok", "redirect_url": url_for("recipes.view_recipe", recipe_id=recipe.id)})
+    return jsonify(
+        {
+            "status": "ok",
+            "redirect_url": url_for("recipes.view_recipe", recipe_id=recipe.id),
+        }
+    )
 
 
 def update_recipe(
@@ -175,7 +189,13 @@ def update_recipe_endpoint(recipe_id):
 
     form = RecipeForm()
     if not form.validate_on_submit():
-        return jsonify({"status": "error", "message": "Controleer de invoer.", "errors": form.errors}), 400
+        return jsonify(
+            {
+                "status": "error",
+                "message": "Controleer de invoer.",
+                "errors": form.errors,
+            }
+        ), 400
 
     updated = update_recipe(
         recipe=recipe,
@@ -188,10 +208,17 @@ def update_recipe_endpoint(recipe_id):
         servings=form.servings.data,
         category=form.category.data if form.category.data else None,
         status=form.status.data,
-        image_file=form.image.data if getattr(form, "image", None) and form.image.data else None,
+        image_file=form.image.data
+        if getattr(form, "image", None) and form.image.data
+        else None,
         remove_image=request.form.get("remove_image") == "1",
     )
-    return jsonify({"status": "ok", "redirect_url": url_for("recipes.view_recipe", recipe_id=updated.id)})
+    return jsonify(
+        {
+            "status": "ok",
+            "redirect_url": url_for("recipes.view_recipe", recipe_id=updated.id),
+        }
+    )
 
 
 def delete_recipe(recipe: Recipe) -> str | None:
@@ -219,7 +246,7 @@ def delete_recipe_endpoint(recipe_id):
 def toggle_recipe_favorite(*, user: User, recipe: Recipe, favorite: bool) -> bool:
     """Add or remove a recipe from the user's favorites."""
     if recipe.status != Recipe.STATUS_PUBLIC:
-        raise ApiError("Alleen openbare recepten kunnen worden gefavoriet.", 403)
+        raise ApiError("Alleen openbare recepten kunnen favoriet worden gemaakt.", 403)
 
     existing = user.favorites.filter_by(id=recipe.id).first()
     changed = False
