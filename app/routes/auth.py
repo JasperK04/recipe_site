@@ -180,7 +180,9 @@ def manage_otc():
         except ApiError as error:
             flash(error.message, "danger")
         else:
-            registration_link = url_for("auth.register", otc=created_otc.code, _external=True)
+            registration_link = url_for(
+                "auth.register", otc=created_otc.code, _external=True
+            )
             session["created_otc"] = {
                 "code": created_otc.code,
                 "purpose": created_otc.purpose,
