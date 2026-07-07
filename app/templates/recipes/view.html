@@ -22,6 +22,40 @@
     <link rel="canonical" href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id, _external=True) }}" />
 {% endblock %}
 
+{% block extra_css %}
+    <style>
+        div > a.whatsapp {
+            border-color: #25D366;
+            color: #25D366 !important;
+            
+            &:hover {
+                background-color: rgba(37, 211, 102, 0.2) !important;
+                border-color: #25D366;
+            }
+        }
+
+        div > a.facebook {
+            border-color: #1877F2;
+            color: #1877F2 !important;
+
+            &:hover {
+                background-color: rgba(24, 119, 242, 0.2) !important;
+                border-color: #1877F2;
+            }
+        }
+
+        div > a.x {
+            border-color: #ffffff;
+            color: #ffffff !important;
+
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.2) !important;
+                border-color: #ffffff;
+            }
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-lg-8 mx-auto">
@@ -160,6 +194,39 @@
                     background: rgba(255,255,255,0.6) !important;
                     box-shadow:0 .125rem .25rem rgba(0,0,0,0.06) !important;
                 }
+                .share-callout{
+                    background: linear-gradient(135deg, rgba(13,110,253,0.08), rgba(13,110,253,0.02));
+                    border-color: rgba(13,110,253,0.16) !important;
+                }
+                .share-kicker{
+                    display:inline-flex;
+                    align-items:center;
+                    padding:0.25rem 0.55rem;
+                    border-radius:999px;
+                    background: rgba(13,110,253,0.12);
+                    color:#0d6efd;
+                    font-size:0.75rem;
+                    font-weight:700;
+                    letter-spacing:0.08em;
+                    text-transform:uppercase;
+                }
+                .share-icon-btn{
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: clamp(2.75rem, 5vw, 3.5rem);
+                    padding: 0.35rem 0.25rem;
+                }
+                .share-icon-btn .bi{
+                    font-size: clamp(1.15rem, 2.4vw, 1.65rem);
+                    line-height: 1;
+                }
+                .share-platform-row > .share-icon-btn{
+                    min-width: 0;
+                }
+                #copyShareLinkBtn.is-pressed{
+                    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.18);
+                }
                 </style>
                 {% endif %}
                 {% if recipe.description %}
@@ -261,6 +328,20 @@
                         {% endfor %}
                     </ol>
                 </div>
+
+                {% if recipe.status == 'public' %}
+                <div class="mt-4 p-3 p-md-3 border rounded-3 share-callout">
+                    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                        <div>
+                            <h5 class="mb-1">Deel dit recept met anderen.</h5>
+                            <p class="text-muted mb-0">Kopieer de link of post op je sociale media.</p>
+                        </div>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#shareModal">
+                            <i class="bi bi-share me-1"></i> Delen
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
 
@@ -271,6 +352,54 @@
         </div>
     </div>
 </div>
+
+{% if recipe.status == 'public' %}
+<div
+    class="modal fade"
+    id="shareModal"
+    tabindex="-1"
+    aria-labelledby="shareModalLabel"
+    aria-hidden="true"
+    data-share-title="{{ recipe.title|e }}"
+    data-share-text="{{ (recipe.description or recipe.title)|e }}"
+    data-share-url="{{ url_for('recipes.view_recipe', recipe_id=recipe.id, _external=True)|e }}"
+>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareModalLabel">Recept delen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">Kopieer de link of open een platform.</p>
+                <div class="otc-link-controls mb-3">
+                    <input
+                        id="shareLinkInput"
+                        class="form-control otc-link-input"
+                        type="text"
+                        value="{{ url_for('recipes.view_recipe', recipe_id=recipe.id, _external=True) }}"
+                        readonly
+                    >
+                    <button type="button" class="btn btn-outline-primary" id="copyShareLinkBtn" data-copy-value="{{ url_for('recipes.view_recipe', recipe_id=recipe.id, _external=True) }}">
+                        Kopiëren
+                    </button>
+                </div>
+                <div class="d-flex gap-2 w-100 share-platform-row">
+                    <a class="btn btn-outline-success share-icon-btn flex-fill whatsapp" id="whatsappShareBtn" target="_blank" rel="noopener noreferrer" aria-label="Delen via WhatsApp" title="WhatsApp">
+                        <i class="bi bi-whatsapp"></i>
+                    </a>
+                    <a class="btn btn-outline-dark share-icon-btn flex-fill facebook" id="facebookShareBtn" target="_blank" rel="noopener noreferrer" aria-label="Delen via Facebook" title="Facebook">
+                        <i class="bi bi-facebook"></i>
+                    </a>
+                    <a class="btn btn-outline-info share-icon-btn flex-fill x" id="xShareBtn" target="_blank" rel="noopener noreferrer" aria-label="Delen via X" title="X">
+                        <i class="bi bi-twitter-x"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Delete Confirmation Modal -->
 {% if can_edit_recipe %}
@@ -297,6 +426,86 @@
 {% endif %}
 <script>
 document.addEventListener('DOMContentLoaded', function(){
+    const shareModal = document.getElementById('shareModal');
+    if (shareModal) {
+        const pageUrl = shareModal.dataset.shareUrl || window.location.href;
+        const shareTitle = shareModal.dataset.shareTitle || document.title;
+        const shareText = shareModal.dataset.shareText || shareTitle;
+        const encodedUrl = encodeURIComponent(pageUrl);
+        const encodedText = encodeURIComponent(`${shareTitle} - ${shareText}`);
+        const copyBtn = document.getElementById('copyShareLinkBtn');
+        const shareInput = document.getElementById('shareLinkInput');
+        const whatsappBtn = document.getElementById('whatsappShareBtn');
+        const facebookBtn = document.getElementById('facebookShareBtn');
+        const xBtn = document.getElementById('xShareBtn');
+
+        function copyText(value) {
+            console.log('[share-copy] attempting copy', { length: value ? value.length : 0, value });
+            if (shareInput) {
+                shareInput.focus({ preventScroll: true });
+                shareInput.select();
+                shareInput.setSelectionRange(0, shareInput.value.length);
+                console.log('[share-copy] selected visible input', {
+                    selectionStart: shareInput.selectionStart,
+                    selectionEnd: shareInput.selectionEnd,
+                    activeElementIsInput: document.activeElement === shareInput,
+                });
+                const ok = document.execCommand('copy');
+                console.log('[share-copy] execCommand result', ok);
+                return ok;
+            }
+
+            console.warn('[share-copy] no visible input found, falling back to textarea');
+            const temp = document.createElement('textarea');
+            temp.value = value;
+            temp.setAttribute('readonly', 'readonly');
+            temp.style.position = 'fixed';
+            temp.style.top = '0';
+            temp.style.left = '-9999px';
+            temp.style.opacity = '0';
+            document.body.appendChild(temp);
+            temp.focus();
+            temp.select();
+            const ok = document.execCommand('copy');
+            console.log('[share-copy] execCommand result', ok);
+            document.body.removeChild(temp);
+            return ok;
+        }
+
+        function setCopyPressed(pressed) {
+            if (!copyBtn) return;
+            copyBtn.classList.toggle('btn-success', pressed);
+            copyBtn.classList.toggle('btn-outline-primary', !pressed);
+            copyBtn.classList.toggle('is-pressed', pressed);
+        }
+
+        if (whatsappBtn) whatsappBtn.href = `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
+        if (facebookBtn) facebookBtn.href = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+        if (xBtn) xBtn.href = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+
+        if (copyBtn) {
+            copyBtn.addEventListener('click', async function () {
+                try {
+                    console.log('[share-copy] button clicked');
+                    const value = shareInput ? shareInput.value : pageUrl;
+                    console.log('[share-copy] source input present', Boolean(shareInput));
+                    const copied = copyText(value);
+                    if (!copied) {
+                        console.warn('[share-copy] copy failed');
+                        throw new Error('copy failed');
+                    }
+                    console.log('[share-copy] copy succeeded');
+                    setCopyPressed(true);
+                    setTimeout(() => {
+                        setCopyPressed(false);
+                    }, 1500);
+                } catch (error) {
+                    console.error('[share-copy] error', error);
+                }
+            });
+        }
+    }
+
     const favForm = document.querySelector('.fav-form');
   if (favForm){
      favForm.addEventListener('submit', async function(e){
