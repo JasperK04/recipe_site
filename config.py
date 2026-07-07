@@ -44,9 +44,17 @@ class Config:
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
     MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER") or MAIL_USERNAME
-    CREATOR_REQUEST_NOTIFICATION_EMAIL = os.environ.get(
-        "CREATOR_REQUEST_NOTIFICATION_EMAIL"
-    ) or os.environ.get("admin_email")
+    MODERATION_NOTIFICATION_EMAIL = (
+        os.environ.get("MODERATION_NOTIFICATION_EMAIL")
+        or os.environ.get("CREATOR_REQUEST_NOTIFICATION_EMAIL")
+        or os.environ.get("admin_email")
+    )
+    CREATOR_REQUEST_NOTIFICATION_EMAIL = (
+        os.environ.get("CREATOR_REQUEST_NOTIFICATION_EMAIL")
+        or MODERATION_NOTIFICATION_EMAIL
+        or os.environ.get("admin_email")
+    )
+    MODERATION_ENABLED = _env_bool("MODERATION_ENABLED", True)
 
     # Central data root for all generated data: db file, image files, backups.
     DATA_ROOT = resolve_data_root(os.environ.get("DATAROOT"), base_dir=BASE_DIR)

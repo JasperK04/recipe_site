@@ -12,6 +12,7 @@ from app.api import (
     deactivate_recipe,
     deactivate_user,
     demote_user,
+    pending_recipe_moderation_count,
     promote_user,
     reactivate_recipe,
     reactivate_user,
@@ -111,11 +112,16 @@ def recipes():
     require_active_admin(current_user)
     page = request.args.get("page", 1, type=int)
     status = request.args.get("status", "all")
+    moderation = request.args.get("moderation", "all")
     search = request.args.get("search", "")
 
     query = Recipe.query
     if status in Recipe.VALID_STATUSES:
         query = query.filter_by(status=status)
+    if moderation == "flagged":
+        query = query.filter(Recipe.moderation_status == "flagged")
+    elif moderation == "allowed":
+        query = query.filter(Recipe.moderation_status == "allowed")
     if search:
         search_pattern = f"%{search}%"
         query = query.filter(
@@ -128,7 +134,11 @@ def recipes():
         page=page, per_page=24, error_out=False
     )
     return render_template(
-        "recipes/admin_list.html", recipes=recipes, status=status, search=search
+        "recipes/admin_list.html",
+        recipes=recipes,
+        status=status,
+        moderation=moderation,
+        search=search,
     )
 
 
@@ -140,7 +150,13 @@ def deactivate_recipe_route(recipe_id):
     already_deactivated = recipe.status == Recipe.STATUS_DEACTIVATED
     deactivate_recipe(recipe)
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify({"status": "ok", "new_status": recipe.status})
+        return jsonify(
+            {
+                "status": "ok",
+                "new_status": recipe.status,
+                "pending_recipe_moderation": pending_recipe_moderation_count(),
+            }
+        )
     if already_deactivated:
         flash("Recept is al gedeactiveerd.", "info")
     else:
@@ -156,7 +172,13 @@ def reactivate_recipe_route(recipe_id):
     already_active = recipe.status != Recipe.STATUS_DEACTIVATED
     reactivate_recipe(recipe)
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify({"status": "ok", "new_status": recipe.status})
+        return jsonify(
+            {
+                "status": "ok",
+                "new_status": recipe.status,
+                "pending_recipe_moderation": pending_recipe_moderation_count(),
+            }
+        )
     if already_active:
         flash("Recept is al actief.", "info")
     else:

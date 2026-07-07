@@ -30,6 +30,7 @@ from utils import (
     restore_directory_from_zip,
     sqlite_path_from_uri,
 )
+from utils.moderation import moderate_username
 
 fake = Faker("nl_NL")
 
@@ -103,6 +104,10 @@ def register_commands(app: Flask):
         Usage:
             flask create-user <username> <email>
         """
+        moderation = moderate_username(username)
+        if moderation.is_flagged:
+            raise click.ClickException(" ".join(moderation.messages))
+
         # Check if user already exists
         existing_user = User.query.filter(
             (User.username == username) | (User.email == email)
@@ -144,6 +149,10 @@ def register_commands(app: Flask):
         Usage:
             flask create-admin <username> <email>
         """
+        moderation = moderate_username(username)
+        if moderation.is_flagged:
+            raise click.ClickException(" ".join(moderation.messages))
+
         # Check if user already exists
         existing_user = User.query.filter(
             (User.username == username) | (User.email == email)
@@ -168,6 +177,20 @@ def register_commands(app: Flask):
         click.echo(
             click.style(
                 f"✓ Admin-gebruiker aangemaakt: {username} ({email})", fg="green"
+            )
+        )
+
+    @app.cli.command("retest-recipes")
+    def retest_recipes():
+        """Re-run moderation across all recipes using the current filters."""
+        from app.api.recipes import retest_all_recipe_moderation
+
+        flagged_count, restored_count = retest_all_recipe_moderation()
+        click.echo(
+            click.style(
+                "Moderation retest completed: "
+                f"{flagged_count} flagged, {restored_count} restored.",
+                fg="green",
             )
         )
 

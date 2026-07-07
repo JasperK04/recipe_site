@@ -120,7 +120,16 @@
                             {% if current_user.is_admin %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('auth.manage_otc') }}">OTC-beheer</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('admin.recipes') }}">Receptmoderatie</a></li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between gap-2" href="{{ url_for('admin.recipes') }}">
+                                    <span>Receptmoderatie</span>
+                                    <span
+                                        class="creator-request-dot ms-2 creator-request-badge {% if pending_recipe_moderation == 0 %}d-none{% endif %}"
+                                        data-recipe-moderation-badge
+                                        aria-hidden="true"
+                                    ></span>
+                                </a>
+                            </li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center justify-content-between gap-2" href="{{ url_for('admin.users') }}">
                                     <span>Gebruikersbeheer</span>

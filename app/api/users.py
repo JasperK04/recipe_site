@@ -14,6 +14,7 @@ from app.api.common import ApiError
 from app.models import OTC, Recipe, User
 from app.services.email import send_creator_request_notification
 from utils import require_active_admin
+from utils.moderation import moderate_username
 
 
 def cleanup_expired_otc_codes() -> int:
@@ -70,8 +71,12 @@ def register_user(
     one_time_code: str | None = None,
 ) -> User:
     """Create a new user account."""
+    username_result = moderate_username(username)
+    errors = username_result.messages
     if User.query.filter_by(username=username).first():
-        raise ApiError("Gebruikersnaam al in gebruik. Kies een andere.", 400)
+        errors.append("Gebruikersnaam al in gebruik. Kies een andere.")
+    if errors:
+        raise ApiError(" ".join(errors), 400)
     if User.query.filter_by(email=email).first():
         raise ApiError("E-mail al geregistreerd. Gebruik een ander e-mailadres.", 400)
 
@@ -103,9 +108,14 @@ def update_profile(
     new_password: str | None = None,
 ) -> User:
     """Update the current user's profile and optional password."""
-    existing_username = User.query.filter_by(username=username).first()
-    if existing_username and existing_username.id != user.id:
-        raise ApiError("Gebruikersnaam al in gebruik. Kies een andere.", 400)
+    if username != user.username:
+        username_result = moderate_username(username)
+        errors = username_result.messages
+        existing_username = User.query.filter_by(username=username).first()
+        if existing_username and existing_username.id != user.id:
+            errors.append("Gebruikersnaam al in gebruik. Kies een andere.")
+        if errors:
+            raise ApiError(" ".join(errors), 400)
 
     existing_email = User.query.filter_by(email=email).first()
     if existing_email and existing_email.id != user.id:

@@ -173,6 +173,21 @@ class Recipe(PaginationMixin, db.Model):
         db.String(20), nullable=False, default="public", server_default="public"
     )
     status_before_deactivation = db.Column(db.String(20))
+    moderation_status = db.Column(
+        db.String(20),
+        nullable=False,
+        default="allowed",
+        server_default="allowed",
+    )
+    moderation_issues = db.Column(
+        db.JSON,
+        nullable=False,
+        default=list,
+        server_default="[]",
+    )
+    status_before_moderation = db.Column(db.String(20))
+    moderated_at = db.Column(db.DateTime)
+    moderation_notification_signature = db.Column(db.String(128))
 
     # File-backed recipe image identifier (stored as DATAROOT/recipe/<image_id>.webp)
     image_id = db.Column(db.String(64), index=True)
@@ -227,6 +242,23 @@ class Recipe(PaginationMixin, db.Model):
     @property
     def has_image(self):
         return bool(self.image_id)
+
+    @property
+    def is_flagged_by_moderation(self) -> bool:
+        return self.moderation_status == "flagged"
+
+    @property
+    def moderation_issue_messages(self) -> list[str]:
+        issues = self.moderation_issues or []
+        messages: list[str] = []
+        for issue in issues:
+            if isinstance(issue, dict):
+                message = issue.get("message")
+                if message:
+                    messages.append(str(message))
+            elif issue:
+                messages.append(str(issue))
+        return messages
 
     def __repr__(self):
         return f"<Recipe {self.title}>"

@@ -47,6 +47,18 @@ def _status_badge(status):
     return ("Openbaar", "success")
 
 
+def _moderation_alert(recipe: Recipe) -> str | None:
+    if not recipe.is_flagged_by_moderation:
+        return None
+    issues = recipe.moderation_issue_messages
+    if not issues:
+        return "Dit recept is door moderatie gemarkeerd."
+    if len(issues) == 1:
+        return f"Dit recept is door moderatie gemarkeerd: {issues[0]}"
+    joined = " ".join(f"• {issue}" for issue in issues)
+    return f"Dit recept is door moderatie gemarkeerd. Gevonden problemen: {joined}"
+
+
 @recipes_bp.route("/")
 def list_recipes():
     """Display public recipes."""
@@ -227,7 +239,10 @@ def add_recipe():
                 validate_on_load=validate_on_load,
             )
 
-        if recipe.status == Recipe.STATUS_PUBLIC:
+        moderation_message = _moderation_alert(recipe)
+        if moderation_message:
+            flash(moderation_message, "warning")
+        elif recipe.status == Recipe.STATUS_PUBLIC:
             flash("Recept succesvol gepubliceerd!", "success")
         else:
             flash("Concept opgeslagen.", "success")
@@ -378,7 +393,10 @@ def edit_recipe(recipe_id):
                 validate_on_load=False,
             )
 
-        if recipe.status == Recipe.STATUS_PUBLIC:
+        moderation_message = _moderation_alert(recipe)
+        if moderation_message:
+            flash(moderation_message, "warning")
+        elif recipe.status == Recipe.STATUS_PUBLIC:
             flash("Recept succesvol bijgewerkt en gepubliceerd.", "success")
         else:
             flash("Concept succesvol bijgewerkt.", "success")

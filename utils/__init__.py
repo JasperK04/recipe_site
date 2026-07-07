@@ -18,6 +18,14 @@ from .general import (
     sqlite_path_from_uri,
     to_model_choices,
 )
+from .moderation import (
+    MODERATION_ENABLED,
+    ModerationIssue,
+    ModerationResult,
+    moderate_recipe_payload,
+    moderate_texts,
+    moderate_username,
+)
 
 __all__ = [
     "clear_directory_files",
@@ -36,6 +44,12 @@ __all__ = [
     "restore_directory_from_zip",
     "sanitize_recipe_ingredients",
     "sanitize_recipe_instructions",
+    "MODERATION_ENABLED",
+    "ModerationIssue",
+    "ModerationResult",
+    "moderate_recipe_payload",
+    "moderate_texts",
+    "moderate_username",
     "sqlite_path_from_uri",
     "to_model_choices",
 ]

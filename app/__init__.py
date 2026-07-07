@@ -76,11 +76,17 @@ def create_app(config_name="default"):
         from flask_login import current_user as flask_current_user
 
         from app.api.users import pending_creator_request_count
+        from app.api.recipes import pending_recipe_moderation_count
 
         pending_creator_requests = 0
+        pending_recipe_moderation = 0
         if flask_current_user.is_authenticated and flask_current_user.is_admin:
             pending_creator_requests = pending_creator_request_count()
+            pending_recipe_moderation = pending_recipe_moderation_count()
 
-        return dict(pending_creator_requests=pending_creator_requests)
+        return dict(
+            pending_creator_requests=pending_creator_requests,
+            pending_recipe_moderation=pending_recipe_moderation,
+        )
 
     return app

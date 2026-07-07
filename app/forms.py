@@ -21,6 +21,7 @@ from wtforms.validators import (
 )
 
 from app.models import User
+from utils.moderation import moderate_username
 
 
 class RegistrationForm(FlaskForm):
@@ -79,9 +80,13 @@ class RegistrationForm(FlaskForm):
 
     def validate_username(self, username):
         """Check if username already exists."""
+        moderation = moderate_username(username.data)
+        errors = moderation.messages
         user = User.query.filter_by(username=username.data).first()
         if user:
-            raise ValidationError("Gebruikersnaam al in gebruik. Kies een andere.")
+            errors.append("Gebruikersnaam al in gebruik. Kies een andere.")
+        if errors:
+            raise ValidationError(" ".join(errors))
 
     def validate_email(self, email):
         """Check if email already exists."""
@@ -148,9 +153,16 @@ class ProfileEditForm(FlaskForm):
     submit = SubmitField("Opslaan")
 
     def validate_username(self, username):
+        if current_user.is_authenticated and username.data == current_user.username:
+            return
+
+        moderation = moderate_username(username.data)
+        errors = moderation.messages
         existing = User.query.filter_by(username=username.data).first()
         if existing and existing.id != current_user.id:
-            raise ValidationError("Gebruikersnaam al in gebruik. Kies een andere.")
+            errors.append("Gebruikersnaam al in gebruik. Kies een andere.")
+        if errors:
+            raise ValidationError(" ".join(errors))
 
     def validate_email(self, email):
         existing = User.query.filter_by(email=email.data).first()

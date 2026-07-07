@@ -13,17 +13,30 @@
         <form method="GET" class="d-flex flex-column flex-sm-row gap-2 admin-search-form">
             <input type="text" name="search" class="form-control" placeholder="Zoek op titel of beschrijving" value="{{ search }}">
             <input type="hidden" name="status" value="{{ status }}">
+            <input type="hidden" name="moderation" value="{{ moderation }}">
             <button type="submit" class="btn btn-outline-primary">Zoeken</button>
         </form>
     </div>
     <div class="col-12 col-md-3 admin-filter-col">
         <form method="GET">
             <input type="hidden" name="search" value="{{ search }}">
+            <input type="hidden" name="moderation" value="{{ moderation }}">
             <select class="form-select" name="status" onchange="this.form.submit()">
                 <option value="all" {% if status == 'all' %}selected{% endif %}>Alle statussen</option>
                 <option value="public" {% if status == 'public' %}selected{% endif %}>Openbaar</option>
                 <option value="draft" {% if status == 'draft' %}selected{% endif %}>Concept</option>
                 <option value="deactivated" {% if status == 'deactivated' %}selected{% endif %}>Gedeactiveerd</option>
+            </select>
+        </form>
+    </div>
+    <div class="col-12 col-md-3 admin-filter-col">
+        <form method="GET">
+            <input type="hidden" name="search" value="{{ search }}">
+            <input type="hidden" name="status" value="{{ status }}">
+            <select class="form-select" name="moderation" onchange="this.form.submit()">
+                <option value="all" {% if moderation == 'all' %}selected{% endif %}>Alle moderatie</option>
+                <option value="flagged" {% if moderation == 'flagged' %}selected{% endif %}>Gevlagd</option>
+                <option value="allowed" {% if moderation == 'allowed' %}selected{% endif %}>Toegestaan</option>
             </select>
         </form>
     </div>
@@ -37,6 +50,7 @@
                 <th>Titel</th>
                 <th>Auteur</th>
                 <th>Status</th>
+                <th>Moderatie</th>
                 <th>Aangemaakt</th>
                 <th class="text-end">Acties</th>
             </tr>
@@ -55,9 +69,27 @@
                     <span class="badge bg-danger">Gedeactiveerd</span>
                     {% endif %}
                 </td>
+                <td data-label="Moderatie">
+                    {% if recipe.moderation_status == 'flagged' %}
+                    <span class="badge bg-danger">Gevlagd</span>
+                    {% else %}
+                    <span class="badge bg-success">Toegestaan</span>
+                    {% endif %}
+                </td>
                 <td data-label="Aangemaakt">{{ recipe.created_at.strftime('%d-%m-%Y') if recipe.created_at else '-' }}</td>
                 <td class="text-end" data-label="Acties">
                     <div class="d-inline-flex gap-2 flex-wrap justify-content-end admin-action-group">
+                        {% if recipe.moderation_status == 'flagged' %}
+                        <form
+                            method="POST"
+                            action="{{ url_for('api.allow_recipe_moderation_endpoint', recipe_id=recipe.id) }}"
+                            data-admin-recipe-moderation="1"
+                            data-allow-endpoint="{{ url_for('api.allow_recipe_moderation_endpoint', recipe_id=recipe.id) }}"
+                        >
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit" class="btn btn-sm btn-outline-success">Sta toe</button>
+                        </form>
+                        {% endif %}
                         {% if recipe.status == 'deactivated' %}
                         <form
                             method="POST"
@@ -94,13 +126,13 @@
     <ul class="pagination justify-content-center">
         {% if recipes.has_prev %}
         <li class="page-item">
-            <a class="page-link" href="{{ url_for('admin.recipes', page=recipes.prev_num, status=status, search=search) }}">Vorige</a>
+            <a class="page-link" href="{{ url_for('admin.recipes', page=recipes.prev_num, status=status, moderation=moderation, search=search) }}">Vorige</a>
         </li>
         {% endif %}
         {% for page_num in recipes.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
             {% if page_num %}
             <li class="page-item {% if page_num == recipes.page %}active{% endif %}">
-                <a class="page-link" href="{{ url_for('admin.recipes', page=page_num, status=status, search=search) }}">{{ page_num }}</a>
+                <a class="page-link" href="{{ url_for('admin.recipes', page=page_num, status=status, moderation=moderation, search=search) }}">{{ page_num }}</a>
             </li>
             {% else %}
             <li class="page-item disabled"><span class="page-link">...</span></li>
@@ -108,7 +140,7 @@
         {% endfor %}
         {% if recipes.has_next %}
         <li class="page-item">
-            <a class="page-link" href="{{ url_for('admin.recipes', page=recipes.next_num, status=status, search=search) }}">Volgende</a>
+            <a class="page-link" href="{{ url_for('admin.recipes', page=recipes.next_num, status=status, moderation=moderation, search=search) }}">Volgende</a>
         </li>
         {% endif %}
     </ul>
@@ -124,6 +156,13 @@
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/validation.js') }}" defer></script>
 <script>
+    function updateNavbarModerationBadge(pendingCount) {
+        document.querySelectorAll("[data-recipe-moderation-badge]")
+            .forEach(badge => {
+                badge.classList.toggle("d-none", pendingCount <= 0)
+            })
+    }
+
     function updateRecipeStatusBadge(row, status) {
         const badge = row.querySelector('[data-label="Status"] .badge')
         if (!badge) {
@@ -144,6 +183,23 @@
         }
     }
 
+    function updateRecipeModerationBadge(row, moderationStatus) {
+        const badge = row.querySelector('[data-label="Moderatie"] .badge')
+        if (!badge) {
+            return
+        }
+
+        badge.className = "badge"
+
+        if (moderationStatus === "flagged") {
+            badge.classList.add("bg-danger")
+            badge.textContent = "Gevlagd"
+        } else {
+            badge.classList.add("bg-success")
+            badge.textContent = "Toegestaan"
+        }
+    }
+
     function updateRecipeAction(form, status) {
         const button = form.querySelector('button[type="submit"]')
         if (!button) {
@@ -161,29 +217,46 @@
         }
     }
 
+    function updateModerationAction(form, moderationStatus) {
+        const button = form.querySelector('button[type="submit"]')
+        if (!button) {
+            return
+        }
+
+        if (moderationStatus === "flagged") {
+            form.action = form.dataset.allowEndpoint
+            button.className = "btn btn-sm btn-outline-success"
+            button.textContent = "Sta toe"
+        } else {
+            form.remove()
+        }
+    }
+
     document.addEventListener("submit", async event => {
         const form = event.target.closest("form[data-admin-recipe-toggle='1']")
+        const moderationForm = event.target.closest("form[data-admin-recipe-moderation='1']")
 
-        if (!form) {
+        if (!form && !moderationForm) {
             return
         }
 
         event.preventDefault()
 
-        const submitButton = form.querySelector("button[type='submit']")
-        const row = form.closest("tr")
+        const activeForm = form || moderationForm
+        const submitButton = activeForm.querySelector("button[type='submit']")
+        const row = activeForm.closest("tr")
 
         if (submitButton) {
             submitButton.disabled = true
         }
 
         try {
-            const response = await fetch(form.action, {
-                method: form.method || "POST",
+            const response = await fetch(activeForm.action, {
+                method: activeForm.method || "POST",
                 headers: {
                     "X-Requested-With": "XMLHttpRequest",
                 },
-                body: new FormData(form),
+                body: new FormData(activeForm),
                 credentials: "same-origin",
             })
 
@@ -194,7 +267,16 @@
 
             if (row && data.new_status) {
                 updateRecipeStatusBadge(row, data.new_status)
-                updateRecipeAction(form, data.new_status)
+                if (activeForm.dataset.adminRecipeToggle === "1") {
+                    updateRecipeAction(activeForm, data.new_status)
+                }
+            }
+            if (row && data.moderation_status) {
+                updateRecipeModerationBadge(row, data.moderation_status)
+                updateModerationAction(activeForm, data.moderation_status)
+            }
+            if (typeof data.pending_recipe_moderation === "number") {
+                updateNavbarModerationBadge(data.pending_recipe_moderation)
             }
         } catch (error) {
             window.alert(error.message || "Actie mislukt.")

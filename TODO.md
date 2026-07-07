@@ -1,5 +1,4 @@
 ## recipes
 - Create an actual Logo/icon
 - Sharing buttons (maybe a modal)
-- Maybe auto moderation for recipes and usernames
 - Image edit modal for recipe form (cropping)

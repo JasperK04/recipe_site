@@ -6,11 +6,14 @@ api_bp = Blueprint("api", __name__, url_prefix="/api")
 
 from app.api.common import ApiError  # noqa: E402
 from app.api.recipes import (  # noqa: E402
+    allow_recipe_moderation,
     create_recipe,
     deactivate_recipe,
     delete_recipe,
     reactivate_recipe,
     record_recipe_score,
+    pending_recipe_moderation_count,
+    retest_all_recipe_moderation,
     toggle_recipe_favorite,
     update_recipe,
 )
@@ -29,11 +32,14 @@ from app.api.users import (  # noqa: E402
 __all__ = [
     "api_bp",
     "ApiError",
+    "allow_recipe_moderation",
     "create_recipe",
     "deactivate_recipe",
     "delete_recipe",
     "reactivate_recipe",
     "record_recipe_score",
+    "pending_recipe_moderation_count",
+    "retest_all_recipe_moderation",
     "toggle_recipe_favorite",
     "update_recipe",
     "register_user",

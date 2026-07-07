@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from datetime import datetime, timezone
 from typing import Any, cast
 
-from flask import abort, jsonify, request, url_for
+from flask import abort, flash, jsonify, request, url_for
 from flask_login import current_user, login_required
 
 from app import db
@@ -12,13 +13,87 @@ from app.api.common import ApiError
 from app.forms import RecipeForm
 from app.image_store import delete_recipe_image, save_recipe_image
 from app.models import Recipe, RecipeScore, User
+from app.services.email import send_recipe_moderation_notification
 from utils import (
+    moderate_recipe_payload,
     normalize_choice,
     require_active_admin,
     require_active_creator,
     sanitize_recipe_ingredients,
     sanitize_recipe_instructions,
 )
+from utils.moderation import ModerationResult
+
+
+def _moderate_recipe(
+    *,
+    title: str,
+    description: str | None,
+    ingredients: list[str] | None,
+    instructions: Iterable[str] | None,
+):
+    return moderate_recipe_payload(
+        title=title,
+        description=description,
+        ingredients=ingredients,
+        instructions=list(instructions or []),
+    )
+
+
+def _apply_recipe_moderation(
+    *,
+    recipe: Recipe,
+    requested_status: str,
+    moderation_result: ModerationResult,
+) -> Recipe:
+    recipe.moderation_status = moderation_result.status
+    recipe.moderation_issues = [issue.to_dict() for issue in moderation_result.issues]
+    recipe.moderated_at = datetime.now(timezone.utc)
+
+    if moderation_result.is_flagged:
+        recipe.status_before_moderation = requested_status
+        recipe.status = (
+            Recipe.STATUS_DRAFT
+            if requested_status == Recipe.STATUS_PUBLIC
+            else requested_status
+        )
+    else:
+        recipe.status_before_moderation = None
+        recipe.moderation_notification_signature = None
+        recipe.status = requested_status
+
+    return recipe
+
+
+def _restore_requested_status(recipe: Recipe) -> None:
+    if recipe.status_before_moderation and recipe.status != Recipe.STATUS_DEACTIVATED:
+        recipe.status = recipe.status_before_moderation
+    recipe.status_before_moderation = None
+
+
+def _flash_recipe_save_message(recipe: Recipe, *, updated: bool) -> None:
+    if recipe.is_flagged_by_moderation:
+        issues = recipe.moderation_issue_messages
+        if issues:
+            flash(
+                "Recept opgeslagen als concept vanwege moderatie: "
+                + "; ".join(issues),
+                "warning",
+            )
+        else:
+            flash("Recept opgeslagen als concept vanwege moderatie.", "warning")
+    elif recipe.status == Recipe.STATUS_PUBLIC:
+        flash(
+            "Recept succesvol bijgewerkt en gepubliceerd."
+            if updated
+            else "Recept succesvol gepubliceerd!",
+            "success",
+        )
+    else:
+        flash(
+            "Concept succesvol bijgewerkt." if updated else "Concept opgeslagen.",
+            "success",
+        )
 
 
 def create_recipe(
@@ -36,6 +111,17 @@ def create_recipe(
     image_file: Any = None,
 ) -> Recipe:
     """Create a recipe and persist the optional image."""
+    requested_status = normalize_choice(
+        status,
+        allowed=(Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC),
+        default=Recipe.STATUS_DRAFT,
+    )
+    moderation = _moderate_recipe(
+        title=title,
+        description=description,
+        ingredients=ingredients,
+        instructions=instructions,
+    )
     recipe = Recipe(
         title=title,
         description=description,
@@ -45,12 +131,12 @@ def create_recipe(
         cook_time=cook_time,
         servings=servings,
         category=category if category else None,
-        status=normalize_choice(
-            status,
-            allowed=(Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC),
-            default=Recipe.STATUS_DRAFT,
-        ),
         user_id=author.id,
+    )
+    _apply_recipe_moderation(
+        recipe=recipe,
+        requested_status=requested_status,
+        moderation_result=moderation,
     )
 
     db.session.add(recipe)
@@ -69,6 +155,9 @@ def create_recipe(
         if uploaded_image_id:
             delete_recipe_image(uploaded_image_id)
         raise
+
+    if moderation.is_flagged:
+        send_recipe_moderation_notification(recipe, moderation)
 
     return recipe
 
@@ -103,6 +192,7 @@ def create_recipe_endpoint():
         if getattr(form, "image", None) and form.image.data
         else None,
     )
+    _flash_recipe_save_message(recipe, updated=False)
     return jsonify(
         {
             "status": "ok",
@@ -127,6 +217,17 @@ def update_recipe(
     remove_image: bool = False,
 ) -> Recipe:
     """Update a recipe and handle image replacement/removal."""
+    requested_status = normalize_choice(
+        status,
+        allowed=(Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC),
+        default=recipe.status,
+    )
+    moderation = _moderate_recipe(
+        title=title,
+        description=description,
+        ingredients=ingredients,
+        instructions=instructions,
+    )
     recipe.title = title
     recipe.description = description
     recipe.ingredients = sanitize_recipe_ingredients(ingredients)
@@ -135,13 +236,11 @@ def update_recipe(
     recipe.cook_time = cook_time
     recipe.servings = servings
     recipe.category = category if category else None
-
-    if status is not None:
-        recipe.status = normalize_choice(
-            status,
-            allowed=(Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC),
-            default=recipe.status,
-        )
+    _apply_recipe_moderation(
+        recipe=recipe,
+        requested_status=requested_status,
+        moderation_result=moderation,
+    )
 
     previous_image_id = recipe.image_id
     image_ids_to_delete_after_commit: set[str] = set()
@@ -172,6 +271,9 @@ def update_recipe(
     for image_id in image_ids_to_delete_after_commit:
         if image_id != recipe.image_id:
             delete_recipe_image(image_id)
+
+    if moderation.is_flagged:
+        send_recipe_moderation_notification(recipe, moderation)
 
     return recipe
 
@@ -213,6 +315,7 @@ def update_recipe_endpoint(recipe_id):
         else None,
         remove_image=request.form.get("remove_image") == "1",
     )
+    _flash_recipe_save_message(updated, updated=True)
     return jsonify(
         {
             "status": "ok",
@@ -230,6 +333,66 @@ def delete_recipe(recipe: Recipe) -> str | None:
     return image_id
 
 
+def allow_recipe_moderation(recipe: Recipe) -> Recipe:
+    """Mark a recipe as allowed and restore the requested publish state."""
+    recipe.moderation_status = "allowed"
+    recipe.moderated_at = datetime.now(timezone.utc)
+    recipe.moderation_notification_signature = None
+    _restore_requested_status(recipe)
+    db.session.commit()
+    return recipe
+
+
+def retest_recipe_moderation(recipe: Recipe) -> Recipe:
+    """Re-run moderation on an existing recipe without notifying by email."""
+    moderation = _moderate_recipe(
+        title=recipe.title,
+        description=recipe.description,
+        ingredients=recipe.ingredients,
+        instructions=recipe.instructions,
+    )
+    recipe.moderation_status = moderation.status
+    recipe.moderation_issues = [issue.to_dict() for issue in moderation.issues]
+    recipe.moderated_at = datetime.now(timezone.utc)
+
+    if moderation.is_flagged:
+        if recipe.status != Recipe.STATUS_DEACTIVATED:
+            if recipe.status_before_moderation is None:
+                recipe.status_before_moderation = recipe.status
+            if recipe.status == Recipe.STATUS_PUBLIC:
+                recipe.status = Recipe.STATUS_DRAFT
+    else:
+        recipe.moderation_notification_signature = None
+        _restore_requested_status(recipe)
+
+    return recipe
+
+
+def retest_all_recipe_moderation() -> tuple[int, int]:
+    """Re-run moderation for all recipes and return flagged/restored counts."""
+    flagged_count = 0
+    restored_count = 0
+
+    for recipe in Recipe.query.all():
+        before_moderation = recipe.moderation_status
+        retest_recipe_moderation(recipe)
+        if recipe.moderation_status == "flagged":
+            flagged_count += 1
+        if before_moderation == "flagged" and recipe.moderation_status == "allowed":
+            restored_count += 1
+
+    db.session.commit()
+    return flagged_count, restored_count
+
+
+def pending_recipe_moderation_count() -> int:
+    """Return the number of recipes that still need admin review."""
+    return Recipe.query.filter(
+        Recipe.moderation_status == "flagged",
+        Recipe.status != Recipe.STATUS_DEACTIVATED,
+    ).count()
+
+
 @api_bp.route("/recipes/<int:recipe_id>/delete", methods=["POST"])
 @login_required
 def delete_recipe_endpoint(recipe_id):
@@ -241,6 +404,24 @@ def delete_recipe_endpoint(recipe_id):
 
     delete_recipe(recipe)
     return jsonify({"status": "ok", "redirect_url": url_for("recipes.list_recipes")})
+
+
+@api_bp.route("/recipes/<int:recipe_id>/moderation/allow", methods=["POST"])
+@login_required
+def allow_recipe_moderation_endpoint(recipe_id):
+    user = cast(User, current_user)
+    require_active_admin(user)
+    recipe = Recipe.query.get_or_404(recipe_id)
+
+    allow_recipe_moderation(recipe)
+    return jsonify(
+        {
+            "status": "ok",
+            "new_status": recipe.status,
+            "moderation_status": recipe.moderation_status,
+            "pending_recipe_moderation": pending_recipe_moderation_count(),
+        }
+    )
 
 
 def toggle_recipe_favorite(*, user: User, recipe: Recipe, favorite: bool) -> bool:
