@@ -2,6 +2,10 @@
 
 {% block title %}{{ title }} - Recepten{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe_image_cropper.css') }}">
+{% endblock %}
+
 {% block content %}
 <style>
 /* ===== drag handle styling ===== */
@@ -62,11 +66,13 @@
             <div class="card-body">
                 <h2 class="card-title mb-4">{{ title }}</h2>
                 <form
+                    id="recipe-form"
                     method="POST"
                     enctype="multipart/form-data"
                     action="{{ url_for('api.update_recipe_endpoint', recipe_id=recipe.id) if recipe else url_for('api.create_recipe_endpoint') }}"
                     data-api-form="1"
                     data-client-validation="recipe"
+                    data-image-crop-enabled="1"
                     {% if validate_on_load %}data-client-validation-on-load="1"{% endif %}
                     novalidate
                 >
@@ -76,29 +82,31 @@
                                 {{ form.image(class="d-none", accept="image/jpeg,image/png,image/gif,image/webp") }}
                                 <input type="hidden" name="remove_image" id="remove_image" value="0" />
                             {% if recipe and recipe.has_image %}
-                                <div class="image-frame d-inline-block position-relative">
-                                    <img id="image-preview" data-original-src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="Recipe image" class="img-fluid rounded mb-2 d-block" style="max-height:300px; object-fit:cover;" />
+                                <div class="image-frame position-relative w-100">
+                                    <img id="image-preview" data-original-src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="Recipe image" class="rounded border border-2 border-secondary mb-2 d-block w-100" style="height:300px; object-fit:cover;" />
                                     <div id="image-actions" class="position-absolute top-0 end-0 m-2 d-flex gap-2">
                                         <label for="{{ form.image.id }}" id="image-change-btn" class="btn btn-dark btn-sm text-white rounded d-flex align-items-center justify-content-center" aria-label="Change image" title="Change image" style="width:40px;height:40px;box-shadow:0 2px 6px rgba(0,0,0,0.35); cursor:pointer;"><i class="bi bi-pencil-fill"></i></label>
                                         <button type="button" id="image-clear-btn" class="btn btn-danger btn-sm text-white rounded d-flex align-items-center justify-content-center" aria-label="Remove image" title="Remove image" style="width:40px;height:40px;box-shadow:0 2px 6px rgba(0,0,0,0.35);"><i class="bi bi-trash3-fill"></i></button>
                                     </div>
                                 </div>
                             {% else %}
-                                <div class="image-frame position-relative" style="display:none;">
-                                    <img id="image-preview" data-original-src="" alt="Recipe image preview test" class="img-fluid rounded mb-2 d-block" style="display:none; max-height:300px; object-fit:cover;" />
+                                <div class="image-frame position-relative w-100" style="display:none;">
+                                    <img id="image-preview" data-original-src="" alt="Recipe image preview test" class="rounded border border-2 border-secondary mb-2 d-block w-100" style="display:none; height:300px; object-fit:cover;" />
                                     <div id="image-actions" class="position-absolute top-0 end-0 m-2 d-flex gap-2" style="display:none;">
                                         <label for="{{ form.image.id }}" id="image-change-btn" class="btn btn-dark btn-sm text-white rounded d-flex align-items-center justify-content-center" aria-label="Change image" title="Change image" style="width:40px;height:40px;box-shadow:0 2px 6px rgba(0,0,0,0.35); cursor:pointer;"><i class="bi bi-pencil-fill"></i></label>
                                         <button type="button" id="image-clear-btn" class="btn btn-danger btn-sm text-white rounded d-flex align-items-center justify-content-center" aria-label="Remove image" title="Remove image" style="width:40px;height:40px;box-shadow:0 2px 6px rgba(0,0,0,0.35);"><i class="bi bi-trash3-fill"></i></button>
                                     </div>
                                 </div>
                             {% endif %}
-                                <label id="image-placeholder" for="{{ form.image.id }}" role="button" tabindex="0" class="border rounded d-flex align-items-center justify-content-center text-muted" {% if recipe and recipe.has_image %}hidden{% endif %}
-                                     style="height:150px; width:100%; cursor:pointer;">
+                                {% if not recipe or not recipe.has_image %}
+                                <label id="image-placeholder" for="{{ form.image.id }}" role="button" tabindex="0" class="border rounded align-items-center justify-content-center text-muted"
+                                     style="height:150px; width:100%; cursor:pointer; display:flex;">
                                     <div class="text-center">
                                         <i class="bi bi-image" style="font-size:2rem;"></i>
                                         <div id="image-placeholder-text">Click to choose image</div>
                                     </div>
                                 </label>
+                                {% endif %}
                             </div>
                         </div>
                     
@@ -223,17 +231,18 @@
                             {% endif %}
                         </div>
                     </div>
-                    </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+{% include "recipes/_image_crop_modal.html" %}
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/validation.js') }}" defer></script>
 <!-- Sortable for drag-and-drop -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="{{ url_for('static', filename='js/recipe_image_cropper.js') }}" defer></script>
 <script>
 function reindexList(container) {
     const items = Array.from(container.children)
@@ -365,125 +374,6 @@ document.addEventListener('DOMContentLoaded', function(){
     attachListHandlers('#instructions-list', '.instruction-item', false);
     ensureOneEmptyAtEnd(document.querySelector('#ingredients-list'), true);
     ensureOneEmptyAtEnd(document.querySelector('#instructions-list'), false);
-});
-</script>
-<script>
-// Image preview & upload handler (delegated) — reliably triggers when a file input changes
-    document.addEventListener('DOMContentLoaded', function(){
-    const preview = document.getElementById('image-preview');
-    const placeholder = document.getElementById('image-placeholder');
-    const actions = document.getElementById('image-actions');
-    const clearBtn = document.getElementById('image-clear-btn');
-    const removeFlag = document.getElementById('remove_image');
-    const fileInput = document.querySelector('input[type="file"][name="image"]');
-
-    function showControls() {
-        if (actions) actions.style.display = 'flex';
-    }
-
-    function hideControls() {
-        if (actions) actions.style.display = 'none';
-    }
-
-    function showPlaceholder() {
-        if (placeholder) {
-            placeholder.hidden = false;
-            placeholder.style.display = 'flex';
-        }
-    }
-
-    function hidePlaceholder() {
-        if (placeholder && placeholder.parentNode) {
-            placeholder.hidden = true;
-            placeholder.style.display = 'none';
-        }
-    }
-
-    function showPreview(url, filename) {
-        if (!preview) return;
-        preview.setAttribute('src', url);
-        preview.dataset.originalSrc = preview.dataset.originalSrc || '';
-        preview.style.display = 'block';
-        // ensure image frame is visible
-        const imageFrame = document.querySelector('.image-frame');
-        if (imageFrame) imageFrame.style.display = 'inline-block';
-        // remove placeholder node if present
-        hidePlaceholder();
-        // show remove button
-        showControls();
-        // filename
-        const nameSpan = document.getElementById('image-filename');
-        if (nameSpan) nameSpan.textContent = filename || '';
-    }
-
-    // Delegated handler: catch any change on file inputs (useful if input rendered later)
-    document.addEventListener('change', function(e){
-        const target = e.target;
-        if (!target) return;
-        if (target.matches('input[type="file"][name="image"]')) {
-            const file = target.files && target.files[0];
-            if (!file) {
-                if (preview) {
-                    const originalSrc = preview.dataset.originalSrc || '';
-                    if (originalSrc && (!removeFlag || removeFlag.value !== '1')) {
-                        preview.setAttribute('src', originalSrc);
-                        preview.style.display = 'block';
-                        hidePlaceholder();
-                        showControls();
-                    } else {
-                        preview.removeAttribute('src');
-                        preview.style.display = 'none';
-                        showPlaceholder();
-                        hideControls();
-                    }
-                }
-                return;
-            }
-            if (removeFlag) removeFlag.value = '0';
-            const url = URL.createObjectURL(file);
-            showPreview(url, file.name);
-        }
-    });
-
-    if (clearBtn) {
-        clearBtn.addEventListener('click', function(){
-            if (fileInput) {
-                fileInput.value = '';
-            }
-
-            const originalSrc = preview ? (preview.dataset.originalSrc || '') : '';
-            if (removeFlag) {
-                removeFlag.value = originalSrc ? '1' : '0';
-            }
-
-            if (preview) {
-                preview.removeAttribute('src');
-                preview.style.display = 'none';
-            }
-
-            const imageFrame = document.querySelector('.image-frame');
-            if (imageFrame) {
-                imageFrame.style.display = 'none';
-            }
-
-            showPlaceholder();
-            hideControls();
-        });
-    }
-
-    (function init(){
-        if (!preview) return;
-        const src = preview.getAttribute('src');
-        if (src && src.trim() !== '') {
-            hidePlaceholder();
-            // ensure image frame visible and remove button shown
-            const imageFrame = document.querySelector('.image-frame');
-            if (imageFrame) imageFrame.style.display = 'inline-block';
-            showControls();
-        } else {
-            hideControls();
-        }
-    })();
 });
 </script>
 {% endblock %}

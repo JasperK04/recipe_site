@@ -1,0 +1,41 @@
+<div class="modal fade" id="recipe-image-crop-modal" tabindex="-1" aria-labelledby="recipe-image-crop-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="recipe-image-crop-modal-label">Crop je afbeelding</h5>
+                    <p class="text-muted small mb-0">De uitsnede volgt de receptkaartverhouding.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-center">
+                    <div class="recipe-image-crop-stage" id="recipe-image-crop-stage">
+                        <img id="recipe-image-crop-image" alt="Afbeelding om te croppen">
+                        <div id="recipe-image-crop-selection" class="recipe-image-crop-selection" aria-label="Crop selectie" role="presentation">
+                            <span class="crop-handle crop-handle-nw" data-crop-handle="nw"></span>
+                            <span class="crop-handle crop-handle-ne" data-crop-handle="ne"></span>
+                            <span class="crop-handle crop-handle-sw" data-crop-handle="sw"></span>
+                            <span class="crop-handle crop-handle-se" data-crop-handle="se"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3 align-items-center mt-3 d-md-none">
+                    <div class="col-auto">
+                        <label for="recipe-image-crop-slider" class="col-form-label">Grootte</label>
+                    </div>
+                    <div class="col">
+                        <input type="range" class="form-range" id="recipe-image-crop-slider" min="0" max="100" value="50" aria-label="Cropgrootte">
+                    </div>
+                </div>
+                <p class="text-muted small mt-3 mb-0">
+                    Sleep de selectie om te verplaatsen. Op grotere schermen kun je de hoeken slepen om te schalen.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
+                <button type="button" class="btn btn-primary" id="recipe-image-crop-confirm" disabled>Bevestigen</button>
+            </div>
+        </div>
+    </div>
+</div>
