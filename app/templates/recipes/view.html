@@ -440,22 +440,14 @@ document.addEventListener('DOMContentLoaded', function(){
         const xBtn = document.getElementById('xShareBtn');
 
         function copyText(value) {
-            console.log('[share-copy] attempting copy', { length: value ? value.length : 0, value });
             if (shareInput) {
                 shareInput.focus({ preventScroll: true });
                 shareInput.select();
                 shareInput.setSelectionRange(0, shareInput.value.length);
-                console.log('[share-copy] selected visible input', {
-                    selectionStart: shareInput.selectionStart,
-                    selectionEnd: shareInput.selectionEnd,
-                    activeElementIsInput: document.activeElement === shareInput,
-                });
                 const ok = document.execCommand('copy');
-                console.log('[share-copy] execCommand result', ok);
                 return ok;
             }
 
-            console.warn('[share-copy] no visible input found, falling back to textarea');
             const temp = document.createElement('textarea');
             temp.value = value;
             temp.setAttribute('readonly', 'readonly');
@@ -467,7 +459,6 @@ document.addEventListener('DOMContentLoaded', function(){
             temp.focus();
             temp.select();
             const ok = document.execCommand('copy');
-            console.log('[share-copy] execCommand result', ok);
             document.body.removeChild(temp);
             return ok;
         }
@@ -486,15 +477,11 @@ document.addEventListener('DOMContentLoaded', function(){
         if (copyBtn) {
             copyBtn.addEventListener('click', async function () {
                 try {
-                    console.log('[share-copy] button clicked');
                     const value = shareInput ? shareInput.value : pageUrl;
-                    console.log('[share-copy] source input present', Boolean(shareInput));
                     const copied = copyText(value);
                     if (!copied) {
-                        console.warn('[share-copy] copy failed');
                         throw new Error('copy failed');
                     }
-                    console.log('[share-copy] copy succeeded');
                     setCopyPressed(true);
                     setTimeout(() => {
                         setCopyPressed(false);
