@@ -1,4 +1,7 @@
 {% extends "components/base.html" %}
+{% block extra_meta %}
+<link rel="canonical" href="{{ url_for('recipes.list_recipes', _external=True) }}" />
+{% endblock %}
 
 {% block title %}Alle recepten - Recepten{% endblock %}
 

@@ -12,9 +12,9 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:creator" content="@recepten" />
-    <link rel="canonical" href="{{ request.url }}" />
     {% endblock %}
     <meta name="color-scheme" content="light dark">
+    {% block extra_meta %}{% endblock %}
     <script>
     // Critical: determine theme before CSS loads to avoid white flash
     (function(){

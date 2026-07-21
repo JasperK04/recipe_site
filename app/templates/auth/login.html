@@ -1,4 +1,7 @@
 {% extends "components/base.html" %}
+{% block extra_meta %}
+<link rel="canonical" href="{{ url_for('auth.login', _external=True) }}" />
+{% endblock %}
 
 {% block title %}Inloggen - Recepten{% endblock %}
 

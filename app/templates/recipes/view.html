@@ -1,4 +1,7 @@
 {% extends "components/base.html" %}
+{% block extra_meta %}
+<link rel="canonical" href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id, _external=True) }}" />
+{% endblock %}
 
 {% block title %}{{ recipe.title }} - Recepten{% endblock %}
 
