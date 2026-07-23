@@ -15,8 +15,9 @@
 
 .drag-handle {
     cursor: grab;
-    background-color: var(--bs-navbar-bg);
-    color: var(--bs-card-color);
+    background-color: #e9ecef;
+    color: #212529;
+    border-color: #6c757d;
 }
 
 .drag-handle:active {
@@ -56,8 +57,20 @@
 }
 
 #ingredients-list, #instructions-list {
-    border: 1px solid var(--bs-border-color);
+    border: 1px solid #6c757d;
     border-radius: var(--bs-border-radius);
+    background-color: #fff;
+}
+
+.dark-mode .drag-handle {
+    background-color: var(--bs-navbar-bg);
+    color: var(--bs-card-color);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.dark-mode #ingredients-list, .dark-mode #instructions-list {
+    border-color: rgba(255, 255, 255, 0.35);
+    background-color: var(--bs-card-bg);
 }
 </style>
 <div class="row justify-content-center">
@@ -99,7 +112,7 @@
                                 </div>
                             {% endif %}
                                 {% if not recipe or not recipe.has_image %}
-                                <label id="image-placeholder" for="{{ form.image.id }}" role="button" tabindex="0" class="border rounded align-items-center justify-content-center text-muted"
+                                <label id="image-placeholder" for="{{ form.image.id }}" role="button" tabindex="0" class="border rounded align-items-center justify-content-center text-muted bg-light"
                                      style="height:150px; width:100%; cursor:pointer; display:flex;">
                                     <div class="text-center">
                                         <i class="bi bi-image" style="font-size:2rem;"></i>

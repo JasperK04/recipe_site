@@ -6,7 +6,8 @@
 {% block title %}Alle recepten - Recepten{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="jumbotron p-4 rounded-3 mb-2">
+<div class="recipe-list-header d-flex justify-content-between align-items-center mb-2">
     <h1>Alle recepten</h1>
     {% if current_user.is_authenticated and current_user.can_create_recipes %}
     <a href="{{ url_for('recipes.add_recipe') }}" class="btn btn-primary">
@@ -16,7 +17,7 @@
 </div>
 
 
-<div class="row mb-4">
+<div class="row g-2 mb-2">
     <div class="col-md-8">
         <form method="GET" action="{{ url_for('recipes.list_recipes') }}" class="d-flex">
             <input type="text" name="search" class="form-control me-2" placeholder="Zoek recepten..." value="{{ search }}">
@@ -36,6 +37,7 @@
             <option value="{{ url_for('recipes.list_recipes', category='Overig') }}" {% if category == 'Overig' %}selected{% endif %}>Overig</option>
         </select>
     </div>
+</div>
 </div>
 
 {% if recipes.items %}

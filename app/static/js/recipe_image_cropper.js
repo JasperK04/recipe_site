@@ -1,5 +1,5 @@
 (function () {
-    const ASPECT_RATIO = 320 / 180;
+    const ASPECT_RATIO = 4 / 3;
     const SMALL_SCREEN_QUERY = window.matchMedia("(max-width: 767.98px)");
 
     function clamp(value, min, max) {

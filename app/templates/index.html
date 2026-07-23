@@ -7,6 +7,10 @@
 
 {% block extra_css %}
     <style>
+        div.jumbotron {
+            background-color: rgba(var(--bs-primary-rgb), 0.08) !important;
+        }
+        
         @media (max-width: 576px) {
             div.jumbotron {
                 padding: 2rem !important;
@@ -19,7 +23,7 @@
 {% endblock extra_css %}
 
 {% block content %}
-<div class="jumbotron bg-light p-5 rounded-3 mb-4">
+<div class="jumbotron p-5 rounded-3 mb-4">
     <h1 class="display-4">Welkom bij het <span class="text-primary text-nowrap">Recepten Register</span></h1>
     <p class="lead">Sla op, deel en ontdek heerlijke recepten.</p>
     <hr class="my-4">

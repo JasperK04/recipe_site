@@ -1,8 +1,17 @@
+:root {
+    --bs-body-bg: #e9e9e9;
+    --bs-body-color: #212529;
+    --bs-secondary-color: #6c757d;
+    --bs-card-color: #212529;
+    --bs-link-color: #0d6efd;
+    --bs-primary: #0d6efd;
+}
+
 body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background-color: #f8f9fa;
+    background-color: var(--bs-body-bg);
 }
 
 main {
@@ -19,6 +28,24 @@ main {
     font-weight: bold;
 }
 
+.navbar li {
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+}
+
+.navbar li:hover {
+    background-color: rgba(var(--bs-secondary-color-rgb), 0.4);
+}
+button.btn-primary:hover,
+button.btn-outline-primary:hover,
+input.btn-primary:hover,
+a.btn-outline-primary:hover,
+a.btn-primary:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.4) !important;
+    border-color: rgba(var(--bs-primary-rgb), 0.4) !important;
+    box-shadow: 0 0 5px rgba(var(--bs-primary-rgb), 0.2), 0 0 10px rgba(var(--bs-primary-rgb), 0.3) !important;
+}
+
 .creator-request-dot {
     display: inline-block;
     width: 0.6rem;
@@ -31,80 +58,69 @@ main {
 
 .recipe-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 320px));
+    /* Let the columns share the available page width instead of centering
+       fixed-width cards. */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
     gap: 1rem;
-    justify-content: center;
 }
 
 .recipe-card {
     transition: transform 0.2s;
     height: 100%;
     width: 100%;
-    max-width: 320px;
+    background-color: rgba(var(--bs-primary-rgb), 0.12) !important;
 }
 
-@media (max-width: 1110px) {
-    .recipe-grid {
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 270px));
-    }
-
-    .recipe-card {
-        max-width: 270px;
-    }
+.recipe-card-media {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
 }
 
-@media (max-width: 940px) {
-    .recipe-grid {
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 320px));
-    }
-
-    .recipe-card {
-        max-width: 320px;
-    }
+div.jumbotron {
+    background-color: rgba(var(--bs-primary-rgb), 0.08) !important;
 }
 
-@media (max-width: 768px) {
-    .recipe-grid {
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 270px));
+@media (max-width: 576px) {
+    div.jumbotron {
+        padding: 1.5rem !important;
     }
-
-    .recipe-card {
-        max-width: 270px;
+    h1.display-4 {
+        font-size: calc(0.9rem + 4.2vw);
     }
 }
 
-@media (max-width: 632px) {
-    .recipe-grid {
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 320px));
+@media (max-width: 410px) {
+    .recipe-list-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 1rem;
     }
-
-    .recipe-card {
-        max-width: 320px;
+    div.jumbotron {
+        padding: 1rem !important;
     }
 }
 
 .card {
-    background-color: #ffffff;
     border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 0.5rem;
 }
 
 .recipe-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-3px);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 footer {
-    background-color: #f8f9fa;
+    background-color: var(--bs-body-bg);
     margin-top: auto;
 }
 
 .dark-mode {
-    --bs-body-bg: #0D1119;
+    --bs-body-bg: #141a27;
     --bs-body-color: #c9d1d9;
-    --bs-secondary-color-rgb: 154, 166, 178;
-    --bs-secondary-color: rgba(154, 166, 178, 1);
-    --bs-card-bg: #0f1720;
+    --bs-card-bg: #141a27;
     --bs-card-color: #c9d1d9;
     --bs-navbar-bg: #0b1220;
     --bs-link-color: #58a6ff;
@@ -129,9 +145,7 @@ footer .container {
     color: inherit !important;
 }
 
-.dark-mode .card,
 .dark-mode .bg-light,
-.dark-mode .card-body,
 .dark-mode .alert {
     background-color: var(--bs-card-bg) !important;
     color: var(--bs-card-color) !important;
@@ -190,6 +204,26 @@ footer .container {
 textarea.form-control::placeholder {
     color: rgba(0, 0, 0, 0.5);
     opacity: 1;
+}
+
+/* Keep form fields clearly distinct from light cards and page backgrounds. */
+html:not(.dark-mode) .form-control,
+html:not(.dark-mode) .form-select {
+    color: #212529;
+    background-color: #fff;
+    border-color: #6c757d;
+}
+
+html:not(.dark-mode) .form-control:focus,
+html:not(.dark-mode) .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+html:not(.dark-mode) .form-control::file-selector-button {
+    color: #212529;
+    background-color: #e9ecef;
+    border-color: inherit;
 }
 
 .dark-mode .form-control::placeholder,

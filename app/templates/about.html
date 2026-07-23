@@ -12,30 +12,34 @@
     <div class="col-lg-8">
         <p class="lead">Het Recepten Register is jouw persoonlijke kookboek in de cloud.</p>
         
-        <h3 class="mt-4">Kenmerken</h3>
-        <ul class="list-group list-group-flush">
-            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Blader recepten door</li>
-            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Zoek naar specifieke gerechten</li>
-            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Voeg recepten toe aan je favorieten</li>
-            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Beoordeel recepten van anderen</li>
-            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Voeg je eigen recepten toe</li>
-            <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Deel jouw recepten met anderen</li>
-        </ul>
+        <div class="about-content mb-4">
+            <h3 class="mt-4">Kenmerken</h3>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Blader recepten door</li>
+                <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Zoek naar specifieke gerechten</li>
+                <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Voeg recepten toe aan je favorieten</li>
+                <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Beoordeel recepten van anderen</li>
+                <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Voeg je eigen recepten toe</li>
+                <li class="list-group-item"><i class="bi bi-check-circle-fill text-success"></i> Deel jouw recepten met anderen</li>
+            </ul>
+        </div>
 
-        <h3 class="mt-4">Aan de slag</h3>
-        <ol>
-            {% if current_user.is_authenticated %}
-                <li><a href="{{ url_for('recipes.list_recipes') }}">Blader door de recepten</a></li>
-                <li>Vind jouw favoriete recepten</li>
-                {% if current_user.can_create_recipes %}
-                    <li><a href="{{ url_for('recipes.add_recipe') }}">Voeg een nieuw recept toe</a></li>
+        <div class="what-to-do">
+            <h3 class="mt-4">Aan de slag</h3>
+            <ol>
+                {% if current_user.is_authenticated %}
+                    <li><a href="{{ url_for('recipes.list_recipes') }}">Blader door de recepten</a></li>
+                    <li>Vind jouw favoriete recepten</li>
+                    {% if current_user.can_create_recipes %}
+                        <li><a href="{{ url_for('recipes.add_recipe') }}">Voeg een nieuw recept toe</a></li>
+                    {% endif %}
+                {% else %}
+                    <li><a href="{{ url_for('auth.register') }}">Maak een account aan</a></li>
+                    <li><a href="{{ url_for('auth.login') }}">Log in</a> op je account</li>
                 {% endif %}
-            {% else %}
-                <li><a href="{{ url_for('auth.register') }}">Maak een account aan</a></li>
-                <li><a href="{{ url_for('auth.login') }}">Log in</a> op je account</li>
-            {% endif %}
-            <li>Begin met het samenstellen van jouw persoonlijke recepten register</li>
-        </ol>
+                <li>Begin met het samenstellen van jouw persoonlijke recepten register</li>
+            </ol>
+        </div>
     </div>
     
     <div class="col-lg-4">
