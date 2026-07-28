@@ -1,5 +1,6 @@
 import json
 import re
+from html import unescape
 
 import requests
 from bs4 import BeautifulSoup
@@ -8,6 +9,7 @@ from flask import flash
 
 def sanitize_text(text: str) -> str:
     """Sanitize text by removing extra whitespace and unwanted characters."""
+    text = unescape(text)
     text = re.sub(r"\<p\>", "", text)
     text = re.sub(r"\<\/p\>", "", text)
     text = re.sub(r"\s+", " ", text).strip()
@@ -117,10 +119,20 @@ def normalize_instructions(raw_steps: list | None) -> list[str]:
                 steps.append(node)
 
             elif isinstance(node, dict):
-                if node.get("@type") == "HowToStep":
+                node_types = node.get("@type", [])
+                if isinstance(node_types, str):
+                    node_types = [node_types]
+
+                if "HowToStep" in node_types:
                     text = node.get("text")
                     if text:
                         steps.append(text)
+                    return
+
+                # Sections are containers, not instructions.  Traversing every
+                # value would also add their ``@type`` and ``name`` fields.
+                if "HowToSection" in node_types:
+                    walk(node.get("itemListElement", []))
                     return
 
                 for value in node.values():
