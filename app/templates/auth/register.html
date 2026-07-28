@@ -11,7 +11,7 @@
         <div class="card shadow">
             <div class="card-body">
                 <h2 class="card-title text-center mb-4">Account aanmaken</h2>
-                <form method="POST" action="{{ api_submit_url }}" data-api-form="1" data-client-validation="register" novalidate>
+                <form method="POST" action="{{ url_for('auth.register') }}" data-client-validation="register" novalidate>
                     {{ form.hidden_tag() }}
                     {{ form.otc(type="hidden") }}
 
