@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import re
+import unicodedata
 from typing import Any, cast
 
 from app import db
@@ -79,6 +81,13 @@ class Recipe(PaginationMixin, db.Model):
     @property
     def has_image(self):
         return bool(self.image_id)
+
+    @property
+    def url_title(self) -> str:
+        """A readable URL suffix; recipe lookup always uses ``id`` only."""
+        normalized = unicodedata.normalize("NFKD", self.title)
+        ascii_title = normalized.encode("ascii", "ignore").decode("ascii")
+        return re.sub(r"[^a-z0-9]+", "-", ascii_title.lower()).strip("-") or "recept"
 
     @property
     def is_flagged_by_moderation(self) -> bool:

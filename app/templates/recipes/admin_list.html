@@ -58,7 +58,7 @@
         <tbody>
             {% for recipe in recipes.items %}
             <tr>
-                <td data-label="Titel"><a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}">{{ recipe.title }}</a></td>
+                <td data-label="Titel"><a href="{{ recipe_url(recipe) }}">{{ recipe.title }}</a></td>
                 <td data-label="Auteur">{{ recipe.author.username }}</td>
                 <td data-label="Status">
                     {% if recipe.status == 'public' %}

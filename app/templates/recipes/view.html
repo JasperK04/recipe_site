@@ -1,6 +1,6 @@
 {% extends "components/base.html" %}
 {% block extra_meta %}
-<link rel="canonical" href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id, _external=True) }}" />
+<link rel="canonical" href="{{ recipe_url(recipe, external=True) }}" />
 {% endblock %}
 
 {% block title %}{{ recipe.title }} - Recepten{% endblock %}
@@ -13,7 +13,7 @@
     <meta name="twitter:description" content="{{ recipe.description }}" />
     {% endif %}
     <meta property="og:type" content="article" />
-    <meta property="og:url" content="{{ url_for('recipes.view_recipe', recipe_id=recipe.id, _external=True) }}" />
+    <meta property="og:url" content="{{ recipe_url(recipe, external=True) }}" />
     {% if recipe.has_image %}
     <meta property="og:image" content="{{ url_for('recipes.recipe_image', recipe_id=recipe.id, _external=True) }}" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -25,37 +25,95 @@
 {% endblock %}
 
 {% block extra_css %}
-    <style>
-        div > a.whatsapp {
-            border-color: #25D366;
-            color: #25D366 !important;
-            
-            &:hover {
-                background-color: rgba(37, 211, 102, 0.2) !important;
-                border-color: #25D366;
-            }
-        }
+<style>
+div > a.whatsapp {
+    border-color: #25D366;
+    color: #25D366 !important;
+    
+    &:hover {
+        background-color: rgba(37, 211, 102, 0.2) !important;
+        border-color: #25D366;
+    }
+}
 
-        div > a.facebook {
-            border-color: #1877F2;
-            color: #1877F2 !important;
+div > a.facebook {
+    border-color: #1877F2;
+    color: #1877F2 !important;
 
-            &:hover {
-                background-color: rgba(24, 119, 242, 0.2) !important;
-                border-color: #1877F2;
-            }
-        }
+    &:hover {
+        background-color: rgba(24, 119, 242, 0.2) !important;
+        border-color: #1877F2;
+    }
+}
 
-        div > a.x {
-            border-color: #ffffff;
-            color: #ffffff !important;
+div > a.x {
+    border-color: #ffffff;
+    color: #ffffff !important;
 
-            &:hover {
-                background-color: rgba(255, 255, 255, 0.2) !important;
-                border-color: #ffffff;
-            }
-        }
-    </style>
+    &:hover {
+        background-color: rgba(255, 255, 255, 0.2) !important;
+        border-color: #ffffff;
+    }
+}
+
+.fav-btn-overlay{
+    background:rgba(255,255,255,0.6);
+    border:1px solid rgba(0,0,0,0.08);
+    backdrop-filter:blur(4px);
+    box-shadow:0 .125rem .25rem rgba(0,0,0,0.06);
+    border-radius:.375rem;
+    width:44px;height:44px;padding:0;display:inline-flex;align-items:center;justify-content:center;}
+.fav-btn-overlay .bi{font-size:1.5em;transition:color .12s,opacity .12s}
+.fav-btn-overlay .bi-heart{color:#e25555}
+.fav-btn-overlay .bi-heart-fill{color:#e25555}
+.fav-btn-overlay.faded .bi{color:rgba(226,85,85,0.45) !important;opacity:0.85}
+/* Prevent Bootstrap .btn hover/focus from changing background */
+.fav-btn-overlay:hover,
+.fav-btn-overlay:focus,
+.fav-btn-overlay:active {
+    background: rgba(255,255,255,0.6) !important;
+    box-shadow:0 .125rem .25rem rgba(0,0,0,0.06) !important;
+}
+.share-callout{
+    background: linear-gradient(135deg, rgba(13,110,253,0.08), rgba(13,110,253,0.02));
+    border-color: rgba(13,110,253,0.16) !important;
+}
+.share-kicker{
+    display:inline-flex;
+    align-items:center;
+    padding:0.25rem 0.55rem;
+    border-radius:999px;
+    background: rgba(13,110,253,0.12);
+    color:#0d6efd;
+    font-size:0.75rem;
+    font-weight:700;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+}
+.share-icon-btn{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: clamp(2.75rem, 5vw, 3.5rem);
+    padding: 0.35rem 0.25rem;
+}
+.share-icon-btn .bi{
+    font-size: clamp(1.15rem, 2.4vw, 1.65rem);
+    line-height: 1;
+}
+.share-platform-row > .share-icon-btn{
+    min-width: 0;
+}
+#copyShareLinkBtn.is-pressed{
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.18);
+}
+
+.score-star{display:inline-flex;align-items:center;justify-content:center;padding:0 .15rem}
+.score-star:last-child{padding-right:0}
+.score-star .bi{font-size:1.25rem;color:#ffc107;transition:color .12s,opacity .12s}
+.score-star.faded .bi{color:rgba(255,193,7,0.45) !important;opacity:0.85}
+.score-star .bi.bi-star{opacity:0.9}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -177,59 +235,6 @@
                     </form>
                     {% endif %}
                 </div>
-                <style>
-                .fav-btn-overlay{
-                    background:rgba(255,255,255,0.6);
-                    border:1px solid rgba(0,0,0,0.08);
-                    backdrop-filter:blur(4px);
-                    box-shadow:0 .125rem .25rem rgba(0,0,0,0.06);
-                    border-radius:.375rem;
-                    width:44px;height:44px;padding:0;display:inline-flex;align-items:center;justify-content:center;}
-                .fav-btn-overlay .bi{font-size:1.5em;transition:color .12s,opacity .12s}
-                .fav-btn-overlay .bi-heart{color:#e25555}
-                .fav-btn-overlay .bi-heart-fill{color:#e25555}
-                .fav-btn-overlay.faded .bi{color:rgba(226,85,85,0.45) !important;opacity:0.85}
-                /* Prevent Bootstrap .btn hover/focus from changing background */
-                .fav-btn-overlay:hover,
-                .fav-btn-overlay:focus,
-                .fav-btn-overlay:active {
-                    background: rgba(255,255,255,0.6) !important;
-                    box-shadow:0 .125rem .25rem rgba(0,0,0,0.06) !important;
-                }
-                .share-callout{
-                    background: linear-gradient(135deg, rgba(13,110,253,0.08), rgba(13,110,253,0.02));
-                    border-color: rgba(13,110,253,0.16) !important;
-                }
-                .share-kicker{
-                    display:inline-flex;
-                    align-items:center;
-                    padding:0.25rem 0.55rem;
-                    border-radius:999px;
-                    background: rgba(13,110,253,0.12);
-                    color:#0d6efd;
-                    font-size:0.75rem;
-                    font-weight:700;
-                    letter-spacing:0.08em;
-                    text-transform:uppercase;
-                }
-                .share-icon-btn{
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    height: clamp(2.75rem, 5vw, 3.5rem);
-                    padding: 0.35rem 0.25rem;
-                }
-                .share-icon-btn .bi{
-                    font-size: clamp(1.15rem, 2.4vw, 1.65rem);
-                    line-height: 1;
-                }
-                .share-platform-row > .share-icon-btn{
-                    min-width: 0;
-                }
-                #copyShareLinkBtn.is-pressed{
-                    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.18);
-                }
-                </style>
                 {% endif %}
                 {% if recipe.description %}
                 <p class="lead">{{ recipe.description }}</p>
@@ -265,13 +270,6 @@
                             {% endfor %}
                         </div>
                     </form>
-                    <style>
-                    .score-star{display:inline-flex;align-items:center;justify-content:center;padding:0 .15rem}
-                    .score-star:last-child{padding-right:0}
-                    .score-star .bi{font-size:1.25rem;color:#ffc107;transition:color .12s,opacity .12s}
-                    .score-star.faded .bi{color:rgba(255,193,7,0.45) !important;opacity:0.85}
-                    .score-star .bi.bi-star{opacity:0.9}
-                    </style>
                     {% endif %}
                 </div>
 
@@ -320,7 +318,7 @@
                 </div>
 
                 <h3><i class="bi bi-list-ol"></i> Bereidingswijze</h3>
-                <div class="recipe-instructions">
+                <div class="bg-light p-3 rounded mb-4">
                     {% set instructions = recipe.instructions %}
                     <ol>
                         {% for instruction in instructions %}
@@ -364,7 +362,7 @@
     aria-hidden="true"
     data-share-title="{{ recipe.title|e }}"
     data-share-text="{{ (recipe.description or recipe.title)|e }}"
-    data-share-url="{{ url_for('recipes.view_recipe', recipe_id=recipe.id, _external=True)|e }}"
+    data-share-url="{{ recipe_url(recipe, external=True)|e }}"
 >
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -379,10 +377,10 @@
                         id="shareLinkInput"
                         class="form-control otc-link-input"
                         type="text"
-                        value="{{ url_for('recipes.view_recipe', recipe_id=recipe.id, _external=True) }}"
+                        value="{{ recipe_url(recipe, external=True) }}"
                         readonly
                     >
-                    <button type="button" class="btn btn-outline-primary" id="copyShareLinkBtn" data-copy-value="{{ url_for('recipes.view_recipe', recipe_id=recipe.id, _external=True) }}">
+                    <button type="button" class="btn btn-outline-primary" id="copyShareLinkBtn" data-copy-value="{{ recipe_url(recipe, external=True) }}">
                         Kopiëren
                     </button>
                 </div>

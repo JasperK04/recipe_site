@@ -92,12 +92,24 @@ def list_recipes():
     )
 
 
-@recipes_bp.route("/<int:recipe_id>")
-def view_recipe(recipe_id):
+@recipes_bp.route("/<int:recipe_id>", defaults={"title": None})
+@recipes_bp.route("/<int:recipe_id>/<string:title>")
+def view_recipe(recipe_id, title=None):
     """View a single recipe."""
     recipe = Recipe.query.get_or_404(recipe_id)
     if not recipe.is_visible_to(current_user):
         abort(404)
+
+    # The ID is the only lookup key. Redirect missing or stale title suffixes to
+    # the current canonical URL so renamed recipes keep a single shareable URL.
+    if title != recipe.url_title:
+        return redirect(
+            url_for(
+                "recipes.view_recipe",
+                recipe_id=recipe.id,
+                title=recipe.url_title,
+            )
+        )
 
     my_score = None
     if current_user.is_authenticated:
@@ -162,7 +174,7 @@ def favorite_recipe(recipe_id):
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"status": "ok", "favorited": created})
 
-    return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
+    return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title))
 
 
 @recipes_bp.route("/<int:recipe_id>/unfavorite", methods=["POST"])
@@ -183,7 +195,7 @@ def unfavorite_recipe(recipe_id):
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"status": "ok", "favorited": not removed})
 
-    return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
+    return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title))
 
 
 @recipes_bp.route("/add", methods=["GET", "POST"])
@@ -246,7 +258,7 @@ def add_recipe():
             flash("Recept succesvol gepubliceerd!", "success")
         else:
             flash("Concept opgeslagen.", "success")
-        return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
+        return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title))
 
     return render_template(
         "recipes/form.html",
@@ -400,7 +412,7 @@ def edit_recipe(recipe_id):
             flash("Recept succesvol bijgewerkt en gepubliceerd.", "success")
         else:
             flash("Concept succesvol bijgewerkt.", "success")
-        return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
+        return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title))
 
     return render_template(
         "recipes/form.html",
@@ -477,8 +489,8 @@ def score_recipe(recipe_id):
                 {"status": "error", "message": error.message}
             ), error.status_code
         flash(error.message, "danger")
-        return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
+        return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title))
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"status": "ok", **stats})
-    return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id))
+    return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title))

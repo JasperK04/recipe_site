@@ -41,7 +41,19 @@ def create_app(config_name="default"):
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(auth_bp, url_prefix="/auth")
-    app.register_blueprint(recipes_bp, url_prefix="/recipes")
+    app.register_blueprint(recipes_bp, url_prefix="/recipe")
+
+    @app.context_processor
+    def inject_recipe_url():
+        def recipe_url(recipe, *, external=False):
+            return url_for(
+                "recipes.view_recipe",
+                recipe_id=recipe.id,
+                title=recipe.url_title,
+                _external=external,
+            )
+
+        return dict(recipe_url=recipe_url)
 
     # Register CLI commands
     from app.cli import register_commands

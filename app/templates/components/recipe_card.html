@@ -15,7 +15,7 @@
     </div>
     {% endif %}
     <div class="card-body d-flex flex-column">
-        <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="stretched-link"></a>
+        <a href="{{ recipe_url(recipe) }}" class="stretched-link"></a>
         <span class="position-absolute top-0 end-0 m-2 badge bg-primary">{% if recipe.score_count %}{{ '%.1f' % recipe.score_average }}{% else %}-{% endif %}/5</span>
         <h5 class="card-title">{{ recipe.title }}</h5>
         {% if recipe.description %}
@@ -45,10 +45,10 @@
     <div class="card-footer bg-transparent">
         <div class="btn-group w-100" role="group" style="z-index: 2;">
         {% if current_user.is_authenticated and current_user == recipe.author %}
-            <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-primary">Bekijk</a>
+            <a href="{{ recipe_url(recipe) }}" class="btn btn-sm btn-primary">Bekijk</a>
             <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-secondary">Bewerk</a>
         {% else %}
-            <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-primary w-100">Bekijk recept</a>
+            <a href="{{ recipe_url(recipe) }}" class="btn btn-sm btn-primary w-100">Bekijk recept</a>
         {% endif %}
         </div>
     </div>

@@ -196,7 +196,9 @@ def create_recipe_endpoint():
     return jsonify(
         {
             "status": "ok",
-            "redirect_url": url_for("recipes.view_recipe", recipe_id=recipe.id),
+            "redirect_url": url_for(
+                "recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title
+            ),
         }
     )
 
@@ -319,7 +321,9 @@ def update_recipe_endpoint(recipe_id):
     return jsonify(
         {
             "status": "ok",
-            "redirect_url": url_for("recipes.view_recipe", recipe_id=updated.id),
+            "redirect_url": url_for(
+                "recipes.view_recipe", recipe_id=updated.id, title=updated.url_title
+            ),
         }
     )
 
