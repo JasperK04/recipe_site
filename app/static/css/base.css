@@ -57,18 +57,52 @@ a.btn-primary:hover {
 }
 
 .recipe-grid {
-    display: grid;
-    /* Let the columns share the available page width instead of centering
-       fixed-width cards. */
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
     gap: 1rem;
+    container-type: inline-size;
 }
 
 .recipe-card {
+    /* Keep cards in incomplete rows at a column's width. Flexbox centers each
+       wrapped row, while the queries mirror the 270px minimum width and gaps. */
+    flex: 0 0 100%;
+    align-self: stretch;
+    max-width: 100%;
+    max-width: 100cqw;
     transition: transform 0.2s;
-    height: 100%;
+    height: auto !important;
     width: 100%;
+    display: flex;
+    flex-direction: column;
     background-color: rgba(var(--bs-primary-rgb), 0.12) !important;
+}
+
+.recipe-card .card-body {
+    flex: 1 1 auto;
+}
+
+@container (min-width: 556px) {
+    .recipe-card {
+        flex-basis: calc((100cqw - 1rem) / 2);
+        max-width: calc((100cqw - 1rem) / 2);
+    }
+}
+
+@container (min-width: 842px) {
+    .recipe-card {
+        flex-basis: calc((100cqw - 2rem) / 3);
+        max-width: calc((100cqw - 2rem) / 3);
+    }
+}
+
+@container (min-width: 1128px) {
+    .recipe-card {
+        flex-basis: calc((100cqw - 3rem) / 4);
+        max-width: calc((100cqw - 3rem) / 4);
+    }
 }
 
 .recipe-card-media {
