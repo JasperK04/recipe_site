@@ -15,6 +15,8 @@
 
 .drag-handle {
     cursor: grab;
+    touch-action: none;
+    user-select: none;
     background-color: #e9ecef;
     color: #212529;
     border-color: #6c757d;
@@ -327,20 +329,144 @@ function ensureOneEmptyAtEnd(list) {
     reindexList(list);
 }
 
+function finalizeDrop(list, event) {
+    const dropIndex = event.newIndex;
+
+    // Touch browsers can show the fallback ghost at the right position but
+    // occasionally restore the source item during drag cleanup.  Reinsert the
+    // dragged item on the next frame, after that cleanup has completed.
+    window.requestAnimationFrame(() => {
+        if (Number.isInteger(dropIndex) && event.item.parentElement === list) {
+            const otherItems = Array.from(list.children)
+                .filter(item => item.classList?.contains('list-group-item'))
+                .filter(item => item !== event.item);
+
+            list.insertBefore(event.item, otherItems[dropIndex] || null);
+        }
+
+        ensureOneEmptyAtEnd(list);
+    });
+}
+
+function attachTouchReorder(list) {
+    let dragState = null;
+
+    function moveWithAnimation(item, reference) {
+        const positions = new Map(
+            Array.from(list.children)
+                .filter(child => child.classList?.contains('list-group-item'))
+                .map(child => [child, child.getBoundingClientRect()]),
+        );
+
+        list.insertBefore(item, reference);
+
+        positions.forEach((previousBounds, child) => {
+            const currentBounds = child.getBoundingClientRect();
+            const offsetY = previousBounds.top - currentBounds.top;
+
+            if (offsetY && typeof child.animate === 'function') {
+                child.animate(
+                    [
+                        { transform: `translateY(${offsetY}px)` },
+                        { transform: 'translateY(0)' },
+                    ],
+                    { duration: 150, easing: 'ease-out' },
+                );
+            }
+        });
+    }
+
+    function finishTouchReorder(event) {
+        if (!dragState || event.pointerId !== dragState.pointerId) {
+            return;
+        }
+
+        const { handle, item } = dragState;
+        if (handle.hasPointerCapture?.(event.pointerId)) {
+            handle.releasePointerCapture(event.pointerId);
+        }
+        item.classList.remove('touch-reordering');
+        dragState = null;
+        ensureOneEmptyAtEnd(list);
+    }
+
+    list.addEventListener('pointerdown', event => {
+        const target = event.target instanceof Element ? event.target : null;
+        const handle = target?.closest('.drag-handle');
+        const item = handle?.closest('.list-group-item');
+
+        if (!handle || !item || item.classList.contains('sortable-disabled')) {
+            return;
+        }
+
+        dragState = {
+            handle,
+            item,
+            pointerId: event.pointerId,
+            startY: event.clientY,
+            isDragging: false,
+        };
+        handle.setPointerCapture(event.pointerId);
+        event.preventDefault();
+    });
+
+    list.addEventListener('pointermove', event => {
+        if (!dragState || event.pointerId !== dragState.pointerId) {
+            return;
+        }
+
+        if (!dragState.isDragging) {
+            if (Math.abs(event.clientY - dragState.startY) < 4) {
+                return;
+            }
+            dragState.isDragging = true;
+            dragState.item.classList.add('touch-reordering');
+        }
+
+        const target = document.elementFromPoint(event.clientX, event.clientY)
+            ?.closest('.list-group-item');
+        if (!target || target.parentElement !== list || target === dragState.item) {
+            return;
+        }
+
+        const targetBounds = target.getBoundingClientRect();
+        const insertBefore = event.clientY < targetBounds.top + (targetBounds.height / 2);
+        moveWithAnimation(
+            dragState.item,
+            insertBefore ? target : target.nextElementSibling,
+        );
+        event.preventDefault();
+    });
+
+    list.addEventListener('pointerup', finishTouchReorder);
+    list.addEventListener('pointercancel', finishTouchReorder);
+}
+
 function attachListHandlers(listSelector, itemSelector, isIngredient=true) {
     const list = document.querySelector(listSelector);
     if (!list) return;
 
+    // Preserve Sortable's native drag implementation for mouse/trackpad
+    // devices. On phones, reorder directly from pointer movement because
+    // mobile browsers do not reliably commit HTML drag-and-drop drops.
+    const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+    const useTouchReorder = hasCoarsePointer && 'PointerEvent' in window;
+
     new Sortable(list, {
         animation: 150,
         handle: '.drag-handle',
+        disabled: useTouchReorder,
         onMove(evt) {
             return !evt.dragged.classList.contains('sortable-disabled');
         },
-        onEnd() {
-            ensureOneEmptyAtEnd(list);
+        onEnd(event) {
+            finalizeDrop(list, event);
         }
     });
+
+    if (useTouchReorder) {
+        attachTouchReorder(list);
+    }
 
     // auto-add when typing in the last empty name field
     list.addEventListener('input', function(e) {
