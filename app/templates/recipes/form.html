@@ -98,7 +98,7 @@
                                 <input type="hidden" name="remove_image" id="remove_image" value="0" />
                             {% if recipe and recipe.has_image %}
                                 <div class="image-frame position-relative w-100">
-                                    <img id="image-preview" data-original-src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="Recipe image" class="rounded border border-2 border-secondary mb-2 d-block w-100" style="height:300px; object-fit:cover;" />
+                                    <img id="image-preview" data-original-src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="Recipe image" class="rounded border border-2 border-secondary mb-2 d-block w-100" />
                                     <div id="image-actions" class="position-absolute top-0 end-0 m-2 d-flex gap-2">
                                         <label for="{{ form.image.id }}" id="image-change-btn" class="btn btn-dark btn-sm text-white rounded d-flex align-items-center justify-content-center" aria-label="Change image" title="Change image" style="width:40px;height:40px;box-shadow:0 2px 6px rgba(0,0,0,0.35); cursor:pointer;"><i class="bi bi-pencil-fill"></i></label>
                                         <button type="button" id="image-clear-btn" class="btn btn-danger btn-sm text-white rounded d-flex align-items-center justify-content-center" aria-label="Remove image" title="Remove image" style="width:40px;height:40px;box-shadow:0 2px 6px rgba(0,0,0,0.35);"><i class="bi bi-trash3-fill"></i></button>
@@ -106,22 +106,20 @@
                                 </div>
                             {% else %}
                                 <div class="image-frame position-relative w-100" style="display:none;">
-                                    <img id="image-preview" data-original-src="" alt="Recipe image preview test" class="rounded border border-2 border-secondary mb-2 d-block w-100" style="display:none; height:300px; object-fit:cover;" />
+                                    <img id="image-preview" data-original-src="" alt="Recipe image preview test" class="rounded border border-2 border-secondary mb-2 d-block w-100" style="display:none;" />
                                     <div id="image-actions" class="position-absolute top-0 end-0 m-2 d-flex gap-2" style="display:none;">
                                         <label for="{{ form.image.id }}" id="image-change-btn" class="btn btn-dark btn-sm text-white rounded d-flex align-items-center justify-content-center" aria-label="Change image" title="Change image" style="width:40px;height:40px;box-shadow:0 2px 6px rgba(0,0,0,0.35); cursor:pointer;"><i class="bi bi-pencil-fill"></i></label>
                                         <button type="button" id="image-clear-btn" class="btn btn-danger btn-sm text-white rounded d-flex align-items-center justify-content-center" aria-label="Remove image" title="Remove image" style="width:40px;height:40px;box-shadow:0 2px 6px rgba(0,0,0,0.35);"><i class="bi bi-trash3-fill"></i></button>
                                     </div>
                                 </div>
                             {% endif %}
-                                {% if not recipe or not recipe.has_image %}
                                 <label id="image-placeholder" for="{{ form.image.id }}" role="button" tabindex="0" class="border rounded align-items-center justify-content-center text-muted bg-light"
-                                     style="height:150px; width:100%; cursor:pointer; display:flex;">
+                                     style="height:150px; width:100%; cursor:pointer; display:{{ 'none' if recipe and recipe.has_image else 'flex' }};">
                                     <div class="text-center">
                                         <i class="bi bi-image" style="font-size:2rem;"></i>
                                         <div id="image-placeholder-text">Click to choose image</div>
                                     </div>
                                 </label>
-                                {% endif %}
                             </div>
                         </div>
                     

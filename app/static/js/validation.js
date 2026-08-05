@@ -560,10 +560,13 @@
                 body: new FormData(apiForm),
                 credentials: "same-origin",
             });
-            const data = await response.json();
+            const contentType = response.headers.get("content-type") || "";
+            const data = contentType.includes("application/json")
+                ? await response.json()
+                : {};
 
             if (!response.ok || data.status === "error") {
-                throw new Error(data.message || "Actie mislukt.");
+                throw new Error(data.message || "De server kon de actie niet verwerken.");
             }
 
             if (data.redirect_url) {

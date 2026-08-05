@@ -71,6 +71,7 @@ class Config:
     SESSION_TYPE = "filesystem"
     SESSION_PERMANENT = False
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+    WTF_CSRF_TIME_LIMIT = timedelta(hours=6).total_seconds()
 
     # Flask-Login configuration
     REMEMBER_COOKIE_DURATION = timedelta(days=7)

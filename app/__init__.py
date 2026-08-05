@@ -1,10 +1,10 @@
 from datetime import datetime
 
-from flask import Flask, flash, redirect, request, url_for
+from flask import Flask, flash, jsonify, redirect, request, url_for
 from flask_login import LoginManager, current_user, logout_user
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
-from flask_wtf.csrf import CSRFProtect, generate_csrf
+from flask_wtf.csrf import CSRFError, CSRFProtect, generate_csrf
 
 from config import config
 from flask_session import Session
@@ -31,6 +31,20 @@ def create_app(config_name="default"):
     # CSRF protection for forms and manual tokens
     csrf = CSRFProtect()
     csrf.init_app(app)
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(error):
+        """Return JSON for AJAX forms instead of Flask-WTF's HTML error page."""
+        if request.path.startswith("/api/") or request.headers.get(
+            "X-Requested-With"
+        ) == "XMLHttpRequest":
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "Je formulier is verlopen. Vernieuw de pagina en probeer opnieuw.",
+                }
+            ), 400
+        return error.description, 400
 
     # Configure login
     login_manager.login_view = "auth.login"  # type: ignore
