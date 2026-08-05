@@ -44,6 +44,24 @@
             <a class="navbar-brand" href="{{ url_for('main.index') }}">
                 <i class="bi bi-book"></i> Recepten
             </a>
+            <form
+                class="navbar-search navbar-search-medium d-lg-none"
+                method="GET"
+                action="{{ url_for('recipes.list_recipes') }}"
+                role="search"
+            >
+                <label class="visually-hidden" for="navbar-search-medium-input">Zoek recepten</label>
+                <input
+                    id="navbar-search-medium-input"
+                    class="form-control navbar-search-input"
+                    type="search"
+                    name="search"
+                    placeholder="Zoek recepten"
+                >
+                <button class="btn navbar-search-button" type="submit" aria-label="Zoek recepten">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                </button>
+            </form>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -96,11 +114,48 @@
                         </ul>
                     </li>
                     {% endif %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.about') }}">Over</a>
+                    <li class="nav-item navbar-search-item navbar-search-desktop d-none d-lg-block">
+                        <form
+                            class="navbar-search"
+                            method="GET"
+                            action="{{ url_for('recipes.list_recipes') }}"
+                            role="search"
+                        >
+                            <label class="visually-hidden" for="navbar-search-desktop-input">Zoek recepten</label>
+                            <input
+                                id="navbar-search-desktop-input"
+                                class="form-control navbar-search-input"
+                                type="search"
+                                name="search"
+                                placeholder="Zoek recepten"
+                            >
+                            <button class="btn navbar-search-button" type="submit" aria-label="Zoek recepten">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                            </button>
+                        </form>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
+                    <li class="nav-item navbar-search-item navbar-search-mobile">
+                        <form
+                            class="navbar-search"
+                            method="GET"
+                            action="{{ url_for('recipes.list_recipes') }}"
+                            role="search"
+                        >
+                            <label class="visually-hidden" for="navbar-search-input">Zoek recepten</label>
+                            <input
+                                id="navbar-search-input"
+                                class="form-control navbar-search-input"
+                                type="search"
+                                name="search"
+                                placeholder="Zoek recepten"
+                            >
+                            <button class="btn navbar-search-button" type="submit" aria-label="Zoek recepten">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                            </button>
+                        </form>
+                    </li>
                     <li class="nav-item">
                         <a id="theme-toggle" class="nav-link" role="button" title="Wijzig thema" aria-label="Wijzig thema">
                             <i id="theme-icon" class="bi bi-moon-fill"></i>
@@ -177,7 +232,7 @@
 
     <footer class="py-4 mt-5">
         <div class="container text-center">
-            <p class="text-muted mb-0">&copy; {{ current_year }} Recepten. Een plek om je kookrecepten op te slaan en te delen.</p>
+            <p class="text-muted mb-0">&copy; {{ current_year }} Recepten. Een plek om je kookrecepten op te slaan en te delen. <a href="{{ url_for('main.about') }}">Over</a></p>
         </div>
     </footer>
 
