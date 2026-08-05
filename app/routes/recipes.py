@@ -117,6 +117,18 @@ def view_recipe(recipe_id, title=None):
 
     can_edit_recipe = (
         current_user.is_authenticated
+        and current_user.is_active
+        and (
+            current_user.is_admin
+            or (
+                current_user.id == recipe.user_id
+                and current_user.can_create_recipes
+                and recipe.status != Recipe.STATUS_DEACTIVATED
+            )
+        )
+    )
+    can_delete_recipe = (
+        current_user.is_authenticated
         and current_user.id == recipe.user_id
         and current_user.can_create_recipes
         and recipe.status != Recipe.STATUS_DEACTIVATED
@@ -137,6 +149,7 @@ def view_recipe(recipe_id, title=None):
         "recipes/view.html",
         recipe=recipe,
         can_edit_recipe=can_edit_recipe,
+        can_delete_recipe=can_delete_recipe,
         can_moderate_recipe=can_moderate_recipe,
         can_score_recipe=can_score_recipe,
         my_score=my_score,
@@ -334,10 +347,10 @@ def edit_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     require_active_creator(current_user)
 
-    # Only the author can edit their recipe
-    if recipe.user_id != current_user.id:
+    # Active admins may edit every recipe; authors may edit their own.
+    if recipe.user_id != current_user.id and not current_user.is_admin:
         abort(403)
-    if recipe.status == Recipe.STATUS_DEACTIVATED:
+    if recipe.status == Recipe.STATUS_DEACTIVATED and not current_user.is_admin:
         abort(403)
 
     # Build a fresh form instance and populate scalar fields and FieldLists

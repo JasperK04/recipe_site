@@ -1,5 +1,5 @@
 <div class="card recipe-card h-100 position-relative">
-    {% if current_user.is_authenticated and current_user == recipe.author %}
+    {% if current_user.is_authenticated and (current_user == recipe.author or current_user.is_admin) %}
         {% if recipe.status == 'draft' %}
         <span class="position-absolute top-0 start-0 m-2 badge bg-warning text-dark">Concept</span>
         {% endif %}
@@ -8,7 +8,7 @@
         {% endif %}
     {% endif %}
     {% if recipe.has_image %}
-    <img src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="{{ recipe.title }}" class="card-img-top recipe-card-media rounded-top" />
+    <img src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="{{ recipe.title }}" class="card-img-top recipe-card-media rounded-top bg-light" />
     {% else %}
     <div class="card-img-top recipe-card-media bg-light d-flex align-items-center justify-content-center text-muted rounded-top">
         <div class="text-center" aria-hidden="true"><i class="bi bi-image" style="font-size:2rem;"></i></div>
@@ -44,7 +44,7 @@
     </div>
     <div class="card-footer bg-transparent">
         <div class="btn-group w-100" role="group" style="z-index: 2;">
-        {% if current_user.is_authenticated and current_user == recipe.author %}
+        {% if current_user.is_authenticated and (current_user == recipe.author or current_user.is_admin) %}
             <a href="{{ recipe_url(recipe) }}" class="btn btn-sm btn-primary">Bekijk</a>
             <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-secondary">Bewerk</a>
         {% else %}

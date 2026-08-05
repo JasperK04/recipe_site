@@ -156,6 +156,7 @@ div > a.x {
                             title="Recept bewerken">
                                 <i class="bi bi-pencil"></i>
                             </a>
+                            {% if can_delete_recipe %}
                             <button 
                             type="button" 
                             class="btn btn-sm btn-outline-danger w-100 w-md-auto" 
@@ -166,6 +167,7 @@ div > a.x {
                             data-bs-target="#deleteModal">
                                 <i class="bi bi-trash"></i>
                             </button>
+                            {% endif %}
                         </div>
                         {% endif %}
 
@@ -402,7 +404,7 @@ div > a.x {
 {% endif %}
 
 <!-- Delete Confirmation Modal -->
-{% if can_edit_recipe %}
+{% if can_delete_recipe %}
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">

@@ -286,9 +286,9 @@ def update_recipe_endpoint(recipe_id):
     user = cast(User, current_user)
     require_active_creator(user)
     recipe = Recipe.query.get_or_404(recipe_id)
-    if recipe.user_id != user.id:
+    if recipe.user_id != user.id and not user.is_admin:
         abort(403)
-    if recipe.status == Recipe.STATUS_DEACTIVATED:
+    if recipe.status == Recipe.STATUS_DEACTIVATED and not user.is_admin:
         abort(403)
 
     form = RecipeForm()
