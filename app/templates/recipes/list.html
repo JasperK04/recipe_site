@@ -49,7 +49,7 @@
 
 <!-- Pagination -->
 {% if recipes.pages > 1 %}
-<nav aria-label="Recipe pagination" class="mt-4">
+<nav aria-label="Paginering recepten" class="mt-4">
     <ul class="pagination justify-content-center">
         {% if recipes.has_prev %}
         <li class="page-item">
@@ -78,7 +78,7 @@
 
 {% else %}
 <div class="alert alert-info">
-    <i class="bi bi-info-circle"></i> No recipes found. {% if search or category %}Try adjusting your search or filter.{% else %}Be the first to add one!{% endif %}
+    <i class="bi bi-info-circle"></i> Geen recepten gevonden. {% if search or category %}Probeer je zoekopdracht of filter aan te passen.{% else %}Wees de eerste om er een toe te voegen!{% endif %}
 </div>
 {% endif %}
 {% endblock %}

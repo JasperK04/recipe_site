@@ -28,13 +28,13 @@ class RegistrationForm(FlaskForm):
     """User registration form."""
 
     otc = StringField(
-        "One Time Code",
+        "Eenmalige code",
         validators=[
             Optional(),
-            Length(min=8, max=8, message="One Time Code moet exact 8 tekens zijn."),
+            Length(min=8, max=8, message="Eenmalige code moet exact 8 tekens zijn."),
             Regexp(
                 r"^[a-z0-9]+$",
-                message="One Time Code mag alleen cijfers en letters bevatten.",
+                message="Eenmalige code mag alleen kleine letters en cijfers bevatten.",
             ),
         ],
     )
@@ -273,7 +273,7 @@ class RecipeForm(FlaskForm):
     )
     status = SelectField(
         "Status",
-        choices=[("public", "Public"), ("draft", "Draft")],
+        choices=[("public", "Openbaar"), ("draft", "Concept")],
         default="public",
     )
     image = FileField(
@@ -281,7 +281,8 @@ class RecipeForm(FlaskForm):
         validators=[
             Optional(),
             FileAllowed(
-                ["jpg", "jpeg", "png", "gif", "webp"], "Only images are allowed"
+                ["jpg", "jpeg", "png", "gif", "webp"],
+                "Alleen afbeeldingen zijn toegestaan",
             ),
         ],
     )
@@ -347,14 +348,16 @@ STAPPEN
         "JSON-bestand (export van een recept)",
         validators=[
             Optional(),
-            FileAllowed(["json", "jsonl"], "Only JSON files are allowed"),
+            FileAllowed(["json", "jsonl"], "Alleen JSON-bestanden zijn toegestaan"),
         ],
     )
     text_file = FileField(
         "Tekstbestand (recept in tekstformaat)",
         validators=[
             Optional(),
-            FileAllowed(["txt", "docs", "docx", "pdf"], "Only text files are allowed"),
+            FileAllowed(
+                ["txt", "docs", "docx", "pdf"], "Alleen tekstbestanden zijn toegestaan"
+            ),
         ],
     )
 

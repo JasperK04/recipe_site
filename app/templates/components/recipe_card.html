@@ -33,10 +33,10 @@
             {% if recipe.prep_time or recipe.cook_time %}
             <div class="mt-2">
                 {% if recipe.prep_time %}
-                <small class="text-muted"><i class="bi bi-clock"></i> Prep: {{ recipe.prep_time }}m</small>
+                <small class="text-muted"><i class="bi bi-clock"></i> Voorbereiding: {{ recipe.prep_time }}m</small>
                 {% endif %}
                 {% if recipe.cook_time %}
-                <small class="text-muted ms-2"><i class="bi bi-fire"></i> Cook: {{ recipe.cook_time }}m</small>
+                <small class="text-muted ms-2"><i class="bi bi-fire"></i> Kooktijd: {{ recipe.cook_time }}m</small>
                 {% endif %}
             </div>
             {% endif %}

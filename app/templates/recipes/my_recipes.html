@@ -21,11 +21,11 @@
 
 <!-- Pagination -->
 {% if recipes.pages > 1 %}
-<nav aria-label="Recipe pagination" class="mt-4">
+<nav aria-label="Paginering recepten" class="mt-4">
     <ul class="pagination justify-content-center">
         {% if recipes.has_prev %}
         <li class="page-item">
-            <a class="page-link" href="{{ url_for('recipes.my_recipes', page=recipes.prev_num) }}">Previous</a>
+            <a class="page-link" href="{{ url_for('recipes.my_recipes', page=recipes.prev_num) }}">Vorige</a>
         </li>
         {% endif %}
         
@@ -41,7 +41,7 @@
         
         {% if recipes.has_next %}
         <li class="page-item">
-            <a class="page-link" href="{{ url_for('recipes.my_recipes', page=recipes.next_num) }}">Next</a>
+            <a class="page-link" href="{{ url_for('recipes.my_recipes', page=recipes.next_num) }}">Volgende</a>
         </li>
         {% endif %}
     </ul>
