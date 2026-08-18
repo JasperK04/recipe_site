@@ -113,6 +113,61 @@ div > a.x {
 .score-star .bi{font-size:1.25rem;color:#ffc107;transition:color .12s,opacity .12s}
 .score-star.faded .bi{color:rgba(255,193,7,0.45) !important;opacity:0.85}
 .score-star .bi.bi-star{opacity:0.9}
+
+.wake-lock-switch .form-check-input {
+    cursor: pointer;
+    width: 2.8rem;
+    height: 1.5rem;
+    margin-top: 0;
+    border-radius: 999px;
+    border: 1px solid rgba(13, 110, 253, 0.35);
+    background-color: rgba(13, 110, 253, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+    transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.wake-lock-switch .form-check-label {
+    cursor: pointer;
+}
+
+.wake-lock-switch .form-check-input:focus {
+    border-color: rgba(13, 110, 253, 0.55);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.18);
+}
+
+.wake-lock-switch .form-check-input:not(:checked) {
+    background-color: rgba(108, 117, 125, 0.28);
+    border-color: rgba(108, 117, 125, 0.45);
+}
+
+.wake-lock-switch .form-check-input:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.wake-lock-switch .form-check-input::before {
+    border-radius: 999px;
+}
+
+.wake-lock-switch {
+    padding: 0.25rem 0.4rem 0.25rem 0.75rem !important;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 999px;
+    background: rgba(13, 110, 253, 0.04);
+}
+
+.wake-lock-switch .fw-semibold {
+    line-height: 1.1;
+}
+
+.servings-stepper-button {
+    width: 2.2rem;
+    height: 2.2rem;
+    flex: 0 0 2.2rem;
+    padding-left: 0;
+    padding-right: 0;
+}
 </style>
 {% endblock %}
 
@@ -277,10 +332,10 @@ div > a.x {
 
                 <hr>
 
-                <div class="row mb-4">
+                <div class="row mb-4 g-2 justify-content-center">
                     {% if recipe.prep_time %}
                     <div class="col-md-4">
-                        <div class="text-center p-3 bg-light rounded">
+                        <div class="text-center p-3 bg-light rounded border">
                             <i class="bi bi-clock fs-4"></i>
                             <p class="mb-0 mt-2"><strong>Bereidingstijd</strong></p>
                             <p class="mb-0">{{ recipe.prep_time }} minuten</p>
@@ -289,7 +344,7 @@ div > a.x {
                     {% endif %}
                     {% if recipe.cook_time %}
                     <div class="col-md-4">
-                        <div class="text-center p-3 bg-light rounded">
+                        <div class="text-center p-3 bg-light rounded border">
                             <i class="bi bi-fire fs-4"></i>
                             <p class="mb-0 mt-2"><strong>Kooktijd</strong></p>
                             <p class="mb-0">{{ recipe.cook_time }} minuten</p>
@@ -297,23 +352,47 @@ div > a.x {
                     </div>
                     {% endif %}
                     {% if recipe.servings %}
-                    <div class="col-md-4">
-                        <div class="text-center p-3 bg-light rounded">
-                            <i class="bi bi-people fs-4"></i>
-                            <p class="mb-0 mt-2"><strong>Porties</strong></p>
-                            <p class="mb-0">{{ recipe.servings }}</p>
+                    <div class="col-md-4 d-flex">
+                        <div class="text-center p-3 flex-grow-1 gap-3 bg-light rounded h-100 d-flex align-items-center justify-content-center border">
+                            <button type="button" class="btn btn-outline-secondary btn-sm servings-stepper-button" id="servings-decrease" aria-label="Minder porties"><i class="bi bi-dash"></i></button>
+                            <div class="text-center h-100 d-flex flex-column">
+                                <i class="bi bi-people fs-4"></i>
+                                <p class="mb-0 mt-2"><strong>Porties</strong></p>
+                                <p class="mb-0" id="current-serving-count" data-base-servings="{{ recipe.servings }}">{{ recipe.servings }}</p>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm servings-stepper-button" id="servings-increase" aria-label="Meer porties"><i class="bi bi-plus"></i></button>
                         </div>
                     </div>
                     {% endif %}
                 </div>
 
-                <h3><i class="bi bi-basket"></i> Ingrediënten</h3>
+                <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-4">
+                    <h3 class="mb-0"><i class="bi bi-basket"></i> Ingrediënten</h3>
+                    <div class="form-check form-switch wake-lock-switch d-flex align-items-center gap-3 p-0 mb-0 ms-md-auto">
+                        <div class="text-md-end">
+                            <div class="fw-semibold">Scherm aan</div>
+                        </div>
+                        <input class="form-check-input ms-0" type="checkbox" role="switch" id="wake-lock-toggle">
+                        <label class="form-check-label visually-hidden" for="wake-lock-toggle">Scherm actief houden</label>
+                    </div>
+                </div>
+
                 <div class="bg-light p-3 rounded mb-4">
                     <ul class="mb-0">
                         {% for ingredient in recipe.ingredients %}
                             {% set ing_name = ingredient.get('name_') or ingredient.get('name') %}
+                            {% set quantity = ingredient.get('quantity') %}
+                            {% set measurement = ingredient.get('measurement') %}
                             {% if ing_name %}
-                            <li>{{ (ingredient.get("quantity") or '') ~ ' ' ~ (ingredient.get("measurement") or '') ~ ' ' ~ ing_name }}</li>
+                            <li>
+                                {% if quantity is number %}
+                                <span class="ingredient-quantity" data-original-quantity="{{ quantity }}">{{ quantity }}</span>
+                                {% elif quantity is not none %}
+                                <span class="ingredient-quantity">{{ quantity }}</span>
+                                {% endif %}
+                                {% if measurement %}<span class="ingredient-measurement">{{ measurement }}</span>{% endif %}
+                                <span class="ingredient-name">{{ ing_name }}</span>
+                            </li>
                             {% endif %}
                         {% endfor %}
                     </ul>
@@ -692,6 +771,127 @@ document.addEventListener('DOMContentLoaded', function(){
             // owner: just render current selection and skip bindings
             renderSelected();
         }
+    }    
+
+    const decreaseServingsButton = document.getElementById('servings-decrease');
+    const increaseServingsButton = document.getElementById('servings-increase');
+    const servingCountDisplay = document.getElementById('current-serving-count');
+    const ingredientQuantities = Array.from(document.querySelectorAll('[data-original-quantity]'));
+
+    function formatQuantity(value) {
+        const rounded = Math.round(value * 100) / 100;
+        if (Number.isInteger(rounded)) {
+            return String(rounded);
+        }
+        return String(rounded).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1').replace('.', ',');
+    }
+
+    function updateScaledIngredients() {
+        if (!servingCountDisplay || ingredientQuantities.length === 0) {
+            return;
+        }
+
+        const baseServings = Number(servingCountDisplay.dataset.baseServings || 1);
+        const targetServings = Math.max(1, Number(servingCountDisplay.textContent || baseServings));
+        const factor = baseServings > 0 ? targetServings / baseServings : 1;
+
+        ingredientQuantities.forEach((quantityElement) => {
+            const original = Number(quantityElement.dataset.originalQuantity);
+            if (Number.isFinite(original)) {
+                quantityElement.textContent = formatQuantity(original * factor);
+            }
+        });
+
+        if (servingCountDisplay) {
+            servingCountDisplay.textContent = String(targetServings);
+        }
+    }
+
+    function setServings(nextValue) {
+        if (!servingCountDisplay) {
+            return;
+        }
+        const normalized = Math.max(1, Number(nextValue || 1));
+        servingCountDisplay.textContent = String(normalized);
+        updateScaledIngredients();
+    }
+
+    if (decreaseServingsButton && servingCountDisplay) {
+        decreaseServingsButton.addEventListener('click', () => {
+            const current = Number(servingCountDisplay.textContent || servingCountDisplay.dataset.baseServings || 1);
+            setServings(current - 1);
+        });
+    }
+
+    if (increaseServingsButton && servingCountDisplay) {
+        increaseServingsButton.addEventListener('click', () => {
+            const current = Number(servingCountDisplay.textContent || servingCountDisplay.dataset.baseServings || 1);
+            setServings(current + 1);
+        });
+    }
+
+    updateScaledIngredients();
+});
+</script>
+<script>
+const wakeLockToggle = document.getElementById("wake-lock-toggle");
+
+let wakeLock = null;
+
+async function requestWakeLock() {
+    if (!("wakeLock" in navigator)) {
+        console.error("Screen Wake Lock API is not supported.");
+        return;
+    }
+
+    if (wakeLock !== null) {
+        return;
+    }
+
+    try {
+        wakeLock = await navigator.wakeLock.request("screen");
+
+        console.log("Wake lock acquired.");
+
+        wakeLock.addEventListener("release", () => {
+            console.log("Wake lock released.");
+            wakeLock = null;
+        });
+    } catch (error) {
+        console.error("Failed to acquire wake lock:", error);
+        wakeLock = null;
+    }
+}
+
+async function releaseWakeLock() {
+    if (wakeLock === null) {
+        return;
+    }
+
+    try {
+        await wakeLock.release();
+        console.log("Wake lock released.");
+    } catch (error) {
+        console.error("Failed to release wake lock:", error);
+    }
+
+    wakeLock = null;
+}
+
+wakeLockToggle.addEventListener("change", async () => {
+    if (wakeLockToggle.checked) {
+        await requestWakeLock();
+    } else {
+        await releaseWakeLock();
+    }
+});
+
+document.addEventListener("visibilitychange", async () => {
+    if (
+        document.visibilityState === "visible" &&
+        wakeLockToggle.checked
+    ) {
+        await requestWakeLock();
     }
 });
 </script>

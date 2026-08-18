@@ -1,14 +1,8 @@
 ## recipes
 - Create an actual Logo/icon
-- Unit normalization
 - Auto image scraping for uploaded recipes
-- Add ordering option (date, rating etc)
-- Calculated recipe scaling according to portions
-- My ratings page
 - Support nested recipes
   - import a recipe as an ingredient to another recipe
   - display title
   - link (must be to this website itself)
     - search by name or id
-- Always on display toggle
-- create an admin panel

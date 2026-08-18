@@ -12,8 +12,9 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 
+from app import db
 from app.api import (
     ApiError,
     create_recipe,
@@ -28,7 +29,7 @@ from app.api import (
 )
 from app.forms import RecipeForm, RecipeUploadForm
 from app.image_store import read_recipe_image_bytes
-from app.models import Recipe, User
+from app.models import Recipe, RecipeScore, User
 from utils import (
     ingredient_to_string,
     require_active_creator,
@@ -37,6 +38,60 @@ from utils import (
 from utils.upload import parse_uploaded_text, read_uploaded_page, validate_uploaded_json
 
 recipes_bp = Blueprint("recipes", __name__)
+
+SORT_NEWEST = "newest"
+SORT_OLDEST = "oldest"
+SORT_RATING_DESC = "rating_desc"
+SORT_RATING_ASC = "rating_asc"
+SORT_MY_SCORE_DESC = "my_score_desc"
+SORT_MY_SCORE_ASC = "my_score_asc"
+
+RECIPE_SORT_OPTIONS = {
+    SORT_NEWEST: "Nieuw naar oud",
+    SORT_OLDEST: "Oud naar nieuw",
+    SORT_RATING_DESC: "Hoogste beoordeling",
+    SORT_RATING_ASC: "Laagste beoordeling",
+}
+
+RATED_RECIPE_SORT_OPTIONS = {
+    **RECIPE_SORT_OPTIONS,
+    SORT_MY_SCORE_DESC: "Mijn score hoog naar laag",
+    SORT_MY_SCORE_ASC: "Mijn score laag naar hoog",
+}
+
+
+def _normalize_sort(value: str | None, *, allow_my_score: bool = False) -> str:
+    options = RATED_RECIPE_SORT_OPTIONS if allow_my_score else RECIPE_SORT_OPTIONS
+    normalized = str(value or "").strip().lower()
+    return normalized if normalized in options else SORT_NEWEST
+
+
+def _apply_recipe_sort(query, sort_key: str):
+    average_score = (
+        db.session.query(func.coalesce(func.avg(RecipeScore.score), 0.0))
+        .filter(RecipeScore.recipe_id == Recipe.id)
+        .correlate(Recipe)
+        .scalar_subquery()
+    )
+    score_count = (
+        db.session.query(func.count(RecipeScore.id))
+        .filter(RecipeScore.recipe_id == Recipe.id)
+        .correlate(Recipe)
+        .scalar_subquery()
+    )
+
+    if sort_key == SORT_OLDEST:
+        return query.order_by(Recipe.created_at.asc())
+    if sort_key == SORT_RATING_DESC:
+        return query.order_by(
+            average_score.desc(), score_count.desc(), Recipe.created_at.desc()
+        )
+    if sort_key == SORT_RATING_ASC:
+        return query.order_by(
+            average_score.asc(), score_count.asc(), Recipe.created_at.asc()
+        )
+
+    return query.order_by(Recipe.created_at.desc())
 
 
 def _status_badge(status):
@@ -65,6 +120,7 @@ def list_recipes():
     page = request.args.get("page", 1, type=int)
     category = request.args.get("category", None)
     search = request.args.get("search", "")
+    sort = _normalize_sort(request.args.get("sort"))
 
     query = Recipe.query.filter_by(status=Recipe.STATUS_PUBLIC)
 
@@ -80,7 +136,7 @@ def list_recipes():
             )
         )
 
-    recipes = query.order_by(Recipe.created_at.desc()).paginate(
+    recipes = _apply_recipe_sort(query, sort).paginate(
         page=page, per_page=12, error_out=False
     )
 
@@ -89,6 +145,8 @@ def list_recipes():
         recipes=recipes,
         category=category,
         search=search,
+        sort=sort,
+        sort_options=RECIPE_SORT_OPTIONS,
     )
 
 
@@ -187,7 +245,9 @@ def favorite_recipe(recipe_id):
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"status": "ok", "favorited": created})
 
-    return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title))
+    return redirect(
+        url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title)
+    )
 
 
 @recipes_bp.route("/<int:recipe_id>/unfavorite", methods=["POST"])
@@ -208,7 +268,9 @@ def unfavorite_recipe(recipe_id):
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"status": "ok", "favorited": not removed})
 
-    return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title))
+    return redirect(
+        url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title)
+    )
 
 
 @recipes_bp.route("/add", methods=["GET", "POST"])
@@ -271,7 +333,9 @@ def add_recipe():
             flash("Recept succesvol gepubliceerd!", "success")
         else:
             flash("Concept opgeslagen.", "success")
-        return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title))
+        return redirect(
+            url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title)
+        )
 
     return render_template(
         "recipes/form.html",
@@ -421,7 +485,9 @@ def edit_recipe(recipe_id):
             flash("Recept succesvol bijgewerkt en gepubliceerd.", "success")
         else:
             flash("Concept succesvol bijgewerkt.", "success")
-        return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title))
+        return redirect(
+            url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title)
+        )
 
     return render_template(
         "recipes/form.html",
@@ -453,13 +519,18 @@ def delete_recipe(recipe_id):
 def my_recipes():
     """Display current user's recipes."""
     page = request.args.get("page", 1, type=int)
-    recipes = (
-        Recipe.query.filter_by(user_id=current_user.id)
-        .order_by(Recipe.created_at.desc())
-        .paginate(page=page, per_page=12, error_out=False)
+    sort = _normalize_sort(request.args.get("sort"))
+    query = Recipe.query.filter_by(user_id=current_user.id)
+    recipes = _apply_recipe_sort(query, sort).paginate(
+        page=page, per_page=12, error_out=False
     )
 
-    return render_template("recipes/my_recipes.html", recipes=recipes)
+    return render_template(
+        "recipes/my_recipes.html",
+        recipes=recipes,
+        sort=sort,
+        sort_options=RECIPE_SORT_OPTIONS,
+    )
 
 
 @recipes_bp.route("/favorites")
@@ -467,13 +538,47 @@ def my_recipes():
 def favorites():
     """Display current user's favorite recipes."""
     page = request.args.get("page", 1, type=int)
-    recipes = (
-        current_user.favorites.filter(Recipe.status == Recipe.STATUS_PUBLIC)
-        .order_by(Recipe.created_at.desc())
-        .paginate(page=page, per_page=12, error_out=False)
+    sort = _normalize_sort(request.args.get("sort"))
+    query = current_user.favorites.filter(Recipe.status == Recipe.STATUS_PUBLIC)
+    recipes = _apply_recipe_sort(query, sort).paginate(
+        page=page, per_page=12, error_out=False
     )
 
-    return render_template("recipes/favorites.html", recipes=recipes)
+    return render_template(
+        "recipes/favorites.html",
+        recipes=recipes,
+        sort=sort,
+        sort_options=RECIPE_SORT_OPTIONS,
+    )
+
+
+@recipes_bp.route("/rated")
+@login_required
+def rated_recipes():
+    """Display recipes rated by current user."""
+    page = request.args.get("page", 1, type=int)
+    sort = _normalize_sort(request.args.get("sort"), allow_my_score=True)
+
+    query = Recipe.query.join(
+        RecipeScore,
+        (RecipeScore.recipe_id == Recipe.id) & (RecipeScore.user_id == current_user.id),
+    ).filter(Recipe.status == Recipe.STATUS_PUBLIC)
+
+    if sort == SORT_MY_SCORE_DESC:
+        query = query.order_by(RecipeScore.score.desc(), RecipeScore.created_at.desc())
+    elif sort == SORT_MY_SCORE_ASC:
+        query = query.order_by(RecipeScore.score.asc(), RecipeScore.created_at.desc())
+    else:
+        query = _apply_recipe_sort(query, sort)
+
+    recipes = query.paginate(page=page, per_page=12, error_out=False)
+
+    return render_template(
+        "recipes/rated.html",
+        recipes=recipes,
+        sort=sort,
+        sort_options=RATED_RECIPE_SORT_OPTIONS,
+    )
 
 
 @recipes_bp.route("/<int:recipe_id>/score", methods=["POST"])
@@ -498,8 +603,12 @@ def score_recipe(recipe_id):
                 {"status": "error", "message": error.message}
             ), error.status_code
         flash(error.message, "danger")
-        return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title))
+        return redirect(
+            url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title)
+        )
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"status": "ok", **stats})
-    return redirect(url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title))
+    return redirect(
+        url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title)
+    )

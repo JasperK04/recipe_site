@@ -22,6 +22,7 @@ dependencies = [
     "nl-core-news-sm",
     "pillow>=12.3.0",
     "pytest>=9.1.1",
+    "cryptography>=50.0.0",
 ]
 
 [tool.uv.sources]
