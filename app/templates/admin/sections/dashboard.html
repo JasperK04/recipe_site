@@ -1,0 +1,38 @@
+<div class="row g-3">
+    <div class="col-12 col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+                <h3 class="h5">Gebruikersbeheer</h3>
+                <p class="text-muted mb-3">Beheer rollen, accountstatus en creator-aanvragen.</p>
+                <div class="mb-3">
+                    <span class="badge bg-primary">Open aanvragen: {{ stats.pending_creator_requests }}</span>
+                </div>
+                <a class="btn btn-primary mt-auto" href="{{ url_for('admin.users') }}">Open gebruikersbeheer</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+                <h3 class="h5">Receptmoderatie</h3>
+                <p class="text-muted mb-3">Controleer en beheer zichtbaarheid en moderatiestatus van recepten.</p>
+                <div class="mb-3">
+                    <span class="badge bg-primary">Te beoordelen: {{ stats.pending_recipe_moderation }}</span>
+                </div>
+                <a class="btn btn-primary mt-auto" href="{{ url_for('admin.recipes') }}">Open receptmoderatie</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+                <h3 class="h5">OTC-beheer</h3>
+                <p class="text-muted mb-3">Maak en verwijder OTC-codes voor leerling kok-registraties.</p>
+                <div class="mb-3">
+                    <span class="badge bg-primary">Actieve OTC's: {{ stats.active_otcs }}</span>
+                </div>
+                <a class="btn btn-primary mt-auto" href="{{ url_for('admin.manage_otc') }}">Open OTC-beheer</a>
+            </div>
+        </div>
+    </div>
+</div>

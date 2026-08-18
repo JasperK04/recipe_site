@@ -1,0 +1,100 @@
+function updateButtons(row) {
+    const role = Number(row.dataset.role)
+    const active = row.dataset.active === "true"
+    const creatorRequestPending = row.dataset.creatorRequestPending === "true"
+    const isCurrentUser = row.dataset.currentUser === "true"
+
+    const promoteBtn = row.querySelector(".promote-btn")
+    const demoteBtn = row.querySelector(".demote-btn")
+    const activeBtn = row.querySelector(".active-btn")
+
+    promoteBtn.disabled = role >= 5 || isCurrentUser
+    demoteBtn.disabled = (role <= 1 && !creatorRequestPending) || role === 6 || isCurrentUser
+    demoteBtn.setAttribute("title", creatorRequestPending ? "afwijzen" : "degraderen")
+    activeBtn.hidden = isCurrentUser || role === 6
+
+    if (!active) {
+        activeBtn.innerHTML = '<i class="bi bi-check-lg"></i>'
+        activeBtn.classList.remove("btn-outline-danger")
+        activeBtn.classList.add("btn-outline-success")
+        activeBtn.setAttribute('title', 'activeren')
+    } else {
+        activeBtn.innerHTML = '<i class="bi bi-x-lg"></i>'
+        activeBtn.classList.remove("btn-outline-success")
+        activeBtn.classList.add("btn-outline-danger")
+        activeBtn.setAttribute('title', 'deactiveren')
+    }
+}
+
+function updateCreatorRequestBadges(pendingCount) {
+    document.querySelectorAll("[data-creator-request-badge]").forEach(badge => {
+        badge.classList.toggle("d-none", pendingCount <= 0)
+    })
+}
+
+document.querySelectorAll("tbody tr").forEach(updateButtons)
+
+async function postAction(url) {
+    const csrf = document.querySelector('meta[name="csrf-token"]').content
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": csrf,
+            "Content-Type": "application/json"
+        },
+        credentials: "same-origin"
+    })
+
+    const contentType = response.headers.get("content-type") || ""
+    if (!contentType.includes("application/json")) {
+        throw new Error("Server antwoordde niet met JSON.")
+    }
+
+    const data = await response.json()
+    if (!response.ok || data.status !== "ok") {
+        throw new Error(data.message || "Actie mislukt.")
+    }
+
+    return data
+}
+
+document.addEventListener("click", async e => {
+    const btn = e.target.closest("button")
+    if (!btn) {
+        return
+    }
+
+    const row = btn.closest("tr")
+    let endpoint
+
+    if (btn.classList.contains("promote-btn")) {
+        endpoint = btn.dataset.endpoint
+    } else if (btn.classList.contains("demote-btn")) {
+        endpoint = btn.dataset.endpoint
+    } else if (btn.classList.contains("active-btn")) {
+        endpoint = row.dataset.active === "true" ? btn.dataset.deactivateEndpoint : btn.dataset.reactivateEndpoint
+    }
+
+    if (!endpoint) {
+        return
+    }
+
+    let data
+    try {
+        data = await postAction(endpoint)
+    } catch (error) {
+        window.alert(error.message || "Actie mislukt.")
+        return
+    }
+
+    if (data.status === "ok") {
+        const template = document.createElement("template")
+        template.innerHTML = data.html.trim()
+        const newRow = template.content.firstElementChild
+        row.replaceWith(newRow)
+        updateButtons(newRow)
+        if (typeof data.pending_creator_requests === "number") {
+            updateCreatorRequestBadges(data.pending_creator_requests)
+        }
+    }
+})

@@ -1,8 +1,19 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import cast
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    Response,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from flask_login import current_user, login_required
 from sqlalchemy import or_
 
@@ -17,11 +28,113 @@ from app.api import (
     reactivate_recipe,
     reactivate_user,
 )
-from app.api.users import pending_creator_request_count
-from app.models import Recipe, User
+from app.api.users import (
+    cleanup_expired_otc_codes,
+    create_registration_otc,
+    pending_creator_request_count,
+)
+from app.forms import OTCCreateForm
+from app.models import OTC, Recipe, User
 from utils import require_active_admin
 
 admin_bp = Blueprint("admin", __name__)
+
+
+def _panel_context(*, section: str):
+    stats = {
+        "pending_creator_requests": pending_creator_request_count(),
+        "pending_recipe_moderation": pending_recipe_moderation_count(),
+        "active_otcs": OTC.query.count(),
+    }
+
+    context = {
+        "section": section,
+        "stats": stats,
+    }
+
+    if section == "users":
+        context["users"] = User.query.order_by(
+            db.text("is_active DESC"), User.username.asc()
+        ).all()
+    elif section == "recipes":
+        page = request.args.get("page", 1, type=int)
+        status = request.args.get("status", "all")
+        moderation = request.args.get("moderation", "all")
+        search = request.args.get("search", "")
+
+        query = Recipe.query
+        if status in Recipe.VALID_STATUSES:
+            query = query.filter_by(status=status)
+        if moderation == "flagged":
+            query = query.filter(Recipe.moderation_status == "flagged")
+        elif moderation == "allowed":
+            query = query.filter(Recipe.moderation_status == "allowed")
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                or_(
+                    Recipe.title.ilike(search_pattern),
+                    Recipe.description.ilike(search_pattern),
+                )
+            )
+        context.update(
+            {
+                "recipes": query.order_by(Recipe.created_at.desc()).paginate(
+                    page=page, per_page=24, error_out=False
+                ),
+                "status": status,
+                "moderation": moderation,
+                "search": search,
+            }
+        )
+    elif section == "otc":
+        cleanup_expired_otc_codes()
+
+        form = OTCCreateForm()
+        created_otc = session.pop("created_otc", None)
+        registration_link = session.pop("registration_link", None)
+
+        if created_otc:
+            created_otc["expires_at"] = datetime.fromisoformat(
+                created_otc["expires_at"]
+            )
+
+        if form.validate_on_submit():
+            try:
+                expires_in_hours = form.expires_in_hours.data
+                if expires_in_hours is None:
+                    raise ApiError("Controleer de invoer.", 400)
+                created_otc = create_registration_otc(
+                    expires_in_hours=expires_in_hours,
+                    purpose=form.purpose.data,
+                )
+            except ApiError as error:
+                flash(error.message, "danger")
+            else:
+                registration_link = url_for(
+                    "auth.register", otc=created_otc.code, _external=True
+                )
+                session["created_otc"] = {
+                    "code": created_otc.code,
+                    "purpose": created_otc.purpose,
+                    "expires_at": created_otc.expires_at.isoformat(),
+                }
+                session["registration_link"] = registration_link
+                flash("OTC aangemaakt voor een leerling kok-registratie.", "success")
+                return redirect(url_for("admin.manage_otc"))
+
+        context.update(
+            {
+                "form": form,
+                "active_otcs": OTC.query.order_by(
+                    OTC.expires_at.asc(), OTC.created_at.desc()
+                ).all(),
+                "created_otc": created_otc,
+                "registration_link": registration_link,
+            }
+        )
+
+    return context
 
 
 def _user_row_response(user: User):
@@ -42,12 +155,18 @@ def _json_error(error: ApiError):
     return jsonify({"status": "error", "message": error.message}), error.status_code
 
 
+@admin_bp.route("/")
+@login_required
+def panel():
+    require_active_admin(current_user)
+    return render_template("admin/panel.html", **_panel_context(section="dashboard"))
+
+
 @admin_bp.route("/users")
 @login_required
 def users():
     require_active_admin(current_user)
-    users = User.query.order_by(db.text("is_active DESC"), User.username.asc()).all()
-    return render_template("auth/admin_users.html", users=users)
+    return render_template("admin/panel.html", **_panel_context(section="users"))
 
 
 @admin_bp.route("/users/<int:user_id>/deactivate", methods=["POST"])
@@ -110,36 +229,7 @@ def demote_user_route(user_id):
 @login_required
 def recipes():
     require_active_admin(current_user)
-    page = request.args.get("page", 1, type=int)
-    status = request.args.get("status", "all")
-    moderation = request.args.get("moderation", "all")
-    search = request.args.get("search", "")
-
-    query = Recipe.query
-    if status in Recipe.VALID_STATUSES:
-        query = query.filter_by(status=status)
-    if moderation == "flagged":
-        query = query.filter(Recipe.moderation_status == "flagged")
-    elif moderation == "allowed":
-        query = query.filter(Recipe.moderation_status == "allowed")
-    if search:
-        search_pattern = f"%{search}%"
-        query = query.filter(
-            or_(
-                Recipe.title.ilike(search_pattern),
-                Recipe.description.ilike(search_pattern),
-            )
-        )
-    recipes = query.order_by(Recipe.created_at.desc()).paginate(
-        page=page, per_page=24, error_out=False
-    )
-    return render_template(
-        "recipes/admin_list.html",
-        recipes=recipes,
-        status=status,
-        moderation=moderation,
-        search=search,
-    )
+    return render_template("admin/panel.html", **_panel_context(section="recipes"))
 
 
 @admin_bp.route("/recipes/<int:recipe_id>/deactivate", methods=["POST"])
@@ -184,3 +274,26 @@ def reactivate_recipe_route(recipe_id):
     else:
         flash("Recept opnieuw geactiveerd.", "success")
     return redirect(request.referrer or url_for("admin.recipes"))
+
+
+@admin_bp.route("/otc", methods=["GET", "POST"])
+@login_required
+def manage_otc():
+    require_active_admin(current_user)
+    context = _panel_context(section="otc")
+    if isinstance(context, Response):
+        return context
+    return render_template("admin/panel.html", **context)
+
+
+@admin_bp.route("/otc/<string:code>/delete", methods=["POST"])
+@login_required
+def delete_otc(code: str):
+    """Delete an OTC from the dashboard."""
+    admin_user = cast(User, current_user)
+    require_active_admin(admin_user)
+    otc = OTC.query.get_or_404(code)
+    db.session.delete(otc)
+    db.session.commit()
+    flash(f"OTC {code} verwijderd.", "success")
+    return redirect(url_for("admin.manage_otc"))
