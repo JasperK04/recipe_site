@@ -1,0 +1,13 @@
+<form method="GET" class="d-flex align-items-center gap-2">
+    {% for key, value in (sort_hidden_params or {}).items() %}
+        {% if value is not none and value != '' %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}">
+        {% endif %}
+    {% endfor %}
+    <label for="recipe-sort-select" class="text-muted small mb-0">Sortering</label>
+    <select id="recipe-sort-select" name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
+        {% for value, label in sort_options.items() %}
+        <option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+</form>
