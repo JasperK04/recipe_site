@@ -1,0 +1,52 @@
+{% extends "components/base.html" %}
+
+{% block title %}Mijn beoordelingen - Recepten{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-4">
+    <h1>Mijn beoordelingen</h1>
+    {% set sort_hidden_params = {} %}
+    {% include 'components/recipe_sort_controls.html' %}
+</div>
+
+{% if recipes.items %}
+<div class="recipe-grid">
+    {% for recipe in recipes.items %}
+        {% include 'components/recipe_card.html' with context %}
+    {% endfor %}
+</div>
+
+{% if recipes.pages > 1 %}
+<nav aria-label="Paginering beoordelingen" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if recipes.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('recipes.rated_recipes', page=recipes.prev_num, sort=sort) }}">Vorige</a>
+        </li>
+        {% endif %}
+
+        {% for page_num in recipes.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+            {% if page_num %}
+                <li class="page-item {% if page_num == recipes.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('recipes.rated_recipes', page=page_num, sort=sort) }}">{{ page_num }}</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if recipes.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('recipes.rated_recipes', page=recipes.next_num, sort=sort) }}">Volgende</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Je hebt nog geen recepten beoordeeld.
+</div>
+{% endif %}
+{% endblock %}
