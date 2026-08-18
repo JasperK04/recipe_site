@@ -1,0 +1,30 @@
+{
+  "name": "Pastasalade met kip en perzik",
+  "description": "Maak deze frisse pastasalade met kip en perzik. een makkelijk recept voor een zomerse lunch of avondmaaltijd, klaar in ongeveer 25 minuten.",
+  "servings": 4,
+  "cook_time": 25,
+  "prep_time": null,
+  "total_time": 25,
+  "ingredients": [
+    "200 gr pasta",
+    "200 gr (gerookte) kipreepjes",
+    "2 perziken",
+    "100 gr komkommer",
+    "125 gr cherrytomaatjes",
+    "50 gr rucola",
+    "2 el pijnboompitten",
+    "2 el pesto",
+    "2 el crème fraîche",
+    "Snufje peper en zout"
+  ],
+  "instructions": [
+    "Kook de pasta volgens de instructies op de verpakking. giet af en laat afkoelen.",
+    "Snijd de perziken in partjes, de komkommer in blokjes en halveer de cherrytomaatjes.",
+    "Rooster de pijnboompitten kort in een droge koekenpan.",
+    "Meng de pesto met de crème fraîche door elkaar.",
+    "Meng de pasta en de dressing in een grote kom.",
+    "Voeg de kip, perzik, komkommer, tomaatjes en rucola toe. meng voorzichtig door elkaar.",
+    "Maak af met de pijnboompitten."
+  ],
+  "category": "Hoofdgerecht"
+}

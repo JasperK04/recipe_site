@@ -1,0 +1,33 @@
+{
+  "name": "Gevuld flatbread met vegan shoarma en friet",
+  "description": "Shoarma én friet, en het is gewoon gezond. het gevulde flatbread met vegan shoarma is de doordeweekse guilty pleasure die je nodig hebt.",
+  "servings": 4,
+  "cook_time": null,
+  "prep_time": 40,
+  "total_time": 40,
+  "ingredients": [
+    "400 g verse franse friet",
+    "300 g plantaardige shoarma",
+    "1 rode ui",
+    "3 el rodewijnazijn",
+    "2 el water",
+    "350 g trostomaten",
+    "1.5 venkelknol",
+    "1 kropje babyromainesla",
+    "90 g granaatappelpitjes",
+    "2 el extra vierge olijfolie",
+    "2 tenen knoflook",
+    "120 g yoghurt griekse stijl 0%",
+    "4 gevouwen flatbread naturel"
+  ],
+  "instructions": [
+    "Bereid de friet volgens de aanwijzingen op de verpakking in de grootste lade van de airfryer.",
+    "Bak de shoarma in de andere lade 15-17 min. op 180 °c. schep halverwege om.",
+    "Snijd ondertussen de rode ui in flinterdunne halve ringen en schep om met de rodewijnazijn en het water.",
+    "Snijd de tomaat in dunne plakjes. halveer de venkel in de lengte en snijd in flinterdunne plakken (eventueel met een mandoline).",
+    "Snijd de romainesla in dunne repen. schep de venkel en sla om met de granaatappelpitjes, olie en de rest van de azijn.",
+    "Rasp de knoflook, meng met de yoghurt en breng op smaak met peper.",
+    "Bereid de flatbreads volgens de aanwijzingen op de verpakking in de airfryer. serveer de shoarma met de friet, flatbreads, ui, yoghurtsaus en salade."
+  ],
+  "category": "Hoofdgerecht"
+}

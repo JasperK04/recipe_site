@@ -1,0 +1,35 @@
+{
+  "name": "Pasta alla norma",
+  "description": "Pasta alla norma is zo’n pastagerecht dat laat zien dat je met een paar simpele ingrediënten iets heel lekkers kunt maken. ik combineer spaghetti met tomatensaus, gebakken aubergine, verse basilicum en pecorino. vooral de zachte aubergine met de tomatensaus vind ik erg lekker samen. ik ben namelijk echt fan van aubergine. het recept is helemaal vegetarisch en hoewel de saus even moet pruttelen, is het verder heel eenvoudig om te maken.",
+  "servings": 4,
+  "cook_time": 0,
+  "prep_time": 45,
+  "total_time": 45,
+  "ingredients": [
+    "2 grote aubergines",
+    "280 gr spaghetti",
+    "2 blikken hele tomaten (à 400 per stuk)",
+    "Snufje chili",
+    "1 ui",
+    "1 knoflook",
+    "1 theelepel italiaanse kruiden",
+    "Snuf peper en zout",
+    "Verse basilicum",
+    "Flinke scheut olie",
+    "70 gr pecorino kaas"
+  ],
+  "instructions": [
+    "Snipper de ui en knoflook.",
+    "Fruit deze aan in een klein scheutje olijfolie in een grote pan.",
+    "Voeg de tomaten uit blik (inclusief vocht) toe.",
+    "Voeg peper, zout, italiaanse kruiden, chili (naar smaak) en de verse basilicum toe en laat het mengsel ca. 25 min pruttelen.",
+    "Roer af en toe door en plet op den duur de tomaten met een spatel zodat er meer een saus ontstaat.",
+    "Snijd de aubergines in plakken van ca. 1 cm.",
+    "Verhit een flinke scheut olie in een andere pan en bak hier de plakken aubergine ca. 5 minuten in. haal ze er daarna uit en laat uitlekken op een keukenpapiertje.",
+    "Kook ondertussen ook de spaghetti beetgaar en giet af en vang een beetje kookvocht op.",
+    "Voeg de gebakken plakken aubergine toe aan de tomatensaus.",
+    "Proef of deze goed op smaak is en schep dan ook de spaghetti erdoor. voeg eventueel een klein scheutje kookvocht toe om het mengsel extra smeuïg te maken.",
+    "Serveer de pasta alla norma met wat extra basilicum en pecorino kaas."
+  ],
+  "category": "Overig"
+}

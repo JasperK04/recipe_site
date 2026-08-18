@@ -235,8 +235,38 @@ def require_active_creator(user) -> None:
         abort(403)
 
 
+def _parse_ingredient_value(value: str) -> float | int | None:
+    """Parse a single numeric quantity value without raising for invalid input."""
+    if value in {"½", "⅓", "¼", "¾"}:
+        return {"½": 0.5, "⅓": 1 / 3, "¼": 0.25, "¾": 0.75}[value]
+    if re.fullmatch(r"\d+/\d+", value):
+        numerator, denominator = map(int, value.split("/"))
+        return numerator / denominator if denominator else None
+    if re.fullmatch(r"\d+(?:[.,]\d+)?", value):
+        number = float(value.replace(",", "."))
+        return int(number) if number.is_integer() else number
+    return None
+
+
 def parse_ingredient(text: str) -> tuple[float | int | None, str | None, str]:
+    from utils.ingredient_normalization import is_configured_unit, normalize_unit
+
     text = text.lower().strip()
+
+    # Recipe quantities are stored as a single number. Convert a range to its
+    # nearest integer average (half values round up), without adding a new
+    # field to the stored ingredient JSON.
+    range_value = r"(?:\d+(?:[.,]\d+)?|\d+/\d+|[½⅓¼¾])"
+    range_match = re.match(
+        rf"^({range_value})\s*(?:-|–|—|tot|to|à)\s*({range_value})\s+(.+?)$",
+        text,
+    )
+    if range_match:
+        minimum = _parse_ingredient_value(range_match.group(1))
+        maximum = _parse_ingredient_value(range_match.group(2))
+        if minimum is not None and maximum is not None:
+            average = int(((minimum + maximum) / 2) + 0.5)
+            text = f"{average} {range_match.group(3)}"
 
     number_words = {
         "een": 1,
@@ -254,12 +284,6 @@ def parse_ingredient(text: str) -> tuple[float | int | None, str | None, str]:
         "twaalf": 12,
     }
 
-    unit_multipliers = {
-        "ons": ("g", 100),
-        "pond": ("g", 500),
-        "dozijn": ("st", 12),
-    }
-
     fraction_chars = {
         "½": 0.5,
         "⅓": 1 / 3,
@@ -275,6 +299,7 @@ def parse_ingredient(text: str) -> tuple[float | int | None, str | None, str]:
     consumed = 0
 
     first = tokens[0]
+    attached_unit = None
 
     if first in fraction_chars:
         amount = fraction_chars[first]
@@ -282,6 +307,8 @@ def parse_ingredient(text: str) -> tuple[float | int | None, str | None, str]:
 
     elif re.fullmatch(r"\d+/\d+", first):
         num, den = map(int, first.split("/"))
+        if den == 0:
+            return None, None, text
         amount = num / den
         consumed = 1
 
@@ -289,16 +316,40 @@ def parse_ingredient(text: str) -> tuple[float | int | None, str | None, str]:
         amount = float(first.replace(",", "."))
         consumed = 1
 
+    elif match := re.fullmatch(r"(\d+(?:[.,]\d+)?)([^\d\s]+)", first):
+        amount = float(match.group(1).replace(",", "."))
+        attached_unit = match.group(2)
+        consumed = 1
+
     elif first in number_words:
         amount = number_words[first]
         consumed = 1
 
     if amount is None:
+        # A configured unit at the start of an ingredient implies one unit:
+        # "pond gehakt" is equivalent to "1 pond gehakt". Unknown leading
+        # words remain ingredient names instead of being mistaken for units.
+        if is_configured_unit(first) and len(tokens) >= 2:
+            unit, multiplier = normalize_unit(first)
+            amount = multiplier
+            name = " ".join(tokens[1:])
+            if isinstance(amount, float) and amount.is_integer():
+                amount = int(amount)
+            return amount, unit, name
         return None, None, text
 
     unit = None
 
-    remaining = tokens[consumed:]
+    remaining = ([attached_unit] if attached_unit else []) + tokens[consumed:]
+
+    # Support common mixed-fraction forms such as ``1 ½ kg`` and ``1 1/2 kg``.
+    if remaining and remaining[0] in fraction_chars:
+        amount += fraction_chars[remaining.pop(0)]
+    elif remaining and re.fullmatch(r"\d+/\d+", remaining[0]):
+        numerator, denominator = map(int, remaining[0].split("/"))
+        if denominator:
+            amount += numerator / denominator
+            remaining.pop(0)
 
     if len(remaining) == 1:
         name = remaining[0]
@@ -306,11 +357,8 @@ def parse_ingredient(text: str) -> tuple[float | int | None, str | None, str]:
     elif len(remaining) >= 2:
         first = remaining[0]
 
-        if first in unit_multipliers:
-            unit, multiplier = unit_multipliers[first]
-            amount *= multiplier
-        else:
-            unit = first
+        unit, multiplier = normalize_unit(first)
+        amount *= multiplier
 
         name = " ".join(remaining[1:])
 

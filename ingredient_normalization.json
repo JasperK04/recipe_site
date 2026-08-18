@@ -1,0 +1,26 @@
+{
+  "units": {
+    "g": "g",
+    "gram": "g",
+    "grammen": "g",
+    "kg": "kg",
+    "kilogram": "kg",
+    "ml": "ml",
+    "milliliter": "ml",
+    "l": "l",
+    "liter": "l",
+    "el": "el",
+    "eetlepel": "el",
+    "eetlepels": "el",
+    "tl": "tl",
+    "theelepel": "tl",
+    "theelepels": "tl",
+    "st": "",
+    "stuk": "",
+    "stuks": "",
+    "ons": {"unit": "g", "multiplier": 100},
+    "pond": {"unit": "g", "multiplier": 500},
+    "dozijn": {"unit": "", "multiplier": 12},
+    "gros": {"unit": "", "multiplier": 144}
+  }
+}

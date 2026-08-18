@@ -1,0 +1,26 @@
+{
+  "name": "Nasi goreng",
+  "description": "Nasi goreng, uit het kookboek 'koken met karin, zónder pakjes & zakjes' van karin luiten. kijk voor de bereidingswijze op okokorecepten.nl.",
+  "servings": null,
+  "cook_time": 30,
+  "prep_time": 0,
+  "total_time": 30,
+  "ingredients": [
+    "Scheutje plantaardige olie",
+    "1 grote ui, gesnipperd",
+    "2 teentjes knoflook, fijngehakt",
+    "1 eetlepel sambal",
+    "300 g kipfilet, in reepjes",
+    "100 g witte of chinese kool, in dunne reepjes",
+    "1 dunne prei, in dunne plakjes",
+    "4 worteltjes, in dunne plakjes",
+    "Scheutje ketjap manis",
+    "3 eieren, losgeklopt met wat zout en peper",
+    "400 g gare koude rijst",
+    "Paar takjes bladselderij, grof gehakt"
+  ],
+  "instructions": [
+    "Bereiden: zet alle ingrediënten klaar bij het fornuis.verhit een scheutje olie in de wok. fruit de ui, knoflook en sambal kort. voeg de kip erbij en braad snel rondom bruin.doe kool, prei en wortel erbij en wok alles een paar minuten tot de groente zacht begint te worden. giet de ketjap erbij.schuif de groente een beetje opzij en giet de losgeklopte eieren in de wok. roer met een pollepel tot het ei begint te stollen.voeg de rijst toe en roerbak een paar minuten tot alles goed warm is. strooi de selderijblaadjes erover.lekker met zelfgemaakte pindasaus, kroepoek, atjar, extra ketjap en in de lengte gehalveerde, in wat olie gebakken bananen."
+  ],
+  "category": "Hoofdgerecht"
+}
