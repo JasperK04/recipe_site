@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import html
 import smtplib
 from email.message import EmailMessage
 from email.utils import formatdate
-import hashlib
 from typing import cast
 
 from flask import current_app, url_for
@@ -273,16 +273,12 @@ def _recipe_admin_url() -> str:
     return url_for("admin.recipes", _external=True)
 
 
-def _recipe_moderation_signature(
-    recipe: Recipe, moderation: ModerationResult
-) -> str:
+def _recipe_moderation_signature(recipe: Recipe, moderation: ModerationResult) -> str:
     digest = hashlib.sha256()
-    digest.update(f"recipe:{recipe.id}|".encode("utf-8"))
+    digest.update(f"recipe:{recipe.id}|".encode())
     for issue in moderation.issues:
         digest.update(
-            "|".join(
-                [issue.field, issue.category, issue.term, issue.message]
-            ).encode("utf-8")
+            f"{issue.field}|{issue.category}|{issue.term}|{issue.message}".encode()
         )
         digest.update(b"\n")
     return digest.hexdigest()

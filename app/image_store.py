@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from flask import current_app
 from PIL import Image, ImageOps
+
 from utils import ensure_directory
 
 MAX_IMAGE_WIDTH = 600

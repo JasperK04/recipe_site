@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, cast
 
-from flask import abort, flash, jsonify, request, url_for
+from flask import abort, current_app, flash, jsonify, request, url_for
 from flask_login import current_user, login_required
 
 from app import db
@@ -48,7 +48,7 @@ def _apply_recipe_moderation(
 ) -> Recipe:
     recipe.moderation_status = moderation_result.status
     recipe.moderation_issues = [issue.to_dict() for issue in moderation_result.issues]
-    recipe.moderated_at = datetime.now(timezone.utc)
+    recipe.moderated_at = datetime.now(UTC)
 
     if moderation_result.is_flagged:
         recipe.status_before_moderation = requested_status
@@ -145,8 +145,8 @@ def create_recipe(
         try:
             uploaded_image_id = save_recipe_image(image_file)
             recipe.image_id = uploaded_image_id
-        except Exception:
-            pass
+        except (OSError, ValueError):
+            current_app.logger.exception("Unable to save recipe image")
 
     try:
         db.session.commit()
@@ -254,8 +254,8 @@ def update_recipe(
             recipe.image_id = uploaded_image_id
             if previous_image_id:
                 image_ids_to_delete_after_commit.add(previous_image_id)
-        except Exception:
-            pass
+        except (OSError, ValueError):
+            current_app.logger.exception("Unable to save replacement recipe image")
 
     if remove_image:
         if recipe.image_id:
@@ -340,7 +340,7 @@ def delete_recipe(recipe: Recipe) -> str | None:
 def allow_recipe_moderation(recipe: Recipe) -> Recipe:
     """Mark a recipe as allowed and restore the requested publish state."""
     recipe.moderation_status = "allowed"
-    recipe.moderated_at = datetime.now(timezone.utc)
+    recipe.moderated_at = datetime.now(UTC)
     recipe.moderation_notification_signature = None
     _restore_requested_status(recipe)
     db.session.commit()
@@ -357,7 +357,7 @@ def retest_recipe_moderation(recipe: Recipe) -> Recipe:
     )
     recipe.moderation_status = moderation.status
     recipe.moderation_issues = [issue.to_dict() for issue in moderation.issues]
-    recipe.moderated_at = datetime.now(timezone.utc)
+    recipe.moderated_at = datetime.now(UTC)
 
     if moderation.is_flagged:
         if recipe.status != Recipe.STATUS_DEACTIVATED:

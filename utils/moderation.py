@@ -3,8 +3,8 @@ from __future__ import annotations
 import re
 import unicodedata
 from collections.abc import Iterable, Mapping
-from functools import lru_cache
 from dataclasses import asdict, dataclass
+from functools import lru_cache
 from typing import Literal
 
 import spacy
@@ -67,7 +67,7 @@ def _is_moderation_enabled() -> bool:
         from flask import current_app
 
         return bool(current_app.config.get("MODERATION_ENABLED", MODERATION_ENABLED))
-    except Exception:
+    except RuntimeError:
         return MODERATION_ENABLED
 
 
@@ -75,7 +75,7 @@ def _is_moderation_enabled() -> bool:
 def _spacy_model():
     try:
         return spacy.load("nl_core_news_sm", exclude=["parser", "ner"])
-    except Exception:
+    except OSError:
         return None
 
 

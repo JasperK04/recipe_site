@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from flask import Flask, flash, jsonify, redirect, request, url_for
 from flask_login import LoginManager, current_user, logout_user
@@ -14,8 +14,8 @@ login_manager = LoginManager()
 session = Session()
 migrate = Migrate()
 
-from app.api import api_bp  # noqa: E402
-from app.routes import admin_bp, auth_bp, main_bp, recipes_bp  # noqa: E402
+from app.api import api_bp
+from app.routes import admin_bp, auth_bp, main_bp, recipes_bp
 
 
 def create_app(config_name="default"):
@@ -35,9 +35,10 @@ def create_app(config_name="default"):
     @app.errorhandler(CSRFError)
     def handle_csrf_error(error):
         """Return JSON for AJAX forms instead of Flask-WTF's HTML error page."""
-        if request.path.startswith("/api/") or request.headers.get(
-            "X-Requested-With"
-        ) == "XMLHttpRequest":
+        if (
+            request.path.startswith("/api/")
+            or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        ):
             return jsonify(
                 {
                     "status": "error",
@@ -67,7 +68,7 @@ def create_app(config_name="default"):
                 _external=external,
             )
 
-        return dict(recipe_url=recipe_url)
+        return {"recipe_url": recipe_url}
 
     # Register CLI commands
     from app.cli import register_commands
@@ -90,19 +91,19 @@ def create_app(config_name="default"):
     # expose csrf_token() in templates for manual forms
     @app.context_processor
     def inject_csrf_token():
-        return dict(csrf_token=generate_csrf)
+        return {"csrf_token": generate_csrf}
 
     # Inject current year for footer
     @app.context_processor
     def inject_year():
-        return dict(current_year=datetime.now().year)
+        return {"current_year": datetime.now(UTC).year}
 
     @app.context_processor
     def inject_pending_creator_requests():
         from flask_login import current_user as flask_current_user
 
-        from app.api.users import pending_creator_request_count
         from app.api.recipes import pending_recipe_moderation_count
+        from app.api.users import pending_creator_request_count
 
         pending_creator_requests = 0
         pending_recipe_moderation = 0
@@ -110,9 +111,9 @@ def create_app(config_name="default"):
             pending_creator_requests = pending_creator_request_count()
             pending_recipe_moderation = pending_recipe_moderation_count()
 
-        return dict(
-            pending_creator_requests=pending_creator_requests,
-            pending_recipe_moderation=pending_recipe_moderation,
-        )
+        return {
+            "pending_creator_requests": pending_creator_requests,
+            "pending_recipe_moderation": pending_recipe_moderation,
+        }
 
     return app

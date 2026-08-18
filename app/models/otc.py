@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app import db
 
@@ -11,14 +11,14 @@ class OTC(db.Model):
 
     code = db.Column(db.String(8), primary_key=True, unique=True, nullable=False)
     purpose = db.Column(db.String(50), nullable=True)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
     expires_at = db.Column(db.DateTime, nullable=False)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def is_expired(self):
-        return datetime.now(timezone.utc) >= self.expires_at
+        return datetime.now(UTC) >= self.expires_at
 
     def __repr__(self):
         return f"<OTC code={self.code} expires_at={self.expires_at}>"

@@ -6,6 +6,8 @@ A Flask application for managing cooking recipes.
 
 import os
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from app import create_app, db
 from app.models import Recipe, User
 from utils import is_running_flask_db_command, sqlite_path_from_uri
@@ -21,8 +23,8 @@ if not is_running_flask_db_command():
             sqlite_db_file = sqlite_path_from_uri(db_uri)
             if sqlite_db_file and not os.path.exists(sqlite_db_file):
                 db.create_all()
-        except Exception as e:
-            app.logger.warning("Failed to ensure database tables: %s", e)
+        except (OSError, SQLAlchemyError) as error:
+            app.logger.warning("Failed to ensure database tables: %s", error)
 
 
 @app.shell_context_processor

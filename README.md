@@ -175,6 +175,20 @@ flask seed-data --users 10 --recipes 50
 flask db-stats
 ```
 
+**Reapply ingredient unit normalization:**
+```bash
+flask normalize-recipe-ingredients
+```
+
+Ingredient aliases are configured in `ingredient_normalization.json`. Each entry
+maps an input unit to its canonical unit; entries may also multiply the quantity:
+
+```json
+"kg": {"unit": "g", "multiplier": 1000}
+```
+
+Set `INGREDIENT_NORMALIZATION_FILE` to use a configuration file at another path.
+
 **Clear all data from database:**
 ```bash
 flask clear-data

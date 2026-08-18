@@ -322,6 +322,12 @@ def upload_recipe():
             case _:
                 return flash_("Ongeldig uploadtype geselecteerd.", "danger")
 
+        # Normalize before the review form is shown, so uploads and manually
+        # added recipes use the exact same centralized rules.
+        data["ingredients"] = sanitize_recipe_ingredients(
+            data.get("ingredients", []), plain_text=True
+        )
+
         return redirect(
             url_for(
                 "recipes.add_recipe",
@@ -360,20 +366,13 @@ def edit_recipe(recipe_id):
         # simple fields
         form.title.data = recipe.title
         form.description.data = recipe.description
-        # status
-        try:
-            form.status.data = recipe.status
-        except Exception:
-            pass
+        form.status.data = recipe.status
         form.prep_time.data = recipe.prep_time
         form.cook_time.data = recipe.cook_time
         form.servings.data = recipe.servings
         form.category.data = recipe.category if recipe.category else ""
 
-        try:
-            form.ingredients.entries.clear()
-        except Exception:
-            pass
+        form.ingredients.entries.clear()
 
         for ing in recipe.ingredients:
             form.ingredients.append_entry(ingredient_to_string(ing))
@@ -382,10 +381,7 @@ def edit_recipe(recipe_id):
             form.ingredients.append_entry()
 
         # populate instructions FieldList
-        try:
-            form.instructions.entries.clear()
-        except Exception:
-            pass
+        form.instructions.entries.clear()
         for step in recipe.instructions or []:
             form.instructions.append_entry(step)
         if len(form.instructions.entries) == 0:

@@ -218,10 +218,21 @@ def read_uploaded_page(url: str) -> dict:
         if not script or not script.string:
             continue
 
-        raw_data = json.loads(script.string, strict=False)
-        raw_graph = raw_data.get("@graph") or [raw_data]
+        try:
+            raw_data = json.loads(script.string, strict=False)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(raw_data, dict):
+            raw_graph = raw_data.get("@graph") or [raw_data]
+        elif isinstance(raw_data, list):
+            raw_graph = raw_data
+        else:
+            continue
         for item in raw_graph:
-            if isinstance(item, dict) and item.get("@type") == "Recipe":
+            item_types = item.get("@type", []) if isinstance(item, dict) else []
+            if isinstance(item_types, str):
+                item_types = [item_types]
+            if isinstance(item, dict) and "Recipe" in item_types:
                 recipe = item
                 found_recipe = True
                 break

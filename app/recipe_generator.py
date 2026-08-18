@@ -8,7 +8,7 @@ genereren.
 from __future__ import annotations
 
 import random
-from typing import Any, Dict, List
+from typing import Any
 
 # Bijvoeglijke naamwoorden die aan titels worden voorafgeplaatst
 ADJECTIVES = [
@@ -346,7 +346,7 @@ def generate_title(use_adjective: bool = True) -> str:
     return base
 
 
-def generate_ingredients(num_extra: int = 2, base_hint: str | None = None) -> List[str]:
+def generate_ingredients(num_extra: int = 2, base_hint: str | None = None) -> list[str]:
     """Generate an ingredient list. If base_hint provided, prefer matching base."""
     # Choose a base entry that matches hint if given
     if base_hint:
@@ -369,7 +369,7 @@ def generate_ingredients(num_extra: int = 2, base_hint: str | None = None) -> Li
             picks += random.sample(other, k=1)
 
     # Normalize and deduplicate while preserving order
-    items: List[str] = []
+    items: list[str] = []
     for i in core + picks:
         if i not in items:
             items.append(i)
@@ -377,7 +377,7 @@ def generate_ingredients(num_extra: int = 2, base_hint: str | None = None) -> Li
     return items
 
 
-def generate_recipe(use_adjective: bool = True, num_extra: int = 2) -> Dict[str, Any]:
+def generate_recipe(use_adjective: bool = True, num_extra: int = 2) -> dict[str, Any]:
     """Return a dict with `title` and `ingredients` for a generated recipe."""
     # pick base so ingredients align with title
     base_entry = random.choice(RECIPE_BASES)
@@ -413,7 +413,7 @@ def generate_recipe(use_adjective: bool = True, num_extra: int = 2) -> Dict[str,
 
 def generate_recipes(
     n: int = 10, use_adjective: bool = True, num_extra: int = 2
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Generate multiple recipes."""
     return [
         generate_recipe(use_adjective=use_adjective, num_extra=num_extra)

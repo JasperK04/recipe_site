@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from app import db
 
-
 users_favorites = db.Table(
     "users_favorites",
     db.Column("user_id", db.Integer, db.ForeignKey("users.id"), primary_key=True),
@@ -17,14 +16,14 @@ class PaginationMixin:
     def paginate(cls, page=1, per_page=10, query=None, order_by=None):
         try:
             page = int(page) if page and int(page) > 0 else 1
-        except Exception:
+        except (TypeError, ValueError):
             page = 1
         try:
             per_page = int(per_page) if per_page and int(per_page) > 0 else 10
-        except Exception:
+        except (TypeError, ValueError):
             per_page = 10
 
-        q = query or getattr(cls, "query")
+        q = query or cls.query
         if order_by is not None:
             q = q.order_by(order_by)
 

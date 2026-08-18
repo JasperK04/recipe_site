@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import secrets
 import string
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import cast
 
 from flask import jsonify, render_template
@@ -19,7 +19,7 @@ from utils.moderation import moderate_username
 
 def cleanup_expired_otc_codes() -> int:
     """Delete expired OTC records and return the number removed."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     removed = OTC.query.filter(OTC.expires_at <= now).delete(synchronize_session=False)
     if removed:
         db.session.commit()
@@ -44,7 +44,7 @@ def create_registration_otc(
     """Create a new OTC for leerling kok registration."""
     cleanup_expired_otc_codes()
 
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=expires_in_hours)
+    expires_at = datetime.now(UTC) + timedelta(hours=expires_in_hours)
 
     for _ in range(20):
         code = generate_otc_code()
@@ -161,7 +161,7 @@ def deactivate_user(*, actor: User, target: User) -> User:
     if not target.is_active:
         return target
 
-    setattr(target, "is_active", False)
+    target.is_active = False
     target.creator_request_pending = False
 
     for recipe in target.recipes.all():
@@ -178,7 +178,7 @@ def reactivate_user(target: User) -> User:
     if target.is_active:
         return target
 
-    setattr(target, "is_active", True)
+    target.is_active = True
 
     for recipe in target.recipes.all():
         if recipe.status != Recipe.STATUS_DEACTIVATED:

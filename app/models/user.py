@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from flask_login import UserMixin
@@ -43,7 +43,7 @@ class User(UserMixin, db.Model):
     creator_request_pending = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.false()
     )
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
 
     recipes = db.relationship(
         "Recipe", backref="author", lazy="dynamic", cascade="all, delete-orphan"

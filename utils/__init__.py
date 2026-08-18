@@ -18,6 +18,11 @@ from .general import (
     sqlite_path_from_uri,
     to_model_choices,
 )
+from .ingredient_normalization import (
+    is_configured_unit,
+    normalize_stored_ingredients,
+    normalize_unit,
+)
 from .moderation import (
     MODERATION_ENABLED,
     ModerationIssue,
@@ -28,14 +33,23 @@ from .moderation import (
 )
 
 __all__ = [
+    "MODERATION_ENABLED",
+    "ModerationIssue",
+    "ModerationResult",
     "clear_directory_files",
     "count_files",
     "create_zip_from_directory",
     "ensure_directory",
     "ingredient_to_string",
+    "is_configured_unit",
     "is_running_flask_db_command",
+    "moderate_recipe_payload",
+    "moderate_texts",
+    "moderate_username",
     "normalize_choice",
     "normalize_sqlite_uri",
+    "normalize_stored_ingredients",
+    "normalize_unit",
     "parse_ingredient",
     "query_rows_by_ids",
     "require_active_admin",
@@ -44,12 +58,6 @@ __all__ = [
     "restore_directory_from_zip",
     "sanitize_recipe_ingredients",
     "sanitize_recipe_instructions",
-    "MODERATION_ENABLED",
-    "ModerationIssue",
-    "ModerationResult",
-    "moderate_recipe_payload",
-    "moderate_texts",
-    "moderate_username",
     "sqlite_path_from_uri",
     "to_model_choices",
 ]

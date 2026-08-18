@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 import click
 from faker import Faker
 from flask import Flask
+from sqlalchemy.exc import SQLAlchemyError
 
 from app import db
 from app.models import (
@@ -27,6 +28,7 @@ from utils import (
     clear_directory_files,
     create_zip_from_directory,
     ensure_directory,
+    normalize_stored_ingredients,
     restore_directory_from_zip,
     sqlite_path_from_uri,
 )
@@ -194,6 +196,23 @@ def register_commands(app: Flask):
             )
         )
 
+    @app.cli.command("normalize-recipe-ingredients")
+    def normalize_recipe_ingredients():
+        """Reapply the current ingredient_normalization.json rules to every recipe."""
+        changed_count = 0
+        for recipe in Recipe.query.order_by(Recipe.id).yield_per(100):
+            normalized = normalize_stored_ingredients(recipe.ingredients)
+            if normalized != (recipe.ingredients or []):
+                recipe.ingredients = normalized
+                changed_count += 1
+        db.session.commit()
+        click.echo(
+            click.style(
+                f"Ingredient normalization completed: {changed_count} recipe(s) updated.",
+                fg="green",
+            )
+        )
+
     @app.cli.command("seed-data")
     @click.option("--users", default=10, help="Number of users to create (default: 10)")
     @click.option(
@@ -208,9 +227,9 @@ def register_commands(app: Flask):
         """
         # Clear association tables first to avoid unique-constraint leftovers
 
-        Recipe.query.delete()  # noqa: F841
+        Recipe.query.delete()
         _clear_recipe_images(app)
-        User.query.delete()  # noqa: F841
+        User.query.delete()
         db.session.commit()
 
         # Create mock users
@@ -316,7 +335,7 @@ def register_commands(app: Flask):
                         if not user.favorites.filter_by(id=r.id).first():
                             user.favorites.append(r)
                 db.session.commit()
-        except Exception:
+        except SQLAlchemyError:
             db.session.rollback()
 
     @app.cli.command("clear-data")
@@ -328,9 +347,9 @@ def register_commands(app: Flask):
         """
         click.echo("Alle data uit de database verwijderen...")
 
-        Recipe.query.delete()  # noqa: F841
+        Recipe.query.delete()
         deleted_images = _clear_recipe_images(app)
-        User.query.delete()  # noqa: F841
+        User.query.delete()
 
         db.session.commit()
         click.echo(f"Verwijderde recepten-afbeeldingen: {deleted_images}")
