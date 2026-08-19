@@ -13,7 +13,17 @@ from app.api.common import ApiError
 from app.forms import RecipeForm
 from app.image_store import delete_recipe_image, save_recipe_image
 from app.models import Recipe, RecipeScore, User
-from app.services.email import send_recipe_moderation_notification
+from app.services.email import (
+    send_recipe_moderation_notification,
+    send_referenced_recipe_deletion_notification,
+    send_referenced_recipe_update_notification,
+)
+from app.services.nested_recipes import (
+    build_recipe_dependency_graph,
+    handle_referenced_recipe_deletion,
+    handle_referenced_recipe_update,
+    validate_recipe_dependency_graph,
+)
 from utils import (
     moderate_recipe_payload,
     normalize_choice,
@@ -76,8 +86,7 @@ def _flash_recipe_save_message(recipe: Recipe, *, updated: bool) -> None:
         issues = recipe.moderation_issue_messages
         if issues:
             flash(
-                "Recept opgeslagen als concept vanwege moderatie: "
-                + "; ".join(issues),
+                "Recept opgeslagen als concept vanwege moderatie: " + "; ".join(issues),
                 "warning",
             )
         else:
@@ -159,6 +168,15 @@ def create_recipe(
     if moderation.is_flagged:
         send_recipe_moderation_notification(recipe, moderation)
 
+    referencing = handle_referenced_recipe_update(recipe)
+    for dependent in referencing:
+        try:
+            send_referenced_recipe_update_notification(dependent, recipe)
+        except Exception:
+            current_app.logger.exception(
+                "Failed to notify dependent recipe owners after nested recipe update"
+            )
+
     return recipe
 
 
@@ -238,6 +256,25 @@ def update_recipe(
     recipe.cook_time = cook_time
     recipe.servings = servings
     recipe.category = category if category else None
+
+    graph = build_recipe_dependency_graph(
+        Recipe.query.filter(Recipe.id != recipe.id).all()
+    )
+    graph[recipe.id] = [
+        dep
+        for dep in recipe.ingredients or []
+        if isinstance(dep, dict) and dep.get("type") == "recipe"
+    ]
+    dependency_ids = []
+    for dep in graph.get(recipe.id, []):
+        if isinstance(dep, dict):
+            dependency_ids.append(int(dep.get("recipe_id", 0)))
+    graph[recipe.id] = [item for item in dependency_ids if item > 0]
+    try:
+        validate_recipe_dependency_graph(recipe.id, graph)
+    except ValueError as exc:
+        raise ApiError(str(exc), 400) from exc
+
     _apply_recipe_moderation(
         recipe=recipe,
         requested_status=requested_status,
@@ -331,8 +368,23 @@ def update_recipe_endpoint(recipe_id):
 def delete_recipe(recipe: Recipe) -> str | None:
     """Delete a recipe and remove the backing image after commit."""
     image_id = recipe.image_id
-    db.session.delete(recipe)
-    db.session.commit()
+    referencing = handle_referenced_recipe_deletion(recipe)
+
+    try:
+        db.session.delete(recipe)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+    for dependent in referencing:
+        try:
+            send_referenced_recipe_deletion_notification(dependent, recipe)
+        except Exception:
+            current_app.logger.exception(
+                "Failed to notify dependent recipe owners after nested recipe deletion"
+            )
+
     delete_recipe_image(image_id)
     return image_id
 

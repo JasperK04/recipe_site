@@ -87,22 +87,48 @@ def normalize_stored_ingredients(ingredients: object) -> list[dict[str, Any]]:
             quantity, unit, name = parse_ingredient(ingredient)
             if name:
                 normalized.append(
-                    {"name": name, "quantity": quantity, "measurement": unit}
+                    {
+                        "type": "ingredient",
+                        "display_name": name,
+                        "quantity": quantity,
+                        "unit": unit or "",
+                    }
                 )
             continue
         if not isinstance(ingredient, dict):
             continue
 
-        name = ingredient.get("name") or ingredient.get("name_")
+        if ingredient.get("type") == "recipe":
+            normalized.append(
+                {
+                    "type": "recipe",
+                    "recipe_id": ingredient.get("recipe_id"),
+                    "display_name": ingredient.get("display_name")
+                    or ingredient.get("name")
+                    or "Recept",
+                    "quantity": ingredient.get("quantity"),
+                    "unit": ingredient.get("unit") or ingredient.get("measurement") or "",
+                }
+            )
+            continue
+
+        name = ingredient.get("display_name") or ingredient.get("name") or ingredient.get("name_")
         if not name:
             continue
         quantity = ingredient.get("quantity")
-        unit, multiplier = normalize_unit(ingredient.get("measurement"))
+        unit, multiplier = normalize_unit(
+            ingredient.get("unit") or ingredient.get("measurement")
+        )
         if isinstance(quantity, (int, float)) and not isinstance(quantity, bool):
             quantity *= multiplier
             if isinstance(quantity, float) and quantity.is_integer():
                 quantity = int(quantity)
         normalized.append(
-            {"name": str(name), "quantity": quantity, "measurement": unit}
+            {
+                "type": "ingredient",
+                "display_name": str(name),
+                "quantity": quantity,
+                "unit": unit or "",
+            }
         )
     return normalized

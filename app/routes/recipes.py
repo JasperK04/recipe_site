@@ -30,6 +30,7 @@ from app.api import (
 from app.forms import RecipeForm, RecipeUploadForm
 from app.image_store import read_recipe_image_bytes
 from app.models import Recipe, RecipeScore, User
+from app.services.nested_recipes import resolve_recipe_search_term
 from utils import (
     ingredient_to_string,
     require_active_creator,
@@ -64,6 +65,23 @@ def _normalize_sort(value: str | None, *, allow_my_score: bool = False) -> str:
     options = RATED_RECIPE_SORT_OPTIONS if allow_my_score else RECIPE_SORT_OPTIONS
     normalized = str(value or "").strip().lower()
     return normalized if normalized in options else SORT_NEWEST
+
+
+def _ingredient_field_value(ingredient: str | dict) -> str:
+    if isinstance(ingredient, dict):
+        if ingredient.get("type") == "recipe":
+            return json.dumps(ingredient)
+        return ingredient_to_string(ingredient)
+    return ingredient
+
+
+@recipes_bp.route("/nested/search")
+def nested_recipe_search():
+    search = (request.args.get("q") or "").strip()
+    matches = resolve_recipe_search_term(search)
+    results = [{"id": recipe.id, "title": recipe.title} for recipe in matches[:6]]
+    payload = {"results": results, "has_more": len(matches) > 6}
+    return jsonify(payload)
 
 
 def _apply_recipe_sort(query, sort_key: str):
@@ -439,7 +457,7 @@ def edit_recipe(recipe_id):
         form.ingredients.entries.clear()
 
         for ing in recipe.ingredients:
-            form.ingredients.append_entry(ingredient_to_string(ing))
+            form.ingredients.append_entry(_ingredient_field_value(ing))
 
         if len(form.ingredients.entries) == 0:
             form.ingredients.append_entry()

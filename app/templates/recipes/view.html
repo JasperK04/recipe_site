@@ -380,19 +380,37 @@ div > a.x {
                 <div class="bg-light p-3 rounded mb-4">
                     <ul class="mb-0">
                         {% for ingredient in recipe.ingredients %}
-                            {% set ing_name = ingredient.get('name_') or ingredient.get('name') %}
-                            {% set quantity = ingredient.get('quantity') %}
-                            {% set measurement = ingredient.get('measurement') %}
-                            {% if ing_name %}
-                            <li>
-                                {% if quantity is number %}
-                                <span class="ingredient-quantity" data-original-quantity="{{ quantity }}">{{ quantity }}</span>
-                                {% elif quantity is not none %}
-                                <span class="ingredient-quantity">{{ quantity }}</span>
+                            {% if ingredient.get('type') == 'recipe' %}
+                                {% set nested_name = ingredient.get('display_name') or 'Recept' %}
+                                {% set nested_quantity = ingredient.get('quantity') %}
+                                {% set nested_unit = ingredient.get('unit') %}
+                                {% set nested_recipe_id = ingredient.get('recipe_id') %}
+                                {% set nested_recipe_title = ingredient.get('recipe_title') or ingredient.get('url_title') %}
+                                <li>
+                                    <a href="{{ url_for('recipes.view_recipe', recipe_id=nested_recipe_id, title=nested_recipe_title) if nested_recipe_title else url_for('recipes.view_recipe', recipe_id=nested_recipe_id) }}" class="ingredient-name d-block">
+                                    {% if nested_quantity is number %}
+                                    <span class="ingredient-quantity" data-original-quantity="{{ nested_quantity }}">{{ nested_quantity }}</span>
+                                    {% elif nested_quantity is not none %}
+                                    <span class="ingredient-quantity">{{ nested_quantity }}</span>
+                                    {% endif %}
+                                    {% if nested_unit %}<span class="ingredient-measurement">{{ nested_unit }}</span>{% endif %}
+                                    {{ nested_name }}</a>
+                                </li>
+                            {% else %}
+                                {% set ing_name = ingredient.get('display_name') or ingredient.get('name_') or ingredient.get('name') %}
+                                {% set quantity = ingredient.get('quantity') %}
+                                {% set measurement = ingredient.get('unit') or ingredient.get('measurement') %}
+                                {% if ing_name %}
+                                <li>
+                                    {% if quantity is number %}
+                                    <span class="ingredient-quantity" data-original-quantity="{{ quantity }}">{{ quantity }}</span>
+                                    {% elif quantity is not none %}
+                                    <span class="ingredient-quantity">{{ quantity }}</span>
+                                    {% endif %}
+                                    {% if measurement %}<span class="ingredient-measurement">{{ measurement }}</span>{% endif %}
+                                    <span class="ingredient-name">{{ ing_name }}</span>
+                                </li>
                                 {% endif %}
-                                {% if measurement %}<span class="ingredient-measurement">{{ measurement }}</span>{% endif %}
-                                <span class="ingredient-name">{{ ing_name }}</span>
-                            </li>
                             {% endif %}
                         {% endfor %}
                     </ul>

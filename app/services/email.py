@@ -284,6 +284,96 @@ def _recipe_moderation_signature(recipe: Recipe, moderation: ModerationResult) -
     return digest.hexdigest()
 
 
+def send_referenced_recipe_update_notification(
+    recipe: Recipe, referenced_recipe: Recipe
+) -> bool:
+    """Notify owners when a nested referenced recipe was updated."""
+    if not recipe.author or not recipe.author.email:
+        return False
+
+    settings = _mail_settings()
+    server = settings["server"]
+    recipient = recipe.author.email
+    sender = settings["sender"] or settings["recipient"]
+    if not server or not sender:
+        return False
+
+    subject = f"[Recipe Site] Recept waar je naar verwijst is aangepast: {referenced_recipe.title}"
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = str(sender)
+    message["To"] = str(recipient)
+    message["Date"] = formatdate(localtime=True)
+    text_body = "\n".join(
+        [
+            "Je recept verwijst naar een ander recept dat is aangepast.",
+            "",
+            f"Bijbehorende eigenaar: {recipe.author.username}",
+            f"Recept: {recipe.title}",
+            f"Aangepast recept: {referenced_recipe.title}",
+            "",
+            "Controleer je recept om te zien of de verwijzing nog klopt.",
+        ]
+    )
+    message.set_content(text_body)
+    try:
+        with smtplib.SMTP(str(server), cast(int, settings["port"])) as smtp:
+            if bool(settings["use_tls"]):
+                smtp.starttls()
+            _authenticate_and_send(smtp, settings, message)
+    except Exception:
+        current_app.logger.exception(
+            "Failed to send referenced recipe update notification email"
+        )
+        return False
+    return True
+
+
+def send_referenced_recipe_deletion_notification(
+    recipe: Recipe, deleted_recipe: Recipe
+) -> bool:
+    """Notify owners when a referenced recipe was deleted and their recipe was converted to concept."""
+    if not recipe.author or not recipe.author.email:
+        return False
+
+    settings = _mail_settings()
+    server = settings["server"]
+    recipient = recipe.author.email
+    sender = settings["sender"] or settings["recipient"]
+    if not server or not sender:
+        return False
+
+    subject = f"[Recipe Site] Recept verwijderd: {deleted_recipe.title}"
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = str(sender)
+    message["To"] = str(recipient)
+    message["Date"] = formatdate(localtime=True)
+    text_body = "\n".join(
+        [
+            "Een recept waarnaar je verwijst is verwijderd.",
+            "",
+            f"Verwijderd recept: {deleted_recipe.title}",
+            f"Jouw recept: {recipe.title}",
+            "",
+            "Je recept is automatisch omgezet naar concept en vereist actie.",
+            "Controleer en corrigeer de verwijzing om de status weer te herstellen.",
+        ]
+    )
+    message.set_content(text_body)
+    try:
+        with smtplib.SMTP(str(server), cast(int, settings["port"])) as smtp:
+            if bool(settings["use_tls"]):
+                smtp.starttls()
+            _authenticate_and_send(smtp, settings, message)
+    except Exception:
+        current_app.logger.exception(
+            "Failed to send referenced recipe deletion notification email"
+        )
+        return False
+    return True
+
+
 def _authenticate_and_send(
     smtp: smtplib.SMTP, settings: dict[str, object], message: EmailMessage
 ) -> None:

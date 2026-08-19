@@ -32,6 +32,56 @@
     padding: 6px 10px 0px 10px;
 }
 
+.nested-recipe-trigger {
+    flex-shrink: 0;
+}
+
+.row-actions {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    margin-left: 6px;
+}
+
+.imported-indicator {
+    display: none;
+    color: #0d6efd;
+    background-color: #e7f1ff;
+    border-color: #0d6efd;
+}
+
+.imported-indicator.is-visible {
+    display: inline-flex;
+}
+
+#ingredients-list .ingredient-item .drag-handle {
+    border-top-right-radius: var(--bs-border-radius);
+    border-bottom-right-radius: var(--bs-border-radius);
+}
+
+#ingredients-list .ingredient-item:not(.has-imported-recipe) .form-control {
+    border-top-left-radius: var(--bs-border-radius);
+    border-bottom-left-radius: var(--bs-border-radius);
+}
+
+#ingredients-list .ingredient-item.has-imported-recipe .imported-indicator {
+    border-top-left-radius: var(--bs-border-radius);
+    border-bottom-left-radius: var(--bs-border-radius);
+}
+
+.nested-recipe-result {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    border: 1px solid rgba(0,0,0,0.08);
+    background: var(--bs-body-bg);
+}
+
+.nested-recipe-more {
+    opacity: 0.7;
+}
+
 #ingredients-list .list-group-item:last-child, #instructions-list .list-group-item:last-child {
     padding: 6px 10px;
 }
@@ -187,16 +237,22 @@
                     </div>
                     
                     <div class="mb-3">
-                        {{ form.ingredients.label(class="form-label") }}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            {{ form.ingredients.label(class="form-label mb-0") }}
+                            <button type="button" class="btn btn-outline-primary btn-sm nested-recipe-trigger" data-bs-toggle="modal" data-bs-target="#nestedRecipeModal">+ recept als ingredient</button>
+                        </div>
                         <div id="ingredients-list" class="list-group">
                             {% for entry in form.ingredients.entries %}
                             <div class="list-group-item ingredient-item d-flex gap-0 align-items-start" data-index="{{ loop.index0 }}">
                                 <div class="input-group">
-                                    {{ entry(class="form-control", placeholder='Ingrediënt') }} 
+                                    <span class="input-group-text imported-indicator" title="Geïmporteerd recept" aria-label="Geïmporteerd recept">
+                                        <i class="bi bi-box-arrow-in-down"></i>
+                                    </span>
+                                    {{ entry(class="form-control", placeholder='Ingrediënt') }}
                                     <span class="input-group-text drag-handle">
                                         <i class="bi bi-grip-vertical"></i>
-                                    </span> 
-                                </div>                      
+                                    </span>
+                                </div>
                             </div>
                             {% endfor %}
                         </div>
@@ -249,6 +305,42 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="nestedRecipeModal" tabindex="-1" aria-labelledby="nestedRecipeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="nestedRecipeModalLabel">Recept als ingredient</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="nestedRecipeSearch" class="form-label">Zoek recept</label>
+                    <input id="nestedRecipeSearch" name="nested-recipe-search" type="text" class="form-control" placeholder="Zoek op titel of ID" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true">
+                </div>
+                <div id="nestedRecipeResults" class="list-group"></div>
+                <div class="mt-3">
+                    <label for="nestedRecipeDisplayName" class="form-label">Weergavenaam</label>
+                    <input id="nestedRecipeDisplayName" name="nested-recipe-display-name" type="text" class="form-control" placeholder="Tomatensaus" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true">
+                </div>
+                <div class="row mt-3 g-2">
+                    <div class="col-6">
+                        <label for="nestedRecipeQuantity" class="form-label">Hoeveelheid</label>
+                        <input id="nestedRecipeQuantity" name="nested-recipe-quantity" type="number" class="form-control" min="0" step="1" value="1" autocomplete="off">
+                    </div>
+                    <div class="col-6">
+                        <label for="nestedRecipeUnit" class="form-label">Eenheid</label>
+                        <input id="nestedRecipeUnit" name="nested-recipe-unit" type="text" class="form-control" placeholder="stuks" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                <button type="button" class="btn btn-primary" id="nestedRecipeConfirmBtn" disabled>Toevoegen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% include "recipes/_image_crop_modal.html" %}
 
 {% block extra_js %}
@@ -442,9 +534,7 @@ function attachTouchReorder(list) {
 
 function attachListHandlers(listSelector, itemSelector, isIngredient=true) {
     const list = document.querySelector(listSelector);
-    if (!list) return;
-
-    // Preserve Sortable's native drag implementation for mouse/trackpad
+    if (!list) return;    // Preserve Sortable's native drag implementation for mouse/trackpad
     // devices. On phones, reorder directly from pointer movement because
     // mobile browsers do not reliably commit HTML drag-and-drop drops.
     const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
@@ -511,6 +601,176 @@ document.addEventListener('DOMContentLoaded', function(){
     attachListHandlers('#instructions-list', '.instruction-item', false);
     ensureOneEmptyAtEnd(document.querySelector('#ingredients-list'), true);
     ensureOneEmptyAtEnd(document.querySelector('#instructions-list'), false);
+
+    function ingredientToDisplayString(value) {
+        if (typeof value !== 'object' || value === null) {
+            return String(value ?? '');
+        }
+
+        if (value.type === 'recipe') {
+            const parts = [];
+            if (value.quantity !== undefined && value.quantity !== null && value.quantity !== '') {
+                parts.push(String(value.quantity));
+            }
+            if (value.unit) {
+                parts.push(String(value.unit));
+            }
+            if (value.display_name) {
+                parts.push(String(value.display_name));
+            }
+            return parts.join(' ');
+        }
+
+        if (value.name || value.name_) {
+            const parts = [];
+            if (value.quantity !== undefined && value.quantity !== null && value.quantity !== '') {
+                parts.push(String(value.quantity));
+            }
+            if (value.measurement) {
+                parts.push(String(value.measurement));
+            }
+            const name = value.name || value.name_;
+            if (name) {
+                parts.push(String(name));
+            }
+            return parts.join(' ');
+        }
+
+        return String(value);
+    }
+
+    function normalizeIngredientInput(input) {
+        const raw = (input.value || '').trim();
+        if (!raw || !raw.startsWith('{')) {
+            return;
+        }
+
+        try {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object') {
+                input.dataset.rawIngredientJson = raw;
+                input.value = ingredientToDisplayString(parsed);
+                if (parsed.type === 'recipe') {
+                    const ingredientItem = input.closest('.ingredient-item');
+                    ingredientItem?.classList.add('has-imported-recipe');
+                    ingredientItem?.querySelector('.imported-indicator')?.classList.add('is-visible');
+                }
+            }
+        } catch (error) {
+            // Ignore plain-text values that are not JSON payloads.
+        }
+    }
+
+    document.querySelectorAll('#ingredients-list input, #ingredients-list textarea, #ingredients-list select').forEach(input => {
+        normalizeIngredientInput(input);
+    });
+
+    const ingredientForm = document.getElementById('recipe-form');
+    if (ingredientForm) {
+        ingredientForm.addEventListener('submit', function () {
+            document.querySelectorAll('#ingredients-list input[data-raw-ingredient-json]').forEach(input => {
+                input.value = input.dataset.rawIngredientJson;
+            });
+        });
+    }
+
+    const nestedModal = document.getElementById('nestedRecipeModal');
+    const nestedSearchInput = document.getElementById('nestedRecipeSearch');
+    const nestedResults = document.getElementById('nestedRecipeResults');
+    const nestedDisplayName = document.getElementById('nestedRecipeDisplayName');
+    const nestedQuantity = document.getElementById('nestedRecipeQuantity');
+    const nestedUnit = document.getElementById('nestedRecipeUnit');
+    const nestedConfirmBtn = document.getElementById('nestedRecipeConfirmBtn');
+    let selectedRecipe = null;
+    let nestedTargetInput = null;
+
+    function renderNestedResults(items, hasMore) {
+        nestedResults.innerHTML = '';
+        if (!items.length) {
+            nestedResults.innerHTML = '<div class="list-group-item text-muted">Geen resultaten gevonden.</div>';
+            nestedConfirmBtn.disabled = true;
+            selectedRecipe = null;
+            return;
+        }
+
+        items.forEach(item => {
+            const row = document.createElement('button');
+            row.type = 'button';
+            row.className = 'list-group-item list-group-item-action nested-recipe-result';
+            row.innerHTML = `<span>${item.title}</span><span class="text-muted">#${item.id}</span>`;
+            row.addEventListener('click', () => {
+                selectedRecipe = item;
+                nestedDisplayName.value = item.title;
+                nestedConfirmBtn.disabled = false;
+                document.querySelectorAll('.nested-recipe-result').forEach(el => el.classList.remove('active'));
+                row.classList.add('active');
+            });
+            nestedResults.appendChild(row);
+        });
+
+        if (hasMore) {
+            const more = document.createElement('div');
+            more.className = 'list-group-item nested-recipe-more text-muted';
+            more.textContent = '+ meer';
+            nestedResults.appendChild(more);
+        }
+    }
+
+    nestedSearchInput.addEventListener('input', async function () {
+        const q = nestedSearchInput.value.trim();
+        if (!q) {
+            nestedResults.innerHTML = '';
+            nestedConfirmBtn.disabled = true;
+            selectedRecipe = null;
+            return;
+        }
+
+        const response = await fetch(`/recipe/nested/search?q=${encodeURIComponent(q)}`);
+        const data = await response.json();
+        renderNestedResults(data.results || [], !!data.has_more);
+    });
+
+    document.querySelectorAll('.nested-recipe-trigger').forEach(button => {
+        button.addEventListener('click', function () {
+            nestedTargetInput = null;
+            selectedRecipe = null;
+            nestedDisplayName.value = '';
+            nestedQuantity.value = '1';
+            nestedUnit.value = '';
+            nestedSearchInput.value = '';
+            nestedResults.innerHTML = '';
+            nestedConfirmBtn.disabled = true;
+        });
+    });
+
+    nestedConfirmBtn.addEventListener('click', function () {
+        if (!selectedRecipe) return;
+        const payload = {
+            type: 'recipe',
+            recipe_id: selectedRecipe.id,
+            display_name: (nestedDisplayName.value || selectedRecipe.title).trim() || selectedRecipe.title,
+            quantity: Number(nestedQuantity.value) || 1,
+            unit: (nestedUnit.value || '').trim() || '',
+        };
+        const ingredientsList = document.getElementById('ingredients-list');
+        const emptyItem = Array.from(ingredientsList.querySelectorAll('.ingredient-item'))
+            .find(item => {
+                const input = item.querySelector('input');
+                return input && input.value.trim() === '';
+            });
+        if (!emptyItem) return;
+
+        const importedItem = emptyItem.cloneNode(true);
+        const importedInput = importedItem.querySelector('input');
+        importedInput.dataset.rawIngredientJson = JSON.stringify(payload);
+        importedInput.value = ingredientToDisplayString(payload);
+        importedInput.classList.add('nested-recipe-selected');
+        importedItem.classList.add('has-imported-recipe');
+        importedItem.querySelector('.imported-indicator')?.classList.add('is-visible');
+        ingredientsList.insertBefore(importedItem, emptyItem);
+        reindexList(ingredientsList);
+        bootstrap.Modal.getInstance(nestedModal)?.hide();
+    });
 });
 </script>
 {% endblock %}

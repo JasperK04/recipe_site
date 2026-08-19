@@ -134,46 +134,147 @@ def count_files(directory: str | Path, *, pattern: str = "*") -> int:
 
 
 def ingredient_to_string(ingredient: dict) -> str:
+    if ingredient.get("type") == "recipe":
+        parts = []
+        if ingredient.get("quantity") is not None:
+            parts.append(str(ingredient["quantity"]))
+        if ingredient.get("unit"):
+            parts.append(str(ingredient["unit"]))
+        if ingredient.get("display_name"):
+            parts.append(str(ingredient["display_name"]))
+        return " ".join(parts)
+
     parts = []
 
     if ingredient.get("quantity") is not None:
         parts.append(str(ingredient["quantity"]))
 
-    if ingredient.get("measurement"):
-        parts.append(ingredient["measurement"])
+    if ingredient.get("unit"):
+        parts.append(ingredient["unit"])
 
-    if ingredient.get("name"):
-        parts.append(ingredient["name"])
+    display_name = ingredient.get("display_name") or ingredient.get("name")
+    if display_name:
+        parts.append(display_name)
 
     return " ".join(parts)
 
 
+def _normalize_ingredient_quantity(quantity):
+    if quantity in (None, "") or not isinstance(quantity, str):
+        return quantity
+    try:
+        number = float(quantity.strip().replace(",", "."))
+    except ValueError:
+        return quantity
+    return int(number) if number.is_integer() else number
+
+
 def sanitize_recipe_ingredients(
-    raw_ingredients: list[str] | None,
+    raw_ingredients: list[str | dict] | None,
     plain_text: bool = False,
 ) -> list[dict] | list[str]:
-    """Normalize ingredient data from recipe forms."""
+    """Normalize all ingredient data to the canonical JSON representation."""
     ingredients = []
     for ingredient in raw_ingredients or []:
-        quantity, unit, name = parse_ingredient(ingredient)
-        if name:
-            if plain_text:
-                ingredients.append(
-                    " ".join(
-                        filter(
-                            None,
-                            [
-                                str(quantity) if quantity is not None else None,
-                                unit,
-                                name,
-                            ],
+        if isinstance(ingredient, dict):
+            if ingredient.get("type") == "recipe":
+                try:
+                    from app.services.nested_recipes import (
+                        validate_nested_recipe_reference,
+                    )
+
+                    normalized = validate_nested_recipe_reference(ingredient)
+                    if plain_text:
+                        ingredients.append(__import__("json").dumps(normalized))
+                    else:
+                        ingredients.append(normalized)
+                except ValueError:
+                    continue
+                continue
+
+            name = ingredient.get("display_name") or ingredient.get("name") or ingredient.get("name_")
+            if name:
+                quantity = _normalize_ingredient_quantity(ingredient.get("quantity"))
+                unit = ingredient.get("unit")
+                if unit is None:
+                    unit = ingredient.get("measurement")
+                normalized = {
+                    "type": "ingredient",
+                    "display_name": str(name).strip(),
+                    "quantity": quantity,
+                    "unit": str(unit or "").strip(),
+                }
+                if plain_text:
+                    ingredients.append(__import__("json").dumps(normalized))
+                else:
+                    ingredients.append(normalized)
+            continue
+
+        if isinstance(ingredient, str):
+            stripped = ingredient.strip()
+            if not stripped:
+                continue
+            if stripped.startswith("{"):
+                try:
+                    parsed = __import__("json").loads(stripped)
+                except __import__("json").JSONDecodeError:
+                    parsed = None
+                if isinstance(parsed, dict):
+                    if parsed.get("type") == "recipe":
+                        try:
+                            from app.services.nested_recipes import (
+                                validate_nested_recipe_reference,
+                            )
+
+                            normalized = validate_nested_recipe_reference(parsed)
+                            if plain_text:
+                                ingredients.append(__import__("json").dumps(normalized))
+                            else:
+                                ingredients.append(normalized)
+                        except ValueError:
+                            continue
+                    else:
+                        name = parsed.get("display_name") or parsed.get("name") or parsed.get("name_")
+                        if name:
+                            quantity = _normalize_ingredient_quantity(parsed.get("quantity"))
+                            unit = parsed.get("unit")
+                            if unit is None:
+                                unit = parsed.get("measurement")
+                            normalized = {
+                                "type": "ingredient",
+                                "display_name": str(name).strip(),
+                                "quantity": quantity,
+                                "unit": str(unit or "").strip(),
+                            }
+                            if plain_text:
+                                ingredients.append(__import__("json").dumps(normalized))
+                            else:
+                                ingredients.append(normalized)
+                    continue
+            quantity, unit, name = parse_ingredient(ingredient)
+            if name:
+                if plain_text:
+                    ingredients.append(
+                        " ".join(
+                            filter(
+                                None,
+                                [
+                                    str(quantity) if quantity is not None else None,
+                                    unit,
+                                    name,
+                                ],
+                            )
                         )
                     )
-                )
-            else:
-                ingredients.append(
-                    {"name": name, "quantity": quantity, "measurement": unit}
-                )
+                else:
+                    ingredients.append(
+                        {
+                            "type": "ingredient",
+                            "display_name": name,
+                            "quantity": quantity,
+                            "unit": unit or "",
+                        }
+                    )
 
     return ingredients
 

@@ -76,8 +76,18 @@ class IngredientNormalizationTests(unittest.TestCase):
         self.assertEqual(
             ingredients,
             [
-                {"name": "eieren", "quantity": 3, "measurement": None},
-                {"name": "bloem", "quantity": 3, "measurement": "kg"},
+                {
+                    "type": "ingredient",
+                    "display_name": "eieren",
+                    "quantity": 3,
+                    "unit": "",
+                },
+                {
+                    "type": "ingredient",
+                    "display_name": "bloem",
+                    "quantity": 3,
+                    "unit": "kg",
+                },
             ],
         )
         self.assertEqual(ingredient_to_string(ingredients[0]), "3 eieren")  # type: ignore
@@ -96,9 +106,10 @@ class IngredientNormalizationTests(unittest.TestCase):
             once,
             [
                 {
-                    "name": "kaas",
+                    "type": "ingredient",
+                    "display_name": "kaas",
                     "quantity": 200,
-                    "measurement": "g",
+                    "unit": "g",
                 }
             ],
         )
@@ -138,8 +149,18 @@ class IngredientNormalizationTests(unittest.TestCase):
         self.assertEqual(
             sanitize_recipe_ingredients(["2 kg bloem", "3 eetlepels olie"]),
             [
-                {"name": "bloem", "quantity": 2, "measurement": "kg"},
-                {"name": "olie", "quantity": 3, "measurement": "el"},
+                {
+                    "type": "ingredient",
+                    "display_name": "bloem",
+                    "quantity": 2,
+                    "unit": "kg",
+                },
+                {
+                    "type": "ingredient",
+                    "display_name": "olie",
+                    "quantity": 3,
+                    "unit": "el",
+                },
             ],
         )
 
@@ -152,8 +173,38 @@ class IngredientNormalizationTests(unittest.TestCase):
                 ]
             ),
             [
-                {"name": "bloem", "quantity": 2, "measurement": "kg"},
-                {"name": "olie", "quantity": 3, "measurement": "el"},
+                {
+                    "type": "ingredient",
+                    "display_name": "bloem",
+                    "quantity": 2,
+                    "unit": "kg",
+                },
+                {
+                    "type": "ingredient",
+                    "display_name": "olie",
+                    "quantity": 3,
+                    "unit": "el",
+                },
+            ],
+        )
+
+    def test_nested_recipe_ingredients_render_as_human_readable_strings(self):
+        nested = {
+            "type": "recipe",
+            "recipe_id": 42,
+            "display_name": "Tomatensaus",
+            "quantity": 1,
+            "unit": "portie",
+        }
+
+        self.assertEqual(
+            ingredient_to_string(nested),
+            "1 portie Tomatensaus",
+        )
+        self.assertEqual(
+            sanitize_recipe_ingredients([nested], plain_text=True),
+            [
+                '{"type": "recipe", "recipe_id": 42, "display_name": "Tomatensaus", "quantity": 1, "unit": "portie"}'
             ],
         )
 
