@@ -192,7 +192,11 @@ def sanitize_recipe_ingredients(
                     continue
                 continue
 
-            name = ingredient.get("display_name") or ingredient.get("name") or ingredient.get("name_")
+            name = (
+                ingredient.get("display_name")
+                or ingredient.get("name")
+                or ingredient.get("name_")
+            )
             if name:
                 quantity = _normalize_ingredient_quantity(ingredient.get("quantity"))
                 unit = ingredient.get("unit")
@@ -234,9 +238,15 @@ def sanitize_recipe_ingredients(
                         except ValueError:
                             continue
                     else:
-                        name = parsed.get("display_name") or parsed.get("name") or parsed.get("name_")
+                        name = (
+                            parsed.get("display_name")
+                            or parsed.get("name")
+                            or parsed.get("name_")
+                        )
                         if name:
-                            quantity = _normalize_ingredient_quantity(parsed.get("quantity"))
+                            quantity = _normalize_ingredient_quantity(
+                                parsed.get("quantity")
+                            )
                             unit = parsed.get("unit")
                             if unit is None:
                                 unit = parsed.get("measurement")

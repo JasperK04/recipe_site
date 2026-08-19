@@ -107,12 +107,18 @@ def normalize_stored_ingredients(ingredients: object) -> list[dict[str, Any]]:
                     or ingredient.get("name")
                     or "Recept",
                     "quantity": ingredient.get("quantity"),
-                    "unit": ingredient.get("unit") or ingredient.get("measurement") or "",
+                    "unit": ingredient.get("unit")
+                    or ingredient.get("measurement")
+                    or "",
                 }
             )
             continue
 
-        name = ingredient.get("display_name") or ingredient.get("name") or ingredient.get("name_")
+        name = (
+            ingredient.get("display_name")
+            or ingredient.get("name")
+            or ingredient.get("name_")
+        )
         if not name:
             continue
         quantity = ingredient.get("quantity")

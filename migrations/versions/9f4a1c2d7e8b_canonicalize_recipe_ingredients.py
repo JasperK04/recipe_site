@@ -5,11 +5,11 @@ Revises: 4332bb8ecf71
 Create Date: 2026-08-19
 
 """
+
 import json
 
 import sqlalchemy as sa
 from alembic import op
-
 
 revision = "9f4a1c2d7e8b"
 down_revision = "4332bb8ecf71"
@@ -31,7 +31,11 @@ def _upgrade_ingredient(ingredient):
         return ingredient
     if ingredient.get("type") == "recipe":
         return ingredient
-    name = ingredient.get("display_name") or ingredient.get("name") or ingredient.get("name_")
+    name = (
+        ingredient.get("display_name")
+        or ingredient.get("name")
+        or ingredient.get("name_")
+    )
     if not name:
         return ingredient
     return {
