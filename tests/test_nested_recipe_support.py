@@ -23,7 +23,7 @@ class NestedRecipeSupportTests(unittest.TestCase):
         )
 
     def test_normal_ingredients_stay_unchanged(self):
-        ingredient = {"name": "tomaat", "quantity": 2, "measurement": "stk"}
+        ingredient = {"name": "tomaat", "quantity": 2, "unit": ""}
         self.assertEqual(validate_nested_recipe_reference(ingredient), ingredient)
 
     def test_nested_recipe_reference_validates(self):

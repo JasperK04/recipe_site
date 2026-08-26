@@ -258,7 +258,9 @@ def register_commands(app: Flask):
         admin_email = os.getenv("admin_email", "admin@example.com")
         admin_password = os.getenv("admin_password", "admin123")
 
-        admin = User(username=admin_username, email=admin_email, role=User.ROLE_CHEF_DE_CUISINE)  # type: ignore
+        admin = User(
+            username=admin_username, email=admin_email, role=User.ROLE_CHEF_DE_CUISINE
+        )  # type: ignore
         admin.set_password(admin_password)
         db.session.add(admin)
         created_users.append(admin)
@@ -278,16 +280,14 @@ def register_commands(app: Flask):
 
         click.echo(f"\nMaak {recipes} recepten aan ...")
         generated = generate_recipes(n=recipes)
-        measurements = ["g", "kg", "ml", "l", "el", "tl", "stuks"]
+        units = ["g", "kg", "ml", "l", "el", "tl", "stuks"]
 
         for rec in generated:
             ingredient_list = []
             for name in rec.get("ingredients", []):
                 qty = round(fake.random.uniform(1, 500), 2)
-                measurement = random.choice(measurements)
-                ingredient_list.append(
-                    {"name": name, "quantity": qty, "measurement": measurement}
-                )
+                unit = random.choice(units)
+                ingredient_list.append({"name": name, "quantity": qty, "unit": unit})
 
             step_count = fake.random_int(min=2, max=5)
             instruction_list = [fake.sentence() for _ in range(step_count)]
@@ -302,11 +302,7 @@ def register_commands(app: Flask):
                 servings=fake.random_int(min=1, max=8),
                 category=rec.get("category", ""),
                 user_id=random.choice(
-                    [
-                        u
-                        for u in created_users
-                        if u.role >= User.ROLE_LEERLING_KOK
-                    ]
+                    [u for u in created_users if u.role >= User.ROLE_LEERLING_KOK]
                 ).id,
             )
 

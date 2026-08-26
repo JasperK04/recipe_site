@@ -200,8 +200,6 @@ def sanitize_recipe_ingredients(
             if name:
                 quantity = _normalize_ingredient_quantity(ingredient.get("quantity"))
                 unit = ingredient.get("unit")
-                if unit is None:
-                    unit = ingredient.get("measurement")
                 normalized = {
                     "type": "ingredient",
                     "display_name": str(name).strip(),
@@ -248,8 +246,6 @@ def sanitize_recipe_ingredients(
                                 parsed.get("quantity")
                             )
                             unit = parsed.get("unit")
-                            if unit is None:
-                                unit = parsed.get("measurement")
                             normalized = {
                                 "type": "ingredient",
                                 "display_name": str(name).strip(),

@@ -393,13 +393,13 @@ div > a.x {
                                     {% elif nested_quantity is not none %}
                                     <span class="ingredient-quantity">{{ nested_quantity }}</span>
                                     {% endif %}
-                                    {% if nested_unit %}<span class="ingredient-measurement">{{ nested_unit }}</span>{% endif %}
+                                    {% if nested_unit %}<span class="ingredient-unit">{{ nested_unit }}</span>{% endif %}
                                     {{ nested_name }}</a>
                                 </li>
                             {% else %}
                                 {% set ing_name = ingredient.get('display_name') or ingredient.get('name_') or ingredient.get('name') %}
                                 {% set quantity = ingredient.get('quantity') %}
-                                {% set measurement = ingredient.get('unit') or ingredient.get('measurement') %}
+                                {% set unit = ingredient.get('unit') %}
                                 {% if ing_name %}
                                 <li>
                                     {% if quantity is number %}
@@ -407,7 +407,7 @@ div > a.x {
                                     {% elif quantity is not none %}
                                     <span class="ingredient-quantity">{{ quantity }}</span>
                                     {% endif %}
-                                    {% if measurement %}<span class="ingredient-measurement">{{ measurement }}</span>{% endif %}
+                                    {% if unit %}<span class="ingredient-unit">{{ unit }}</span>{% endif %}
                                     <span class="ingredient-name">{{ ing_name }}</span>
                                 </li>
                                 {% endif %}

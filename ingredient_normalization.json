@@ -1,10 +1,12 @@
 {
   "units": {
     "g": "g",
+    "gr": "g",
     "gram": "g",
     "grammen": "g",
     "kg": "kg",
     "kilogram": "kg",
+    "kilo": "kg",
     "ml": "ml",
     "milliliter": "ml",
     "l": "l",

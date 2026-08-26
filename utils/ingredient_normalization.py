@@ -8,6 +8,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from utils.general import parse_ingredient
+
 DEFAULT_CONFIG_PATH = (
     Path(__file__).resolve().parents[1] / "ingredient_normalization.json"
 )
@@ -49,7 +51,7 @@ def _load_unit_rules(path: str) -> dict[str, tuple[str | None, float]]:
                 f"normalization rule for unit {alias!r} has an invalid multiplier"
             )
         # An empty target unit intentionally means a countable ingredient: for
-        # example, ``2 st eieren`` becomes ``2 eieren`` without a measurement.
+        # example, ``2 st eieren`` becomes ``2 eieren`` without a unit.
         rules[alias.strip().casefold()] = (unit.strip() or None, float(multiplier))  # type: ignore[assignment]
     return rules  # type: ignore
 
@@ -79,7 +81,6 @@ def reload_unit_normalization() -> None:
 
 def normalize_stored_ingredients(ingredients: object) -> list[dict[str, Any]]:
     """Apply unit rules to recipe ingredients already stored in the database."""
-    from utils.general import parse_ingredient
 
     normalized: list[dict[str, Any]] = []
     for ingredient in ingredients or []:  # type: ignore
@@ -107,9 +108,7 @@ def normalize_stored_ingredients(ingredients: object) -> list[dict[str, Any]]:
                     or ingredient.get("name")
                     or "Recept",
                     "quantity": ingredient.get("quantity"),
-                    "unit": ingredient.get("unit")
-                    or ingredient.get("measurement")
-                    or "",
+                    "unit": ingredient.get("unit") or "",
                 }
             )
             continue
@@ -122,9 +121,7 @@ def normalize_stored_ingredients(ingredients: object) -> list[dict[str, Any]]:
         if not name:
             continue
         quantity = ingredient.get("quantity")
-        unit, multiplier = normalize_unit(
-            ingredient.get("unit") or ingredient.get("measurement")
-        )
+        unit, multiplier = normalize_unit(ingredient.get("unit"))
         if isinstance(quantity, (int, float)) and not isinstance(quantity, bool):
             quantity *= multiplier
             if isinstance(quantity, float) and quantity.is_integer():

@@ -626,8 +626,8 @@ document.addEventListener('DOMContentLoaded', function(){
             if (value.quantity !== undefined && value.quantity !== null && value.quantity !== '') {
                 parts.push(String(value.quantity));
             }
-            if (value.measurement) {
-                parts.push(String(value.measurement));
+            if (value.unit) {
+                parts.push(String(value.unit));
             }
             const name = value.name || value.name_;
             if (name) {

@@ -22,7 +22,7 @@ class IngredientNormalizationTests(unittest.TestCase):
         self.assertEqual(parse_ingredient("pond gehakt"), (500, "g", "gehakt"))
         self.assertEqual(parse_ingredient("3 eetlepels olie"), (3, "el", "olie"))
 
-    def test_count_units_are_removed_from_the_measurement(self):
+    def test_count_units_are_removed_from_the_unit(self):
         self.assertEqual(parse_ingredient("2 st eieren"), (2, None, "eieren"))
         self.assertEqual(parse_ingredient("1 dozijn eieren"), (12, None, "eieren"))
 
@@ -98,7 +98,7 @@ class IngredientNormalizationTests(unittest.TestCase):
                 {
                     "name": "kaas",
                     "quantity": 2,
-                    "measurement": "ons",
+                    "unit": "ons",
                 }
             ]
         )
@@ -168,8 +168,8 @@ class IngredientNormalizationTests(unittest.TestCase):
         self.assertEqual(
             normalize_stored_ingredients(
                 [
-                    {"name": "bloem", "quantity": 2, "measurement": "kg"},
-                    {"name_": "olie", "quantity": 3, "measurement": "eetlepel"},
+                    {"name": "bloem", "quantity": 2, "unit": "kilo"},
+                    {"name_": "olie", "quantity": 3, "unit": "eetlepel"},
                 ]
             ),
             [

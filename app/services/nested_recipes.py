@@ -215,12 +215,12 @@ def remove_deleted_nested_recipe_reference(
     cleaned: dict[str, Any] = {
         "name": display_name,
         "quantity": quantity,
-        "measurement": unit or None,
+        "unit": unit or None,
     }
     if quantity in (None, ""):
         cleaned.pop("quantity", None)
-    if not cleaned["measurement"]:
-        cleaned.pop("measurement", None)
+    if not cleaned["unit"]:
+        cleaned.pop("unit", None)
     return cleaned
 
 
