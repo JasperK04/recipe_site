@@ -4,6 +4,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
 from app import login_manager
+from app.navigation import safe_redirect_target
 from app.api import (
     ApiError,
     register_user,
@@ -63,6 +64,7 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for("main.index"))
 
+    next_page = safe_redirect_target(request.values.get("next"))
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
@@ -73,12 +75,11 @@ def login():
             if not login_user(user):
                 flash("Inloggen mislukt voor dit account.", "danger")
                 return render_template("auth/login.html", form=form)
-            next_page = request.args.get("next")
             flash(f"Welkom terug, {user.username}!", "success")
             return redirect(next_page) if next_page else redirect(url_for("main.index"))
         flash("Ongeldige gebruikersnaam of wachtwoord.", "danger")
 
-    return render_template("auth/login.html", form=form)
+    return render_template("auth/login.html", form=form, next_page=next_page)
 
 
 @auth_bp.route("/logout")

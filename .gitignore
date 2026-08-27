@@ -213,3 +213,4 @@ data/recipe/
 *json
 !ingredient_normalization.json
 *.txt
+prompt.md

@@ -15,6 +15,11 @@ session = Session()
 migrate = Migrate()
 
 from app.api import api_bp
+from app.navigation import (
+    back_url,
+    load_pending_back_url,
+    remember_back_url_for_login,
+)
 from app.routes import admin_bp, auth_bp, main_bp, recipes_bp
 
 
@@ -51,6 +56,15 @@ def create_app(config_name="default"):
     login_manager.login_view = "auth.login"  # type: ignore
     login_manager.login_message = "Please log in to access this page."
 
+    @login_manager.unauthorized_handler
+    def redirect_to_login():
+        """Preserve the protected URL and its preceding page during login."""
+        remember_back_url_for_login()
+        if login_manager.login_message:
+            flash(login_manager.login_message, login_manager.login_message_category)
+        destination = request.full_path if request.query_string else request.path
+        return redirect(url_for("auth.login", next=destination))
+
     # Register blueprints
     app.register_blueprint(api_bp)
     app.register_blueprint(main_bp)
@@ -68,7 +82,7 @@ def create_app(config_name="default"):
                 _external=external,
             )
 
-        return {"recipe_url": recipe_url}
+        return {"recipe_url": recipe_url, "back_url": back_url}
 
     # Register CLI commands
     from app.cli import register_commands
@@ -76,7 +90,8 @@ def create_app(config_name="default"):
     register_commands(app)
 
     @app.before_request
-    def enforce_active_account():
+    def navigation_and_account_checks():
+        load_pending_back_url()
         # Deactivated accounts are logged out immediately, including existing sessions.
         if current_user.is_authenticated and not current_user.is_active:
             logout_user()

@@ -18,6 +18,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import or_
 
 from app import db
+from app.navigation import safe_referrer_url
 from app.api import (
     ApiError,
     deactivate_recipe,
@@ -251,7 +252,7 @@ def deactivate_recipe_route(recipe_id):
         flash("Recept is al gedeactiveerd.", "info")
     else:
         flash("Recept gedeactiveerd.", "success")
-    return redirect(request.referrer or url_for("admin.recipes"))
+    return redirect(safe_referrer_url() or url_for("admin.recipes"))
 
 
 @admin_bp.route("/recipes/<int:recipe_id>/reactivate", methods=["POST"])
@@ -273,7 +274,7 @@ def reactivate_recipe_route(recipe_id):
         flash("Recept is al actief.", "info")
     else:
         flash("Recept opnieuw geactiveerd.", "success")
-    return redirect(request.referrer or url_for("admin.recipes"))
+    return redirect(safe_referrer_url() or url_for("admin.recipes"))
 
 
 @admin_bp.route("/otc", methods=["GET", "POST"])

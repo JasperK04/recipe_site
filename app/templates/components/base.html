@@ -57,10 +57,14 @@
                     type="search"
                     name="search"
                     placeholder="Zoek recepten"
+                    autocomplete="off"
+                    aria-autocomplete="list"
+                    aria-expanded="false"
                 >
                 <button class="btn navbar-search-button" type="submit" aria-label="Zoek recepten">
                     <i class="bi bi-search" aria-hidden="true"></i>
                 </button>
+                <div class="navbar-search-suggestions list-group" hidden></div>
             </form>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -128,10 +132,14 @@
                                 type="search"
                                 name="search"
                                 placeholder="Zoek recepten"
+                                autocomplete="off"
+                                aria-autocomplete="list"
+                                aria-expanded="false"
                             >
                             <button class="btn navbar-search-button" type="submit" aria-label="Zoek recepten">
                                 <i class="bi bi-search" aria-hidden="true"></i>
                             </button>
+                            <div class="navbar-search-suggestions list-group" hidden></div>
                         </form>
                     </li>
                 </ul>
@@ -150,10 +158,14 @@
                                 type="search"
                                 name="search"
                                 placeholder="Zoek recepten"
+                                autocomplete="off"
+                                aria-autocomplete="list"
+                                aria-expanded="false"
                             >
                             <button class="btn navbar-search-button" type="submit" aria-label="Zoek recepten">
                                 <i class="bi bi-search" aria-hidden="true"></i>
                             </button>
+                            <div class="navbar-search-suggestions list-group" hidden></div>
                         </form>
                     </li>
                     <li class="nav-item">
@@ -233,6 +245,85 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+    (function () {
+        document.querySelectorAll('.navbar-search').forEach(function (form) {
+            const input = form.querySelector('.navbar-search-input');
+            const suggestions = form.querySelector('.navbar-search-suggestions');
+            let requestController = null;
+            let hideTimeout = null;
+
+            function clearSuggestions() {
+                suggestions.replaceChildren();
+                suggestions.hidden = true;
+                input.setAttribute('aria-expanded', 'false');
+            }
+
+            function showSuggestions(results) {
+                suggestions.replaceChildren();
+                if (!results.length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'list-group-item text-muted';
+                    empty.textContent = 'Geen resultaten gevonden.';
+                    suggestions.append(empty);
+                } else {
+                    results.forEach(function (recipe) {
+                        const result = document.createElement('a');
+                        result.className = 'list-group-item list-group-item-action navbar-search-result';
+                        result.href = recipe.url;
+                        const details = document.createElement('span');
+                        details.className = 'navbar-search-result-details';
+                        const title = document.createElement('span');
+                        title.textContent = recipe.title;
+                        details.append(title);
+                        if (recipe.description) {
+                            const description = document.createElement('small');
+                            description.className = 'text-muted';
+                            description.textContent = recipe.description;
+                            details.append(description);
+                        }
+                        const id = document.createElement('span');
+                        id.className = 'text-muted';
+                        id.textContent = '#' + recipe.id;
+                        result.append(details, id);
+                        suggestions.append(result);
+                    });
+                }
+                suggestions.hidden = false;
+                input.setAttribute('aria-expanded', 'true');
+            }
+
+            input.addEventListener('input', async function () {
+                const query = input.value.trim();
+                window.clearTimeout(hideTimeout);
+                if (requestController) requestController.abort();
+                if (!query) {
+                    clearSuggestions();
+                    return;
+                }
+
+                requestController = new AbortController();
+                try {
+                    const response = await fetch('/recipe/search/suggestions?q=' + encodeURIComponent(query), {
+                        signal: requestController.signal,
+                    });
+                    if (!response.ok || input.value.trim() !== query) return;
+                    const data = await response.json();
+                    showSuggestions(data.results || []);
+                } catch (error) {
+                    if (error.name !== 'AbortError') clearSuggestions();
+                }
+            });
+
+            input.addEventListener('focus', function () {
+                window.clearTimeout(hideTimeout);
+                if (input.value.trim()) input.dispatchEvent(new Event('input'));
+            });
+            input.addEventListener('blur', function () {
+                hideTimeout = window.setTimeout(clearSuggestions, 150);
+            });
+        });
+    })();
+
     // Theme toggle (dark/light) using localStorage and prefers-color-scheme
     (function(){
         const storageKey = 'theme';

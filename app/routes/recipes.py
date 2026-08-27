@@ -84,6 +84,43 @@ def nested_recipe_search():
     return jsonify(payload)
 
 
+@recipes_bp.route("/search/suggestions")
+def recipe_search_suggestions():
+    """Return public recipe title matches for the global search dropdown."""
+    search = (request.args.get("q") or "").strip()
+    if not search:
+        return jsonify({"results": []})
+
+    query = Recipe.query.filter_by(status=Recipe.STATUS_PUBLIC)
+    if search.isdigit():
+        matches = query.filter(Recipe.id == int(search)).limit(6).all()
+    else:
+        matches = (
+            query.filter(
+                or_(
+                    Recipe.title.ilike(f"%{search}%"),
+                    Recipe.description.ilike(f"%{search}%"),
+                )
+            )
+            .order_by(Recipe.title.asc())
+            .limit(6)
+            .all()
+        )
+
+    results = [
+        {
+            "id": recipe.id,
+            "title": recipe.title,
+            "description": recipe.description or "",
+            "url": url_for(
+                "recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title
+            ),
+        }
+        for recipe in matches
+    ]
+    return jsonify({"results": results})
+
+
 def _apply_recipe_sort(query, sort_key: str):
     average_score = (
         db.session.query(func.coalesce(func.avg(RecipeScore.score), 0.0))
