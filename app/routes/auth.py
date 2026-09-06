@@ -1,17 +1,30 @@
 from typing import cast
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
+from sqlalchemy import func, or_
 
 from app import login_manager
 from app.navigation import safe_redirect_target
 from app.api import (
     ApiError,
+    complete_password_reset,
     register_user,
+    request_password_reset as issue_password_reset,
     submit_creator_request,
     update_profile,
 )
-from app.forms import LoginForm, ProfileEditForm, RegistrationForm
+from app.forms import (
+    LoginForm,
+    PasswordResetForm,
+    PasswordResetRequestForm,
+    ProfileEditForm,
+    RegistrationForm,
+)
+from app.api.users import (
+    get_valid_password_reset_credential,
+    get_valid_password_reset_credential_by_id,
+)
 from app.models import User
 
 auth_bp = Blueprint("auth", __name__)
@@ -67,7 +80,13 @@ def login():
     next_page = safe_redirect_target(request.values.get("next"))
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
+        identifier = form.username.data.strip()
+        user = User.query.filter(
+            or_(
+                User.username == identifier,
+                func.lower(User.email) == identifier.lower(),
+            )
+        ).first()
         if user and user.check_password(form.password.data):
             if not user.is_active:
                 flash("Je account is gedeactiveerd.", "danger")
@@ -80,6 +99,75 @@ def login():
         flash("Ongeldige gebruikersnaam of wachtwoord.", "danger")
 
     return render_template("auth/login.html", form=form, next_page=next_page)
+
+
+@auth_bp.route("/forgot-password", methods=["GET", "POST"])
+def request_password_reset():
+    """Public password-recovery page with an enumeration-safe outcome."""
+    if current_user.is_authenticated:
+        return redirect(url_for("main.index"))
+    form = PasswordResetRequestForm()
+    if form.validate_on_submit():
+        issue_password_reset(form.identifier.data)
+        flash(
+            "Als een account overeenkomt met de opgegeven gegevens, sturen we herstel-instructies.",
+            "info",
+        )
+        return redirect(url_for("auth.request_password_reset"))
+    return render_template("auth/forgot_password.html", form=form)
+
+
+@auth_bp.route("/reset-password", methods=["GET", "POST"])
+def reset_password():
+    """Show and consume a password-reset credential bound to the server session."""
+    if request.method == "GET":
+        token = request.args.get("token")
+        credential = get_valid_password_reset_credential(token) if token else None
+        if credential:
+            session["password_reset_credential_id"] = credential.id
+        else:
+            credential = get_valid_password_reset_credential_by_id(
+                session.get("password_reset_credential_id")
+            )
+        if not credential:
+            session.pop("password_reset_credential_id", None)
+            return render_template(
+                "auth/reset_password.html", form=PasswordResetForm(), token_valid=False
+            )
+    else:
+        credential = get_valid_password_reset_credential_by_id(
+            session.get("password_reset_credential_id")
+        )
+        if not credential:
+            return render_template(
+                "auth/reset_password.html", form=PasswordResetForm(), token_valid=False
+            )
+
+    form = PasswordResetForm()
+    if form.validate_on_submit():
+        try:
+            complete_password_reset(
+                credential_id=credential.id,
+                new_password=form.new_password.data,
+                confirm_password=form.confirm_password.data,
+            )
+        except ApiError as error:
+            flash(error.message, "danger")
+            return render_template(
+                "auth/reset_password.html",
+                form=form,
+                token_valid=True,
+                reset_email=credential.subject_user.email,
+            )
+        session.pop("password_reset_credential_id", None)
+        flash("Je wachtwoord is gewijzigd. Je kunt nu inloggen.", "success")
+        return redirect(url_for("auth.login"))
+    return render_template(
+        "auth/reset_password.html",
+        form=form,
+        token_valid=True,
+        reset_email=credential.subject_user.email,
+    )
 
 
 @auth_bp.route("/logout")
@@ -156,7 +244,7 @@ def manage_otc():
     return redirect(url_for("admin.manage_otc"), code=302)
 
 
-@auth_bp.route("/profile/otc/<string:code>/delete", methods=["POST"])
+@auth_bp.route("/profile/otc/<int:credential_id>/delete", methods=["POST"])
 @login_required
-def delete_otc(code: str):
-    return redirect(url_for("admin.delete_otc", code=code), code=307)
+def delete_otc(credential_id: int):
+    return redirect(url_for("admin.delete_otc", credential_id=credential_id), code=307)

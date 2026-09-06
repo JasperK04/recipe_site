@@ -135,6 +135,57 @@ def send_creator_request_notification(user: User) -> bool:
     return True
 
 
+def send_password_reset_email(user: User, token: str) -> bool:
+    """Send a reset link to its account owner without disclosing account data."""
+    settings = _mail_settings()
+    server = settings["server"]
+    sender = settings["sender"] or settings["username"]
+    if not server or not sender:
+        return False
+
+    reset_url = url_for("auth.reset_password", token=token, _external=True)
+    minutes = int(current_app.config.get("PASSWORD_RESET_TOKEN_LIFETIME_MINUTES", 60))
+    message = EmailMessage()
+    message["Subject"] = "[Recepten] Herstel je wachtwoord"
+    message["From"] = str(sender)
+    message["To"] = user.email
+    message["Date"] = formatdate(localtime=True)
+    text_body = "\n".join(
+        [
+            "Er is een verzoek gedaan om je wachtwoord te herstellen.",
+            "",
+            f"Gebruik deze link om een nieuw wachtwoord te kiezen: {reset_url}",
+            f"Deze link verloopt over {minutes} minuten en kan maar één keer worden gebruikt.",
+            "",
+            "Heb je dit niet aangevraagd? Dan hoef je niets te doen.",
+        ]
+    )
+    escaped_url = html.escape(reset_url, quote=True)
+    html_body = f"""<!doctype html>
+<html><body style="font-family:Arial,Helvetica,sans-serif;color:#212529;line-height:1.5;">
+  <p>Er is een verzoek gedaan om je wachtwoord te herstellen.</p>
+  <p><a href="{escaped_url}">Kies een nieuw wachtwoord</a></p>
+  <p>Deze link verloopt over {minutes} minuten en kan maar één keer worden gebruikt.</p>
+  <p>Heb je dit niet aangevraagd? Dan hoef je niets te doen.</p>
+</body></html>"""
+    message.set_content(text_body)
+    message.add_alternative(html_body, subtype="html")
+    try:
+        port = cast(int, settings["port"])
+        if bool(settings["use_ssl"]):
+            with smtplib.SMTP_SSL(str(server), port) as smtp:
+                _authenticate_and_send(smtp, settings, message)
+        else:
+            with smtplib.SMTP(str(server), port) as smtp:
+                if bool(settings["use_tls"]):
+                    smtp.starttls()
+                _authenticate_and_send(smtp, settings, message)
+    except Exception:
+        current_app.logger.exception("Failed to send password-reset email")
+        return False
+    return True
+
+
 def send_recipe_moderation_notification(
     recipe: Recipe, moderation: ModerationResult
 ) -> bool:

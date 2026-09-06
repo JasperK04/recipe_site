@@ -30,12 +30,11 @@ from app.api import (
     reactivate_user,
 )
 from app.api.users import (
-    cleanup_expired_otc_codes,
     create_registration_otc,
     pending_creator_request_count,
 )
 from app.forms import OTCCreateForm
-from app.models import OTC, Recipe, User
+from app.models import Credential, Recipe, User
 from utils import require_active_admin
 
 admin_bp = Blueprint("admin", __name__)
@@ -45,7 +44,12 @@ def _panel_context(*, section: str):
     stats = {
         "pending_creator_requests": pending_creator_request_count(),
         "pending_recipe_moderation": pending_recipe_moderation_count(),
-        "active_otcs": OTC.query.count(),
+        "active_otcs": Credential.query.filter(
+            Credential.purpose == "registration_invitation",
+            Credential.expires_at > datetime.now(),
+            Credential.revoked_at.is_(None),
+            Credential.used_at.is_(None),
+        ).count(),
     }
 
     context = {
@@ -89,8 +93,6 @@ def _panel_context(*, section: str):
             }
         )
     elif section == "otc":
-        cleanup_expired_otc_codes()
-
         form = OTCCreateForm()
         created_otc = session.pop("created_otc", None)
         registration_link = session.pop("registration_link", None)
@@ -112,13 +114,11 @@ def _panel_context(*, section: str):
             except ApiError as error:
                 flash(error.message, "danger")
             else:
-                registration_link = url_for(
-                    "auth.register", otc=created_otc.code, _external=True
-                )
+                registration_link = url_for("auth.register", otc=created_otc[1], _external=True)
                 session["created_otc"] = {
-                    "code": created_otc.code,
-                    "purpose": created_otc.purpose,
-                    "expires_at": created_otc.expires_at.isoformat(),
+                    "code": created_otc[1],
+                    "purpose": form.purpose.data,
+                    "expires_at": created_otc[0].expires_at.isoformat(),
                 }
                 session["registration_link"] = registration_link
                 flash("OTC aangemaakt voor een leerling kok-registratie.", "success")
@@ -127,9 +127,12 @@ def _panel_context(*, section: str):
         context.update(
             {
                 "form": form,
-                "active_otcs": OTC.query.order_by(
-                    OTC.expires_at.asc(), OTC.created_at.desc()
-                ).all(),
+                "active_otcs": Credential.query.filter(
+                    Credential.purpose == "registration_invitation",
+                    Credential.expires_at > datetime.now(),
+                    Credential.revoked_at.is_(None),
+                    Credential.used_at.is_(None),
+                ).order_by(Credential.expires_at.asc(), Credential.created_at.desc()).all(),
                 "created_otc": created_otc,
                 "registration_link": registration_link,
             }
@@ -287,14 +290,16 @@ def manage_otc():
     return render_template("admin/panel.html", **context)
 
 
-@admin_bp.route("/otc/<string:code>/delete", methods=["POST"])
+@admin_bp.route("/otc/<int:credential_id>/delete", methods=["POST"])
 @login_required
-def delete_otc(code: str):
-    """Delete an OTC from the dashboard."""
+def delete_otc(credential_id: int):
+    """Delete a registration invitation from the dashboard."""
     admin_user = cast(User, current_user)
     require_active_admin(admin_user)
-    otc = OTC.query.get_or_404(code)
-    db.session.delete(otc)
+    credential = Credential.query.filter_by(
+        id=credential_id, purpose="registration_invitation"
+    ).first_or_404()
+    db.session.delete(credential)
     db.session.commit()
-    flash(f"OTC {code} verwijderd.", "success")
+    flash("Registratie-uitnodiging verwijderd.", "success")
     return redirect(url_for("admin.manage_otc"))

@@ -31,11 +31,7 @@ class RegistrationForm(FlaskForm):
         "Eenmalige code",
         validators=[
             Optional(),
-            Length(min=8, max=8, message="Eenmalige code moet exact 8 tekens zijn."),
-            Regexp(
-                r"^[a-z0-9]+$",
-                message="Eenmalige code mag alleen kleine letters en cijfers bevatten.",
-            ),
+            Length(min=8, max=512, message="Eenmalige code is ongeldig."),
         ],
     )
 
@@ -100,9 +96,30 @@ class RegistrationForm(FlaskForm):
 class LoginForm(FlaskForm):
     """User login form."""
 
-    username = StringField("Gebruikersnaam", validators=[DataRequired()])
+    username = StringField("Gebruikersnaam of e-mail", validators=[DataRequired()])
     password = PasswordField("Wachtwoord", validators=[DataRequired()])
     submit = SubmitField("Inloggen")
+
+
+class PasswordResetRequestForm(FlaskForm):
+    """Request a password-reset link without revealing account existence."""
+
+    identifier = StringField("Gebruikersnaam of e-mail", validators=[DataRequired(), Length(max=120)])
+    submit = SubmitField("Stuur herstel-link")
+
+
+class PasswordResetForm(FlaskForm):
+    """Set a password after possession of a reset credential was proven."""
+
+    new_password = PasswordField(
+        "Nieuw wachtwoord",
+        validators=[DataRequired(), Length(min=6, message="Wachtwoord moet minimaal 6 tekens lang zijn.")],
+    )
+    confirm_password = PasswordField(
+        "Bevestig nieuw wachtwoord",
+        validators=[DataRequired(), EqualTo("new_password", message="Wachtwoorden moeten overeenkomen.")],
+    )
+    submit = SubmitField("Wachtwoord opslaan")
 
 
 class ProfileEditForm(FlaskForm):

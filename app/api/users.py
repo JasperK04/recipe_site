@@ -1,29 +1,31 @@
 from __future__ import annotations
 
-import secrets
-import string
 from datetime import UTC, datetime, timedelta
 from typing import cast
 
-from flask import jsonify, render_template
+from flask import jsonify, render_template, request
 from flask_login import current_user, login_required
+from sqlalchemy import func, or_
 
 from app import db
 from app.api import api_bp
 from app.api.common import ApiError
-from app.models import OTC, Recipe, User
+from app.models import Credential, Recipe, User
+from app.services.credentials import (
+    claim_credential,
+    cleanup_expired_credentials,
+    find_usable_credential,
+    issue_credential,
+    revoke_active_credentials,
+)
 from app.services.email import send_creator_request_notification
 from utils import require_active_admin
 from utils.moderation import moderate_username
 
 
 def cleanup_expired_otc_codes() -> int:
-    """Delete expired OTC records and return the number removed."""
-    now = datetime.now(UTC)
-    removed = OTC.query.filter(OTC.expires_at <= now).delete(synchronize_session=False)
-    if removed:
-        db.session.commit()
-    return removed
+    """Delete expired registration credentials and return the number removed."""
+    return cleanup_expired_credentials()
 
 
 def _normalize_otc_code(value: str | None) -> str | None:
@@ -31,36 +33,123 @@ def _normalize_otc_code(value: str | None) -> str | None:
     return code or None
 
 
-def generate_otc_code() -> str:
-    """Generate an 8 character OTC code."""
-    alphabet = string.ascii_lowercase + string.digits
-    token = "".join(secrets.choice(alphabet) for _ in range(8))
-    return token
+PASSWORD_RESET_PURPOSE = "password_reset"
+REGISTRATION_PURPOSE = "registration_invitation"
+PASSWORD_RESET_MESSAGE = (
+    "Als een account overeenkomt met de opgegeven gegevens, sturen we herstel-instructies."
+)
+
+
+def _find_user_by_identifier(identifier: str | None) -> User | None:
+    """Find an account by username or email without exposing which matched."""
+    normalized = (identifier or "").strip()
+    if not normalized or len(normalized) > 120:
+        return None
+    return User.query.filter(
+        or_(
+            User.username == normalized,
+            func.lower(User.email) == normalized.lower(),
+        )
+    ).first()
+
+
+def create_password_reset_credential(user: User) -> tuple[Credential, str]:
+    """Create a short-lived, single-use password reset credential."""
+    cleanup_expired_credentials()
+    revoke_active_credentials(
+        purpose=PASSWORD_RESET_PURPOSE, subject_type="user", subject_id=user.id
+    )
+    credential, token = issue_credential(
+        purpose=PASSWORD_RESET_PURPOSE,
+        subject_type="user",
+        subject_id=user.id,
+    )
+    db.session.commit()
+    return credential, token
+
+
+def get_valid_password_reset_credential(token: str | None) -> Credential | None:
+    credential = find_usable_credential(purpose=PASSWORD_RESET_PURPOSE, token=token)
+    if not credential or credential.subject_type != "user" or not credential.subject_user:
+        return None
+    return credential
+
+
+def get_valid_password_reset_credential_by_id(credential_id: int | None) -> Credential | None:
+    if not credential_id:
+        return None
+    credential = db.session.get(Credential, credential_id)
+    if (
+        not credential
+        or credential.purpose != PASSWORD_RESET_PURPOSE
+        or credential.subject_type != "user"
+        or not credential.subject_user
+        or not credential.is_usable()
+    ):
+        return None
+    return credential
+
+
+def request_password_reset(identifier: str | None) -> None:
+    """Issue a reset email where possible; callers always return the same reply."""
+    user = _find_user_by_identifier(identifier)
+    if not user:
+        return
+    _, token = create_password_reset_credential(user)
+    # Import locally to avoid a module cycle and keep mail failures out of the
+    # public response, which must not disclose account existence.
+    from app.services.email import send_password_reset_email
+
+    send_password_reset_email(user, token)
+
+
+def complete_password_reset(
+    *,
+    token: str | None = None,
+    credential_id: int | None = None,
+    new_password: str | None,
+    confirm_password: str | None,
+) -> User:
+    """Validate a reset credential again and consume it atomically with the password change."""
+    if not new_password or len(new_password) < 6:
+        raise ApiError("Wachtwoord moet minimaal 6 tekens lang zijn.", 400)
+    if new_password != confirm_password:
+        raise ApiError("Wachtwoorden moeten overeenkomen.", 400)
+    credential = (
+        get_valid_password_reset_credential(token)
+        if token
+        else get_valid_password_reset_credential_by_id(credential_id)
+    )
+    if not credential:
+        raise ApiError("Deze herstel-link is ongeldig of verlopen.", 400)
+
+    user = credential.subject_user
+    if user is None:
+        raise ApiError("Deze herstel-link is ongeldig of verlopen.", 400)
+    # Claim the credential in the same transaction as the password change. The
+    # conditional update prevents two concurrent requests from consuming one
+    # reset link successfully.
+    if not claim_credential(credential):
+        db.session.rollback()
+        raise ApiError("Deze herstel-link is ongeldig of verlopen.", 400)
+    user.set_password(new_password)
+    db.session.commit()
+    return user
 
 
 def create_registration_otc(
     *, expires_in_hours: int, purpose: str | None = None
-) -> OTC:
-    """Create a new OTC for leerling kok registration."""
+) -> tuple[Credential, str]:
+    """Create a registration invitation credential."""
     cleanup_expired_otc_codes()
-
-    expires_at = datetime.now(UTC) + timedelta(hours=expires_in_hours)
-
-    for _ in range(20):
-        code = generate_otc_code()
-        if OTC.query.filter_by(code=code).first():
-            continue
-
-        otc = OTC(
-            code=code,
-            purpose=(purpose or "").strip() or None,
-            expires_at=expires_at,
-        )
-        db.session.add(otc)
-        db.session.commit()
-        return otc
-
-    raise ApiError("Kon geen unieke OTC-code genereren. Probeer het opnieuw.", 500)
+    credential, token = issue_credential(
+        purpose=REGISTRATION_PURPOSE,
+        subject_type="registration",
+        lifetime=expires_in_hours,
+        metadata={"label": (purpose or "").strip() or None},
+    )
+    db.session.commit()
+    return credential, token
 
 
 def register_user(
@@ -80,19 +169,23 @@ def register_user(
     if User.query.filter_by(email=email).first():
         raise ApiError("E-mail al geregistreerd. Gebruik een ander e-mailadres.", 400)
 
-    otc: OTC | None = None
     normalized_code = _normalize_otc_code(one_time_code)
+    credential: Credential | None = None
     if normalized_code:
         cleanup_expired_otc_codes()
-        otc = OTC.query.filter_by(code=normalized_code).first()
-        if not otc:
+        credential = find_usable_credential(
+            purpose=REGISTRATION_PURPOSE, token=normalized_code
+        )
+        if not credential or credential.subject_type != "registration":
             raise ApiError("Ongeldige of verlopen OTC-code.", 400)
 
     user = User(username=username, email=email)
     user.set_password(password)
-    if otc:
+    if credential:
         user.role = User.ROLE_LEERLING_KOK
-        db.session.delete(otc)
+        if not claim_credential(credential):
+            db.session.rollback()
+            raise ApiError("Ongeldige of verlopen OTC-code.", 400)
 
     db.session.add(user)
     db.session.commit()
@@ -249,6 +342,44 @@ def _user_row_response(user: User):
 
 def _json_error(error: ApiError):
     return jsonify({"status": "error", "message": error.message}), error.status_code
+
+
+def _request_value(name: str) -> str | None:
+    payload = request.get_json(silent=True)
+    if isinstance(payload, dict):
+        value = payload.get(name)
+    else:
+        value = request.form.get(name)
+    return value if isinstance(value, str) else None
+
+
+@api_bp.route("/password-reset/request", methods=["POST"])
+def password_reset_request_endpoint():
+    """Always return the same response to prevent account enumeration."""
+    request_password_reset(_request_value("identifier"))
+    return jsonify({"message": PASSWORD_RESET_MESSAGE})
+
+
+@api_bp.route("/password-reset/verify", methods=["POST"])
+def password_reset_verify_endpoint():
+    """A positive result only proves possession of this still-valid token."""
+    return jsonify(
+        {"valid": get_valid_password_reset_credential(_request_value("token")) is not None}
+    )
+
+
+@api_bp.route("/password-reset/complete", methods=["POST"])
+def password_reset_complete_endpoint():
+    try:
+        complete_password_reset(
+            token=_request_value("token"),
+            new_password=_request_value("newPassword") or _request_value("new_password"),
+            confirm_password=_request_value("confirmPassword")
+            or _request_value("confirm_password"),
+        )
+    except ApiError as error:
+        return _json_error(error)
+    return jsonify({"message": "Je wachtwoord is gewijzigd. Je kunt nu inloggen."})
 
 
 @api_bp.route("/users/<int:user_id>/deactivate", methods=["POST"])

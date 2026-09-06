@@ -5,7 +5,7 @@
             const password = form.querySelector("#password");
             let valid = true;
 
-            valid = validateText(username, "Gebruikersnaam is verplicht.", { required: true, minLength: 1 }) && valid;
+            valid = validateText(username, "Gebruikersnaam of e-mail is verplicht.", { required: true, minLength: 1 }) && valid;
             valid = validateText(password, "Wachtwoord is verplicht.", { required: true, minLength: 1 }) && valid;
             return valid;
         },

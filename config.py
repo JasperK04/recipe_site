@@ -75,6 +75,9 @@ class Config:
 
     # Flask-Login configuration
     REMEMBER_COOKIE_DURATION = timedelta(days=7)
+    PASSWORD_RESET_TOKEN_LIFETIME_MINUTES = _env_int(
+        "PASSWORD_RESET_TOKEN_LIFETIME_MINUTES", 10
+    )
 
 
 class DevelopmentConfig(Config):

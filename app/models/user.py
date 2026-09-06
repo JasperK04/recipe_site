@@ -55,7 +55,6 @@ class User(UserMixin, db.Model):
         backref=db.backref("favorited_by", lazy="dynamic"),
     )
     scores = db.relationship("RecipeScore", back_populates="user", cascade="all, delete-orphan")
-
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
 

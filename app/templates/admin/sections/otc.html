@@ -68,20 +68,19 @@
                     {% if active_otcs %}
                     <div class="d-grid gap-3">
                         {% for otc in active_otcs %}
-                        {% set registration_link = url_for('auth.register', otc=otc.code, _external=True) %}
                         <div class="card otc-item shadow-sm">
                             <div class="card-body p-4 otc-item-body">
                                 <div class="d-flex flex-column flex-xl-row justify-content-between gap-4">
                                     <div class="otc-item-summary">
                                         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                                            <code class="otc-code">{{ otc.code }}</code>
+                                            <code class="otc-code">Uitnodiging #{{ otc.id }}</code>
                                             <span class="badge bg-secondary-subtle text-secondary-emphasis">Leerling Kok</span>
                                         </div>
                                         <div class="row g-3">
                                             <div class="col-md-6">
                                                 <div class="otc-label">Voor</div>
-                                                {% if otc.purpose %}
-                                                <div class="fw-semibold">{{ otc.purpose }}</div>
+                                                {% if otc.metadata_json and otc.metadata_json.get('label') %}
+                                                <div class="fw-semibold">{{ otc.metadata_json.get('label') }}</div>
                                                 {% else %}
                                                 <div class="text-muted">Geen doel ingevuld</div>
                                                 {% endif %}
@@ -94,20 +93,13 @@
                                         </div>
                                     </div>
                                     <div class="otc-item-actions">
-                                        <form method="POST" action="{{ url_for('admin.delete_otc', code=otc.code) }}" onsubmit="return confirm('Weet je zeker dat je OTC {{ otc.code }} wilt verwijderen?');">
+                                        <form method="POST" action="{{ url_for('admin.delete_otc', credential_id=otc.id) }}" onsubmit="return confirm('Weet je zeker dat je deze registratie-uitnodiging wilt verwijderen?');">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></button>
                                         </form>
                                     </div>
                                 </div>
-                                <hr class="my-4">
-                                <div class="otc-link-row">
-                                    <label class="form-label mb-2">Registratielink</label>
-                                    <div class="otc-link-controls">
-                                        <input class="form-control otc-link-input" type="text" value="{{ registration_link }}" readonly>
-                                        <button type="button" class="btn btn-outline-primary" data-copy-link data-copy-value="{{ registration_link }}">Kopiëren</button>
-                                    </div>
-                                </div>
+                                <div class="text-muted small mt-4">De uitnodigingslink wordt alleen getoond direct na het aanmaken.</div>
                             </div>
                         </div>
                         {% endfor %}
