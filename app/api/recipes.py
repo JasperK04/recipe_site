@@ -484,7 +484,7 @@ def delete_recipe_endpoint(recipe_id):
         abort(403)
 
     delete_recipe(recipe)
-    return jsonify({"status": "ok", "redirect_url": url_for("recipes.list_recipes")})
+    return jsonify({"status": "ok", "redirect_url": url_for("recipe_overview.list_recipes")})
 
 
 @api_bp.route("/recipes/<int:recipe_id>/moderation/allow", methods=["POST"])

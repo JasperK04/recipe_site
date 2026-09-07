@@ -47,7 +47,7 @@
             <form
                 class="navbar-search navbar-search-medium d-lg-none"
                 method="GET"
-                action="{{ url_for('recipes.list_recipes') }}"
+                action="{{ url_for('recipe_overview.list_recipes') }}"
                 role="search"
             >
                 <label class="visually-hidden" for="navbar-search-medium-input">Zoek recepten</label>
@@ -75,18 +75,18 @@
                         <a class="nav-link" href="{{ url_for('main.index') }}">Startpagina</a>
                     </li>
                     <li class="nav-item d-lg-none">
-                        <a class="nav-link" href="{{ url_for('recipes.list_recipes') }}">Alle recepten</a>
+                        <a class="nav-link" href="{{ url_for('recipe_overview.list_recipes') }}">Alle recepten</a>
                     </li>
                     <li class="nav-item dropdown d-none d-lg-block">
                         <a class="nav-link dropdown-toggle"
-                        href="{{ url_for('recipes.list_recipes') }}">
+                        href="{{ url_for('recipe_overview.list_recipes') }}">
                             Alle recepten
                         </a>
                         <ul class="dropdown-menu">
                             {% for category in ["Ontbijt", "Lunch", "Voorgerecht", "Hoofdgerecht", "Nagerecht", "Snack", "Drank", "Overig"] %}
                             <li>
                                 <a class="dropdown-item"
-                                href="{{ url_for('recipes.list_recipes', category=category) }}">
+                                href="{{ url_for('recipe_overview.list_recipes', category=category) }}">
                                     <i class="bi bi-list"></i> {{ category }}
                                 </a>
                             </li>
@@ -122,7 +122,7 @@
                         <form
                             class="navbar-search"
                             method="GET"
-                            action="{{ url_for('recipes.list_recipes') }}"
+                            action="{{ url_for('recipe_overview.list_recipes') }}"
                             role="search"
                         >
                             <label class="visually-hidden" for="navbar-search-desktop-input">Zoek recepten</label>
@@ -148,7 +148,7 @@
                         <form
                             class="navbar-search"
                             method="GET"
-                            action="{{ url_for('recipes.list_recipes') }}"
+                            action="{{ url_for('recipe_overview.list_recipes') }}"
                             role="search"
                         >
                             <label class="visually-hidden" for="navbar-search-input">Zoek recepten</label>
@@ -180,11 +180,6 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">Mijn profiel</a></li>
-                            {% if current_user.can_create_recipes %}
-                                <li><a class="dropdown-item" href="{{ url_for('recipes.my_recipes') }}">Mijn recepten</a></li>
-                            {% endif %}
-                            <li><a class="dropdown-item" href="{{ url_for('recipes.favorites') }}">Favorieten</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('recipes.rated_recipes') }}">Mijn beoordelingen</a></li>
                             {% if current_user.is_admin %}
                             <li><hr class="dropdown-divider"></li>
                             <li>
@@ -303,7 +298,7 @@
 
                 requestController = new AbortController();
                 try {
-                    const response = await fetch('/recipe/search/suggestions?q=' + encodeURIComponent(query), {
+                    const response = await fetch('/recept/zoeken/suggesties?q=' + encodeURIComponent(query), {
                         signal: requestController.signal,
                     });
                     if (!response.ok || input.value.trim() !== query) return;

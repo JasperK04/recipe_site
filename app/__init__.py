@@ -20,7 +20,7 @@ from app.navigation import (
     load_pending_back_url,
     remember_back_url_for_login,
 )
-from app.routes import admin_bp, auth_bp, main_bp, recipes_bp
+from app.routes import admin_bp, auth_bp, main_bp, recipe_overview_bp, recipes_bp
 
 
 def create_app(config_name="default"):
@@ -69,8 +69,9 @@ def create_app(config_name="default"):
     app.register_blueprint(api_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp, url_prefix="/admin")
-    app.register_blueprint(auth_bp, url_prefix="/auth")
-    app.register_blueprint(recipes_bp, url_prefix="/recipe")
+    app.register_blueprint(auth_bp, url_prefix="/account")
+    app.register_blueprint(recipe_overview_bp, url_prefix="/recepten")
+    app.register_blueprint(recipes_bp, url_prefix="/recept")
 
     @app.context_processor
     def inject_recipe_url():

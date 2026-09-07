@@ -40,6 +40,18 @@ from utils import (
 from utils.upload import parse_uploaded_text, read_uploaded_page, validate_uploaded_json
 
 recipes_bp = Blueprint("recipes", __name__)
+recipe_overview_bp = Blueprint("recipe_overview", __name__)
+
+OVERVIEW_FILTER_ALL = "alle"
+OVERVIEW_FILTER_MINE = "mijn"
+OVERVIEW_FILTER_FAVORITES = "favorieten"
+OVERVIEW_FILTER_RATED = "beoordeeld"
+OVERVIEW_FILTERS = {
+    OVERVIEW_FILTER_ALL: "Alle recepten",
+    OVERVIEW_FILTER_MINE: "Mijn recepten",
+    OVERVIEW_FILTER_FAVORITES: "Mijn favorieten",
+    OVERVIEW_FILTER_RATED: "Mijn beoordelingen",
+}
 
 SORT_NEWEST = "newest"
 SORT_OLDEST = "oldest"
@@ -78,7 +90,7 @@ def _ingredient_field_value(ingredient: str | dict) -> str:
     return ingredient
 
 
-@recipes_bp.route("/nested/search")
+@recipes_bp.route("/genest/zoeken")
 def nested_recipe_search():
     search = (request.args.get("q") or "").strip()
     matches = resolve_recipe_search_term(search)
@@ -87,7 +99,7 @@ def nested_recipe_search():
     return jsonify(payload)
 
 
-@recipes_bp.route("/search/suggestions")
+@recipes_bp.route("/zoeken/suggesties")
 def recipe_search_suggestions():
     """Return public recipe title matches for the global search dropdown."""
     search = (request.args.get("q") or "").strip()
@@ -152,6 +164,85 @@ def _apply_recipe_sort(query, sort_key: str):
     return query.order_by(Recipe.created_at.desc())
 
 
+@recipe_overview_bp.route("/")
+def list_recipes():
+    """Display recipes using the selected overview filter."""
+    filter_name = request.args.get("filter", OVERVIEW_FILTER_ALL)
+    if filter_name not in OVERVIEW_FILTERS:
+        filter_name = OVERVIEW_FILTER_ALL
+
+    if not current_user.is_authenticated and filter_name != OVERVIEW_FILTER_ALL:
+        return redirect(url_for("recipe_overview.list_recipes"))
+    if filter_name == OVERVIEW_FILTER_MINE and not current_user.can_create_recipes:
+        return redirect(url_for("recipe_overview.list_recipes"))
+
+    filter_options = {}
+    if current_user.is_authenticated:
+        filter_options[OVERVIEW_FILTER_ALL] = OVERVIEW_FILTERS[OVERVIEW_FILTER_ALL]
+        if current_user.can_create_recipes:
+            filter_options[OVERVIEW_FILTER_MINE] = OVERVIEW_FILTERS[
+                OVERVIEW_FILTER_MINE
+            ]
+        filter_options.update(
+            {
+                OVERVIEW_FILTER_FAVORITES: OVERVIEW_FILTERS[OVERVIEW_FILTER_FAVORITES],
+                OVERVIEW_FILTER_RATED: OVERVIEW_FILTERS[OVERVIEW_FILTER_RATED],
+            }
+        )
+
+    page = request.args.get("page", 1, type=int)
+    category = request.args.get("category", "")
+    search = request.args.get("search", "")
+    allow_my_score = filter_name == OVERVIEW_FILTER_RATED
+    sort = _normalize_sort(request.args.get("sort"), allow_my_score=allow_my_score)
+
+    if filter_name == OVERVIEW_FILTER_MINE:
+        query = Recipe.query.filter_by(user_id=current_user.id)
+    elif filter_name == OVERVIEW_FILTER_FAVORITES:
+        query = current_user.favorites.filter(Recipe.status == Recipe.STATUS_PUBLIC)
+    elif filter_name == OVERVIEW_FILTER_RATED:
+        query = Recipe.query.join(
+            RecipeScore,
+            (RecipeScore.recipe_id == Recipe.id)
+            & (RecipeScore.user_id == current_user.id),
+        ).filter(Recipe.status == Recipe.STATUS_PUBLIC)
+    else:
+        query = Recipe.query.filter_by(status=Recipe.STATUS_PUBLIC)
+
+    if category:
+        query = query.filter_by(category=category)
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            or_(
+                Recipe.title.ilike(search_pattern),
+                Recipe.description.ilike(search_pattern),
+            )
+        )
+
+    if filter_name == OVERVIEW_FILTER_RATED and sort == SORT_MY_SCORE_DESC:
+        query = query.order_by(RecipeScore.score.desc(), RecipeScore.created_at.desc())
+    elif filter_name == OVERVIEW_FILTER_RATED and sort == SORT_MY_SCORE_ASC:
+        query = query.order_by(RecipeScore.score.asc(), RecipeScore.created_at.desc())
+    else:
+        query = _apply_recipe_sort(query, sort)
+
+    recipes = query.paginate(page=page, per_page=24, error_out=False)
+    return render_template(
+        "recipes/overview.html",
+        recipes=recipes,
+        category=category,
+        search=search,
+        sort=sort,
+        sort_options=(
+            RATED_RECIPE_SORT_OPTIONS if allow_my_score else RECIPE_SORT_OPTIONS
+        ),
+        filter_name=filter_name,
+        filter_options=filter_options,
+        overview_title=OVERVIEW_FILTERS[filter_name],
+    )
+
+
 def _status_badge(status):
     if status == Recipe.STATUS_DRAFT:
         return ("Concept", "warning text-dark")
@@ -170,42 +261,6 @@ def _moderation_alert(recipe: Recipe) -> str | None:
         return f"Dit recept is door moderatie gemarkeerd: {issues[0]}"
     joined = " ".join(f"• {issue}" for issue in issues)
     return f"Dit recept is door moderatie gemarkeerd. Gevonden problemen: {joined}"
-
-
-@recipes_bp.route("/")
-def list_recipes():
-    """Display public recipes."""
-    page = request.args.get("page", 1, type=int)
-    category = request.args.get("category", None)
-    search = request.args.get("search", "")
-    sort = _normalize_sort(request.args.get("sort"))
-
-    query = Recipe.query.filter_by(status=Recipe.STATUS_PUBLIC)
-
-    if category:
-        query = query.filter_by(category=category)
-
-    if search:
-        search_pattern = f"%{search}%"
-        query = query.filter(
-            or_(
-                Recipe.title.ilike(search_pattern),
-                Recipe.description.ilike(search_pattern),
-            )
-        )
-
-    recipes = _apply_recipe_sort(query, sort).paginate(
-        page=page, per_page=12, error_out=False
-    )
-
-    return render_template(
-        "recipes/list.html",
-        recipes=recipes,
-        category=category,
-        search=search,
-        sort=sort,
-        sort_options=RECIPE_SORT_OPTIONS,
-    )
 
 
 @recipes_bp.route("/<int:recipe_id>", defaults={"title": None})
@@ -274,7 +329,7 @@ def view_recipe(recipe_id, title=None):
     )
 
 
-@recipes_bp.route("/<int:recipe_id>/image")
+@recipes_bp.route("/<int:recipe_id>/afbeelding")
 def recipe_image(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     if not recipe.is_visible_to(current_user):
@@ -285,7 +340,7 @@ def recipe_image(recipe_id):
     return (image_data, 200, {"Content-Type": "image/webp"})
 
 
-@recipes_bp.route("/<int:recipe_id>/favorite", methods=["POST"])
+@recipes_bp.route("/<int:recipe_id>/favoriet", methods=["POST"])
 @login_required
 def favorite_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
@@ -308,7 +363,7 @@ def favorite_recipe(recipe_id):
     )
 
 
-@recipes_bp.route("/<int:recipe_id>/unfavorite", methods=["POST"])
+@recipes_bp.route("/<int:recipe_id>/favoriet-verwijderen", methods=["POST"])
 @login_required
 def unfavorite_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
@@ -331,7 +386,7 @@ def unfavorite_recipe(recipe_id):
     )
 
 
-@recipes_bp.route("/add", methods=["GET", "POST"])
+@recipes_bp.route("/toevoegen", methods=["GET", "POST"])
 @login_required
 def add_recipe():
     """Add a new recipe."""
@@ -407,7 +462,7 @@ def add_recipe():
     )
 
 
-@recipes_bp.route("/upload", methods=["GET", "POST"])
+@recipes_bp.route("/uploaden", methods=["GET", "POST"])
 @login_required
 def upload_recipe():
     """Add a new recipe."""
@@ -459,7 +514,7 @@ def upload_recipe():
     return render_template("recipes/upload.html", form=form, title="Recept uploaden")
 
 
-@recipes_bp.route("/<int:recipe_id>/edit", methods=["GET", "POST"])
+@recipes_bp.route("/<int:recipe_id>/bewerken", methods=["GET", "POST"])
 @login_required
 def edit_recipe(recipe_id):
     """Edit an existing recipe."""
@@ -547,7 +602,7 @@ def edit_recipe(recipe_id):
     )
 
 
-@recipes_bp.route("/<int:recipe_id>/delete", methods=["POST"])
+@recipes_bp.route("/<int:recipe_id>/verwijderen", methods=["POST"])
 @login_required
 def delete_recipe(recipe_id):
     """Delete a recipe."""
@@ -560,77 +615,10 @@ def delete_recipe(recipe_id):
 
     api_delete_recipe(recipe)
     flash("Recept succesvol verwijderd!", "success")
-    return redirect(url_for("recipes.list_recipes"))
+    return redirect(url_for("recipe_overview.list_recipes"))
 
 
-@recipes_bp.route("/my-recipes")
-@login_required
-def my_recipes():
-    """Display current user's recipes."""
-    page = request.args.get("page", 1, type=int)
-    sort = _normalize_sort(request.args.get("sort"))
-    query = Recipe.query.filter_by(user_id=current_user.id)
-    recipes = _apply_recipe_sort(query, sort).paginate(
-        page=page, per_page=12, error_out=False
-    )
-
-    return render_template(
-        "recipes/my_recipes.html",
-        recipes=recipes,
-        sort=sort,
-        sort_options=RECIPE_SORT_OPTIONS,
-    )
-
-
-@recipes_bp.route("/favorites")
-@login_required
-def favorites():
-    """Display current user's favorite recipes."""
-    page = request.args.get("page", 1, type=int)
-    sort = _normalize_sort(request.args.get("sort"))
-    query = current_user.favorites.filter(Recipe.status == Recipe.STATUS_PUBLIC)
-    recipes = _apply_recipe_sort(query, sort).paginate(
-        page=page, per_page=12, error_out=False
-    )
-
-    return render_template(
-        "recipes/favorites.html",
-        recipes=recipes,
-        sort=sort,
-        sort_options=RECIPE_SORT_OPTIONS,
-    )
-
-
-@recipes_bp.route("/rated")
-@login_required
-def rated_recipes():
-    """Display recipes rated by current user."""
-    page = request.args.get("page", 1, type=int)
-    sort = _normalize_sort(request.args.get("sort"), allow_my_score=True)
-
-    query = Recipe.query.join(
-        RecipeScore,
-        (RecipeScore.recipe_id == Recipe.id) & (RecipeScore.user_id == current_user.id),
-    ).filter(Recipe.status == Recipe.STATUS_PUBLIC)
-
-    if sort == SORT_MY_SCORE_DESC:
-        query = query.order_by(RecipeScore.score.desc(), RecipeScore.created_at.desc())
-    elif sort == SORT_MY_SCORE_ASC:
-        query = query.order_by(RecipeScore.score.asc(), RecipeScore.created_at.desc())
-    else:
-        query = _apply_recipe_sort(query, sort)
-
-    recipes = query.paginate(page=page, per_page=12, error_out=False)
-
-    return render_template(
-        "recipes/rated.html",
-        recipes=recipes,
-        sort=sort,
-        sort_options=RATED_RECIPE_SORT_OPTIONS,
-    )
-
-
-@recipes_bp.route("/<int:recipe_id>/score", methods=["POST"])
+@recipes_bp.route("/<int:recipe_id>/beoordelen", methods=["POST"])
 @login_required
 def score_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)

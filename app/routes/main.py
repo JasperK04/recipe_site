@@ -58,7 +58,7 @@ def index():
     )
 
 
-@main_bp.route("/about")
+@main_bp.route("/over")
 def about():
     """About page."""
     return render_template("about.html")

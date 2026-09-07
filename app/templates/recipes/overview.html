@@ -1,0 +1,114 @@
+{% extends "components/base.html" %}
+{% block extra_meta %}
+<link rel="canonical" href="{{ url_for('recipe_overview.list_recipes', filter=filter_name, _external=True) }}" />
+{% endblock %}
+
+{% block title %}{{ overview_title }} - Recepten{% endblock %}
+
+{% block content %}
+<div class="jumbotron p-4 rounded-3 mb-3">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 mb-3">
+        <div>
+            <p class="text-muted mb-1">Receptenoverzicht</p>
+            <h1 class="mb-0">{{ overview_title }}</h1>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            {% set sort_hidden_params = {'filter': filter_name, 'category': category, 'search': search} %}
+            {% include 'components/recipe_sort_controls.html' %}
+            {% if current_user.is_authenticated and current_user.can_create_recipes %}
+            <a href="{{ url_for('recipes.add_recipe') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Recept toevoegen
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if filter_options %}
+    <nav aria-label="Recepten filter" class="mb-3">
+        <div class="nav nav-pills flex-wrap gap-2">
+            {% for value, label in filter_options.items() %}
+            <a class="nav-link {% if filter_name == value %}active{% endif %}"
+               href="{{ url_for('recipe_overview.list_recipes', filter=value, category=category, search=search, sort=sort) }}"
+               {% if filter_name == value %}aria-current="page"{% endif %}>{{ label }}</a>
+            {% endfor %}
+        </div>
+    </nav>
+    {% endif %}
+
+    <div class="row g-2">
+        <div class="col-md-8">
+            <form method="GET" action="{{ url_for('recipe_overview.list_recipes') }}" class="d-flex">
+                <input type="hidden" name="filter" value="{{ filter_name }}">
+                <input type="hidden" name="category" value="{{ category }}">
+                <input type="hidden" name="sort" value="{{ sort }}">
+                <label class="visually-hidden" for="recipe-search">Zoek recepten</label>
+                <input id="recipe-search" type="search" name="search" class="form-control me-2" placeholder="Zoek recepten..." value="{{ search }}">
+                <button type="submit" class="btn btn-outline-primary">Zoeken</button>
+            </form>
+        </div>
+        <div class="col-md-4">
+            <form method="GET" action="{{ url_for('recipe_overview.list_recipes') }}">
+                <input type="hidden" name="filter" value="{{ filter_name }}">
+                <input type="hidden" name="search" value="{{ search }}">
+                <input type="hidden" name="sort" value="{{ sort }}">
+                <label class="visually-hidden" for="recipe-category">Categorie</label>
+                <select id="recipe-category" class="form-select" name="category" onchange="this.form.submit()">
+                    <option value="" {% if not category %}selected{% endif %}>Alle categorieën</option>
+                    <option value="Voorgerecht" {% if category == 'Voorgerecht' %}selected{% endif %}>Voorgerecht</option>
+                    <option value="Ontbijt" {% if category == 'Ontbijt' %}selected{% endif %}>Ontbijt</option>
+                    <option value="Lunch" {% if category == 'Lunch' %}selected{% endif %}>Lunch</option>
+                    <option value="Hoofdgerecht" {% if category == 'Hoofdgerecht' %}selected{% endif %}>Hoofdgerecht</option>
+                    <option value="Nagerecht" {% if category == 'Nagerecht' %}selected{% endif %}>Nagerecht</option>
+                    <option value="Snack" {% if category == 'Snack' %}selected{% endif %}>Snack</option>
+                    <option value="Drank" {% if category == 'Drank' %}selected{% endif %}>Drank</option>
+                    <option value="Overig" {% if category == 'Overig' %}selected{% endif %}>Overig</option>
+                </select>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if recipes.items %}
+<div class="recipe-grid">
+    {% for recipe in recipes.items %}
+        {% include 'components/recipe_card.html' with context %}
+    {% endfor %}
+</div>
+
+{% if recipes.pages > 1 %}
+<nav aria-label="Paginering recepten" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if recipes.has_prev %}
+        <li class="page-item"><a class="page-link" href="{{ url_for('recipe_overview.list_recipes', page=recipes.prev_num, filter=filter_name, category=category, search=search, sort=sort) }}">Vorige</a></li>
+        {% endif %}
+        {% for page_num in recipes.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+            {% if page_num %}
+                <li class="page-item {% if page_num == recipes.page %}active{% endif %}"><a class="page-link" href="{{ url_for('recipe_overview.list_recipes', page=page_num, filter=filter_name, category=category, search=search, sort=sort) }}">{{ page_num }}</a></li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+        {% if recipes.has_next %}
+        <li class="page-item"><a class="page-link" href="{{ url_for('recipe_overview.list_recipes', page=recipes.next_num, filter=filter_name, category=category, search=search, sort=sort) }}">Volgende</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i>
+    {% if search or category %}
+        Geen recepten gevonden. Probeer je zoekopdracht of filter aan te passen.
+    {% elif filter_name == 'mijn' %}
+        Je hebt nog geen recepten toegevoegd.
+        {% if current_user.can_create_recipes %}<a href="{{ url_for('recipes.add_recipe') }}" class="alert-link">Voeg je eerste recept toe.</a>{% endif %}
+    {% elif filter_name == 'favorieten' %}
+        Je hebt nog geen favorieten. Bekijk een recept en voeg deze toe aan je favorieten.
+    {% elif filter_name == 'beoordeeld' %}
+        Je hebt nog geen recepten beoordeeld.
+    {% else %}
+        Nog geen recepten gevonden.
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

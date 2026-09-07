@@ -38,11 +38,11 @@
                 {% endif %}
             </a>
             {% else %}
-            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('recipes.list_recipes') }}" role="button">Recepten bekijken</a>
+            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('recipe_overview.list_recipes') }}" role="button">Recepten bekijken</a>
             {% endif %}
         {% else %}
             <a class="btn btn-primary btn-lg me-2" href="{{ url_for('auth.register') }}" role="button">Begin</a>
-            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('recipes.list_recipes') }}" role="button">Recepten bekijken</a>
+            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('recipe_overview.list_recipes') }}" role="button">Recepten bekijken</a>
         {% endif %}
     </div>
 </div>
@@ -66,7 +66,7 @@
 
 {% if recipes %}
 <div class="text-center mt-4">
-    <a href="{{ url_for('recipes.list_recipes') }}" class="btn btn-outline-primary">Bekijk alle recepten</a>
+    <a href="{{ url_for('recipe_overview.list_recipes') }}" class="btn btn-outline-primary">Bekijk alle recepten</a>
 </div>
 {% endif %}
 {% endblock %}

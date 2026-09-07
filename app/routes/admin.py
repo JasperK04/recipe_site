@@ -18,7 +18,6 @@ from flask_login import current_user, login_required
 from sqlalchemy import or_
 
 from app import db
-from app.navigation import safe_referrer_url
 from app.api import (
     ApiError,
     deactivate_recipe,
@@ -35,6 +34,7 @@ from app.api.users import (
 )
 from app.forms import OTCCreateForm
 from app.models import Credential, Recipe, User
+from app.navigation import safe_referrer_url
 from utils import require_active_admin
 
 admin_bp = Blueprint("admin", __name__)
@@ -46,7 +46,7 @@ def _panel_context(*, section: str):
         "pending_recipe_moderation": pending_recipe_moderation_count(),
         "active_otcs": Credential.query.filter(
             Credential.purpose == "registration_invitation",
-            Credential.expires_at > datetime.now(),
+            Credential.expires_at > datetime.now(),  # noqa: DTZ005
             Credential.revoked_at.is_(None),
             Credential.used_at.is_(None),
         ).count(),
@@ -114,7 +114,9 @@ def _panel_context(*, section: str):
             except ApiError as error:
                 flash(error.message, "danger")
             else:
-                registration_link = url_for("auth.register", otc=created_otc[1], _external=True)
+                registration_link = url_for(
+                    "auth.register", otc=created_otc[1], _external=True
+                )
                 session["created_otc"] = {
                     "code": created_otc[1],
                     "purpose": form.purpose.data,
@@ -129,10 +131,12 @@ def _panel_context(*, section: str):
                 "form": form,
                 "active_otcs": Credential.query.filter(
                     Credential.purpose == "registration_invitation",
-                    Credential.expires_at > datetime.now(),
+                    Credential.expires_at > datetime.now(),  # noqa: DTZ005
                     Credential.revoked_at.is_(None),
                     Credential.used_at.is_(None),
-                ).order_by(Credential.expires_at.asc(), Credential.created_at.desc()).all(),
+                )
+                .order_by(Credential.expires_at.asc(), Credential.created_at.desc())
+                .all(),
                 "created_otc": created_otc,
                 "registration_link": registration_link,
             }

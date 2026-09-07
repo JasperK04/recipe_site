@@ -5,14 +5,19 @@ from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import func, or_
 
 from app import login_manager
-from app.navigation import safe_redirect_target
 from app.api import (
     ApiError,
     complete_password_reset,
     register_user,
-    request_password_reset as issue_password_reset,
     submit_creator_request,
     update_profile,
+)
+from app.api import (
+    request_password_reset as issue_password_reset,
+)
+from app.api.users import (
+    get_valid_password_reset_credential,
+    get_valid_password_reset_credential_by_id,
 )
 from app.forms import (
     LoginForm,
@@ -21,11 +26,8 @@ from app.forms import (
     ProfileEditForm,
     RegistrationForm,
 )
-from app.api.users import (
-    get_valid_password_reset_credential,
-    get_valid_password_reset_credential_by_id,
-)
 from app.models import User
+from app.navigation import safe_redirect_target
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -36,7 +38,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-@auth_bp.route("/register", methods=["GET", "POST"])
+@auth_bp.route("/registreren", methods=["GET", "POST"])
 def register():
     """User registration route."""
     if current_user.is_authenticated:
@@ -71,7 +73,7 @@ def register():
     return render_template("auth/register.html", form=form)
 
 
-@auth_bp.route("/login", methods=["GET", "POST"])
+@auth_bp.route("/inloggen", methods=["GET", "POST"])
 def login():
     """User login route."""
     if current_user.is_authenticated:
@@ -101,7 +103,7 @@ def login():
     return render_template("auth/login.html", form=form, next_page=next_page)
 
 
-@auth_bp.route("/forgot-password", methods=["GET", "POST"])
+@auth_bp.route("/wachtwoord-vergeten", methods=["GET", "POST"])
 def request_password_reset():
     """Public password-recovery page with an enumeration-safe outcome."""
     if current_user.is_authenticated:
@@ -117,7 +119,7 @@ def request_password_reset():
     return render_template("auth/forgot_password.html", form=form)
 
 
-@auth_bp.route("/reset-password", methods=["GET", "POST"])
+@auth_bp.route("/wachtwoord-resetten", methods=["GET", "POST"])
 def reset_password():
     """Show and consume a password-reset credential bound to the server session."""
     if request.method == "GET":
@@ -170,7 +172,7 @@ def reset_password():
     )
 
 
-@auth_bp.route("/logout")
+@auth_bp.route("/uitloggen")
 @login_required
 def logout():
     """User logout route."""
@@ -179,14 +181,14 @@ def logout():
     return redirect(url_for("main.index"))
 
 
-@auth_bp.route("/profile")
+@auth_bp.route("/profiel")
 @login_required
 def profile():
     """Read-only profile view."""
     return render_template("auth/profile.html")
 
 
-@auth_bp.route("/profile/edit", methods=["GET", "POST"])
+@auth_bp.route("/profiel/bewerken", methods=["GET", "POST"])
 @login_required
 def edit_profile():
     """Edit profile and optionally change password."""
@@ -216,7 +218,7 @@ def edit_profile():
     return render_template("auth/profile_edit.html", form=form)
 
 
-@auth_bp.route("/request-creator", methods=["POST"])
+@auth_bp.route("/maker-aanvragen", methods=["POST"])
 @login_required
 def request_creator():
     if not current_user.is_active:
@@ -238,13 +240,13 @@ def request_creator():
     return redirect(url_for("auth.profile"))
 
 
-@auth_bp.route("/profile/otc", methods=["GET", "POST"])
+@auth_bp.route("/profiel/otc", methods=["GET", "POST"])
 @login_required
 def manage_otc():
     return redirect(url_for("admin.manage_otc"), code=302)
 
 
-@auth_bp.route("/profile/otc/<int:credential_id>/delete", methods=["POST"])
+@auth_bp.route("/profiel/otc/<int:credential_id>/verwijderen", methods=["POST"])
 @login_required
 def delete_otc(credential_id: int):
     return redirect(url_for("admin.delete_otc", credential_id=credential_id), code=307)

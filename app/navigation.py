@@ -40,13 +40,11 @@ def safe_referrer_url() -> str | None:
         or not parsed.path.startswith("/")
         # Returning to login after it redirects to the protected page is not a
         # useful Back destination and can send visitors through a login loop.
-        or parsed.path == "/auth/login"
+        or parsed.path == "/account/inloggen"
     ):
         return None
 
-    return _safe_internal_target(
-        urlunsplit(("", "", parsed.path, parsed.query, ""))
-    )
+    return _safe_internal_target(urlunsplit(("", "", parsed.path, parsed.query, "")))
 
 
 def back_url(fallback_endpoint: str, **fallback_values: object) -> str:

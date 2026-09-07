@@ -15,7 +15,7 @@ def _navigation_app() -> Flask:
     def back():
         return redirect(back_url("fallback"))
 
-    @app.route("/auth/login")
+    @app.route("/account/inloggen")
     def login():
         return "login"
 
@@ -44,13 +44,17 @@ def test_back_url_rejects_external_referrer_and_uses_fallback():
 def test_back_url_does_not_return_to_login_after_authentication():
     client = _navigation_app().test_client()
 
-    response = client.get("/back", headers={"Referer": "http://localhost/auth/login"})
+    response = client.get(
+        "/back", headers={"Referer": "http://localhost/account/inloggen"}
+    )
 
     assert response.location == "/fallback"
 
 
 def test_safe_redirect_target_rejects_external_and_protocol_relative_urls():
-    assert safe_redirect_target("/recipe/123?source=search") == "/recipe/123?source=search"
+    assert (
+        safe_redirect_target("/recipe/123?source=search") == "/recipe/123?source=search"
+    )
     assert safe_redirect_target("https://evil.example") is None
     assert safe_redirect_target("//evil.example") is None
     assert safe_redirect_target("/%2f%2fevil.example") is None

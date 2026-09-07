@@ -10,7 +10,6 @@ import hashlib
 import sqlalchemy as sa
 from alembic import op
 
-
 revision = "f1a2b3c4d5e6"
 down_revision = "e4f6a8b0c2d4"
 branch_labels = None

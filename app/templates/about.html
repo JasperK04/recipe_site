@@ -28,7 +28,7 @@
             <h3 class="mt-4">Aan de slag</h3>
             <ol>
                 {% if current_user.is_authenticated %}
-                    <li><a href="{{ url_for('recipes.list_recipes') }}">Blader door de recepten</a></li>
+                    <li><a href="{{ url_for('recipe_overview.list_recipes') }}">Blader door de recepten</a></li>
                     <li>Vind jouw favoriete recepten</li>
                     {% if current_user.can_create_recipes %}
                         <li><a href="{{ url_for('recipes.add_recipe') }}">Voeg een nieuw recept toe</a></li>

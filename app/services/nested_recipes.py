@@ -6,12 +6,7 @@ from typing import Any
 
 from flask import has_app_context
 
-from app import db
 from app.models import Recipe
-from app.services.email import (
-    send_referenced_recipe_deletion_notification,
-    send_referenced_recipe_update_notification,
-)
 
 
 def _coerce_recipe_id(value: object) -> int | None:
@@ -44,7 +39,7 @@ def _normalize_nested_ingredient(
     ingredient: dict[str, Any], *, recipe_id: int | None = None
 ) -> dict[str, Any]:
     if not isinstance(ingredient, dict):
-        raise ValueError("Nested recipe ingredient must be an object.")
+        raise TypeError("Nested recipe ingredient must be an object.")
 
     if ingredient.get("type") != "recipe":
         return ingredient
