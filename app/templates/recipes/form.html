@@ -206,7 +206,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             {{ form.servings.label(class="form-label") }}
-                            {{ form.servings(class="form-control" + (" is-invalid" if form.servings.errors else "")) }}
+                            {{ form.servings(class="form-control" + (" is-invalid" if form.servings.errors else ""), min="1") }}
                             {% if form.servings.errors %}
                                 <div class="invalid-feedback">
                                     {% for error in form.servings.errors %}{{ error }}{% endfor %}
@@ -218,7 +218,7 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             {{ form.prep_time.label(class="form-label") }}
-                            {{ form.prep_time(class="form-control" + (" is-invalid" if form.prep_time.errors else "")) }}
+                            {{ form.prep_time(class="form-control" + (" is-invalid" if form.prep_time.errors else ""), min="1") }}
                             {% if form.prep_time.errors %}
                                 <div class="invalid-feedback">
                                     {% for error in form.prep_time.errors %}{{ error }}{% endfor %}
@@ -227,7 +227,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             {{ form.cook_time.label(class="form-label") }}
-                            {{ form.cook_time(class="form-control" + (" is-invalid" if form.cook_time.errors else "")) }}
+                            {{ form.cook_time(class="form-control" + (" is-invalid" if form.cook_time.errors else ""), min="1") }}
                             {% if form.cook_time.errors %}
                                 <div class="invalid-feedback">
                                     {% for error in form.cook_time.errors %}{{ error }}{% endfor %}
@@ -248,7 +248,7 @@
                                     <span class="input-group-text imported-indicator" title="Geïmporteerd recept" aria-label="Geïmporteerd recept">
                                         <i class="bi bi-box-arrow-in-down"></i>
                                     </span>
-                                    {{ entry(class="form-control", placeholder='Ingrediënt') }}
+                                    {{ entry(class="form-control" + (" is-invalid" if form.ingredients.errors else ""), placeholder='Ingrediënt') }}
                                     <span class="input-group-text drag-handle">
                                         <i class="bi bi-grip-vertical"></i>
                                     </span>
@@ -696,15 +696,6 @@ document.addEventListener('DOMContentLoaded', function(){
     document.querySelectorAll('#ingredients-list input, #ingredients-list textarea, #ingredients-list select').forEach(input => {
         normalizeIngredientInput(input);
     });
-
-    const ingredientForm = document.getElementById('recipe-form');
-    if (ingredientForm) {
-        ingredientForm.addEventListener('submit', function () {
-            document.querySelectorAll('#ingredients-list input[data-raw-ingredient-json]').forEach(input => {
-                input.value = input.dataset.rawIngredientJson;
-            });
-        });
-    }
 
     const nestedModal = document.getElementById('nestedRecipeModal');
     const nestedSearchInput = document.getElementById('nestedRecipeSearch');

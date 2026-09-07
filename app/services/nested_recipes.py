@@ -86,11 +86,12 @@ def _normalize_nested_ingredient(
     unit = str(ingredient.get("unit") or "").strip()
 
     if has_app_context():
-        existing_recipe = Recipe.query.filter_by(id=normalized_recipe_id).first()
+        existing_recipe = Recipe.query.filter(
+            Recipe.id == normalized_recipe_id,
+            Recipe.status != Recipe.STATUS_DEACTIVATED,
+        ).first()
         if existing_recipe is None:
-            raise ValueError(
-                "Het geselecteerde recept bestaat niet meer in deze applicatie."
-            )
+            raise ValueError("Het geselecteerde recept bestaat niet meer.")
 
     return {
         "type": "recipe",

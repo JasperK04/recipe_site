@@ -104,7 +104,9 @@ class LoginForm(FlaskForm):
 class PasswordResetRequestForm(FlaskForm):
     """Request a password-reset link without revealing account existence."""
 
-    identifier = StringField("Gebruikersnaam of e-mail", validators=[DataRequired(), Length(max=120)])
+    identifier = StringField(
+        "Gebruikersnaam of e-mail", validators=[DataRequired(), Length(max=120)]
+    )
     submit = SubmitField("Stuur herstel-link")
 
 
@@ -113,11 +115,17 @@ class PasswordResetForm(FlaskForm):
 
     new_password = PasswordField(
         "Nieuw wachtwoord",
-        validators=[DataRequired(), Length(min=6, message="Wachtwoord moet minimaal 6 tekens lang zijn.")],
+        validators=[
+            DataRequired(),
+            Length(min=6, message="Wachtwoord moet minimaal 6 tekens lang zijn."),
+        ],
     )
     confirm_password = PasswordField(
         "Bevestig nieuw wachtwoord",
-        validators=[DataRequired(), EqualTo("new_password", message="Wachtwoorden moeten overeenkomen.")],
+        validators=[
+            DataRequired(),
+            EqualTo("new_password", message="Wachtwoorden moeten overeenkomen."),
+        ],
     )
     submit = SubmitField("Wachtwoord opslaan")
 
@@ -271,9 +279,27 @@ class RecipeForm(FlaskForm):
         min_entries=1,
         label="Instructies *",
     )
-    prep_time = IntegerField("Bereidingstijd (minuten)", validators=[])
-    cook_time = IntegerField("Kooktijd (minuten)", validators=[Optional()])
-    servings = IntegerField("Porties", validators=[Optional()])
+    prep_time = IntegerField(
+        "Bereidingstijd (minuten)",
+        validators=[
+            Optional(),
+            NumberRange(min=1, message="Vul een getal groter dan 0 in."),
+        ],
+    )
+    cook_time = IntegerField(
+        "Kooktijd (minuten)",
+        validators=[
+            Optional(),
+            NumberRange(min=1, message="Vul een getal groter dan 0 in."),
+        ],
+    )
+    servings = IntegerField(
+        "Porties",
+        validators=[
+            Optional(),
+            NumberRange(min=1, message="Vul een getal groter dan 0 in."),
+        ],
+    )
     category = SelectField(
         "Categorie",
         choices=[
@@ -304,6 +330,30 @@ class RecipeForm(FlaskForm):
         ],
     )
     submit = SubmitField("Opslaan")
+
+    def validate(self, extra_validators=None):
+        if not super().validate(extra_validators):
+            return False
+
+        valid = True
+        if not any(
+            entry.data and entry.data.strip() for entry in self.ingredients.entries
+        ):
+            self.ingredients.errors = [
+                *self.ingredients.errors,
+                "Voeg minstens één ingrediënt toe.",
+            ]
+            valid = False
+        if not any(
+            entry.data and entry.data.strip() for entry in self.instructions.entries
+        ):
+            self.instructions.errors = [
+                *self.instructions.errors,
+                "Voeg minstens één instructiestap toe.",
+            ]
+            valid = False
+
+        return valid
 
 
 class RecipeUploadForm(FlaskForm):

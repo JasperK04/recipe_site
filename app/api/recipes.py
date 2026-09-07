@@ -50,6 +50,15 @@ def _moderate_recipe(
     )
 
 
+def _sanitize_recipe_ingredients_for_save(
+    ingredients: list[str] | list[dict] | None,
+) -> list[str] | list[dict]:
+    try:
+        return sanitize_recipe_ingredients(cast(list[str | dict] | None, ingredients))
+    except ValueError as exc:
+        raise ApiError(str(exc), 400, payload={"field": "ingredients"}) from exc
+
+
 def _apply_recipe_moderation(
     *,
     recipe: Recipe,
@@ -134,7 +143,7 @@ def create_recipe(
     recipe = Recipe(
         title=title,
         description=description,
-        ingredients=sanitize_recipe_ingredients(ingredients),
+        ingredients=_sanitize_recipe_ingredients_for_save(ingredients),
         instructions=sanitize_recipe_instructions(instructions),
         prep_time=prep_time,
         cook_time=cook_time,
@@ -195,21 +204,27 @@ def create_recipe_endpoint():
             }
         ), 400
 
-    recipe = create_recipe(
-        author=user,
-        title=form.title.data,  # type: ignore[arg-type]
-        description=form.description.data,  # type: ignore[arg-type]
-        ingredients=form.ingredients.data,
-        instructions=form.instructions.data,
-        prep_time=form.prep_time.data,
-        cook_time=form.cook_time.data,
-        servings=form.servings.data,
-        category=form.category.data if form.category.data else None,
-        status=form.status.data,
-        image_file=form.image.data
-        if getattr(form, "image", None) and form.image.data
-        else None,
-    )
+    try:
+        recipe = create_recipe(
+            author=user,
+            title=form.title.data,  # type: ignore[arg-type]
+            description=form.description.data,  # type: ignore[arg-type]
+            ingredients=form.ingredients.data,
+            instructions=form.instructions.data,
+            prep_time=form.prep_time.data,
+            cook_time=form.cook_time.data,
+            servings=form.servings.data,
+            category=form.category.data if form.category.data else None,
+            status=form.status.data,
+            image_file=form.image.data
+            if getattr(form, "image", None) and form.image.data
+            else None,
+        )
+    except ApiError as error:
+        payload = error.payload or {}
+        return jsonify(
+            {"status": "error", "message": error.message, **payload}
+        ), error.status_code
     _flash_recipe_save_message(recipe, updated=False)
     return jsonify(
         {
@@ -250,23 +265,18 @@ def update_recipe(
     )
     recipe.title = title
     recipe.description = description
-    recipe.ingredients = sanitize_recipe_ingredients(ingredients)
+    recipe.ingredients = _sanitize_recipe_ingredients_for_save(ingredients)
     recipe.instructions = sanitize_recipe_instructions(instructions)
     recipe.prep_time = prep_time
     recipe.cook_time = cook_time
     recipe.servings = servings
     recipe.category = category if category else None
 
-    graph = build_recipe_dependency_graph(
+    graph: dict[int, list[int]] = build_recipe_dependency_graph(
         Recipe.query.filter(Recipe.id != recipe.id).all()
     )
-    graph[recipe.id] = [
-        dep
-        for dep in recipe.ingredients or []
-        if isinstance(dep, dict) and dep.get("type") == "recipe"
-    ]
     dependency_ids = []
-    for dep in graph.get(recipe.id, []):
+    for dep in recipe.ingredients or []:
         if isinstance(dep, dict):
             dependency_ids.append(int(dep.get("recipe_id", 0)))
     graph[recipe.id] = [item for item in dependency_ids if item > 0]
@@ -338,22 +348,28 @@ def update_recipe_endpoint(recipe_id):
             }
         ), 400
 
-    updated = update_recipe(
-        recipe=recipe,
-        title=form.title.data,  # type: ignore[arg-type]
-        description=form.description.data,  # type: ignore[arg-type]
-        ingredients=form.ingredients.data,
-        instructions=form.instructions.data,
-        prep_time=form.prep_time.data,
-        cook_time=form.cook_time.data,
-        servings=form.servings.data,
-        category=form.category.data if form.category.data else None,
-        status=form.status.data,
-        image_file=form.image.data
-        if getattr(form, "image", None) and form.image.data
-        else None,
-        remove_image=request.form.get("remove_image") == "1",
-    )
+    try:
+        updated = update_recipe(
+            recipe=recipe,
+            title=form.title.data,  # type: ignore[arg-type]
+            description=form.description.data,  # type: ignore[arg-type]
+            ingredients=form.ingredients.data,
+            instructions=form.instructions.data,
+            prep_time=form.prep_time.data,
+            cook_time=form.cook_time.data,
+            servings=form.servings.data,
+            category=form.category.data if form.category.data else None,
+            status=form.status.data,
+            image_file=form.image.data
+            if getattr(form, "image", None) and form.image.data
+            else None,
+            remove_image=request.form.get("remove_image") == "1",
+        )
+    except ApiError as error:
+        payload = error.payload or {}
+        return jsonify(
+            {"status": "error", "message": error.message, **payload}
+        ), error.status_code
     _flash_recipe_save_message(updated, updated=True)
     return jsonify(
         {

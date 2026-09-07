@@ -178,18 +178,13 @@ def sanitize_recipe_ingredients(
     for ingredient in raw_ingredients or []:
         if isinstance(ingredient, dict):
             if ingredient.get("type") == "recipe":
-                try:
-                    from app.services.nested_recipes import (
-                        validate_nested_recipe_reference,
-                    )
+                from app.services.nested_recipes import validate_nested_recipe_reference
 
-                    normalized = validate_nested_recipe_reference(ingredient)
-                    if plain_text:
-                        ingredients.append(__import__("json").dumps(normalized))
-                    else:
-                        ingredients.append(normalized)
-                except ValueError:
-                    continue
+                normalized = validate_nested_recipe_reference(ingredient)
+                if plain_text:
+                    ingredients.append(__import__("json").dumps(normalized))
+                else:
+                    ingredients.append(normalized)
                 continue
 
             name = (
@@ -223,18 +218,15 @@ def sanitize_recipe_ingredients(
                     parsed = None
                 if isinstance(parsed, dict):
                     if parsed.get("type") == "recipe":
-                        try:
-                            from app.services.nested_recipes import (
-                                validate_nested_recipe_reference,
-                            )
+                        from app.services.nested_recipes import (
+                            validate_nested_recipe_reference,
+                        )
 
-                            normalized = validate_nested_recipe_reference(parsed)
-                            if plain_text:
-                                ingredients.append(__import__("json").dumps(normalized))
-                            else:
-                                ingredients.append(normalized)
-                        except ValueError:
-                            continue
+                        normalized = validate_nested_recipe_reference(parsed)
+                        if plain_text:
+                            ingredients.append(__import__("json").dumps(normalized))
+                        else:
+                            ingredients.append(normalized)
                     else:
                         name = (
                             parsed.get("display_name")

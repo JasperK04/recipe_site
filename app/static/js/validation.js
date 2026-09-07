@@ -207,6 +207,21 @@
         return false;
     }
 
+    function showRecipeSaveError(message) {
+        const ingredientsList = document.querySelector("#ingredients-list");
+        if (ingredientsList) {
+            clearFieldError(ingredientsList);
+            ingredientsList.querySelectorAll("input[data-raw-ingredient-json]").forEach((field) => {
+                field.classList.add("is-invalid");
+                field.setAttribute("aria-invalid", "true");
+            });
+            const feedback = document.createElement("div");
+            feedback.className = "invalid-feedback d-block client-validation-feedback";
+            feedback.textContent = message;
+            ingredientsList.closest(".mb-3")?.appendChild(feedback);
+        }
+    }
+
     function validateText(field, message, options = {}) {
         if (!field) {
             return true;
@@ -251,6 +266,9 @@
         }
         if (!/^-?\d+$/.test(value)) {
             return showFieldError(field, "Vul een geheel getal in.");
+        }
+        if (Number(value) <= 0) {
+            return showFieldError(field, "Vul een getal groter dan 0 in.");
         }
 
         return true;
@@ -552,12 +570,16 @@
         });
 
         try {
+            const formData = new FormData(apiForm);
+            apiForm.querySelectorAll("input[data-raw-ingredient-json]").forEach((input) => {
+                formData.set(input.name, input.dataset.rawIngredientJson);
+            });
             const response = await fetch(apiForm.action, {
                 method: apiForm.method || "POST",
                 headers: {
                     "X-Requested-With": "XMLHttpRequest",
                 },
-                body: new FormData(apiForm),
+                body: formData,
                 credentials: "same-origin",
             });
             const contentType = response.headers.get("content-type") || "";
@@ -566,7 +588,10 @@
                 : {};
 
             if (!response.ok || data.status === "error") {
-                throw new Error(data.message || "De server kon de actie niet verwerken.");
+                if (data.field === "ingredients") {
+                    showRecipeSaveError(data.message || "Controleer de ingrediënten.");
+                }
+                return;
             }
 
             if (data.redirect_url) {

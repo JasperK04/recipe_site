@@ -4,24 +4,47 @@ import json
 import unittest
 from pathlib import Path
 
-from app.models import Recipe
+import pytest
+
+from app import create_app, db
+from app.api.common import ApiError
+from app.api.recipes import create_recipe, update_recipe
+from app.forms import RecipeForm
+from app.models import Recipe, User
 from app.services.nested_recipes import (
     find_recipes_referencing_recipe,
     validate_nested_recipe_reference,
     validate_recipe_dependency_graph,
 )
+from config import DevelopmentConfig, config
 from utils import sanitize_recipe_ingredients
+
+
+class NestedRecipeTestConfig(DevelopmentConfig):
+    TESTING = True
+    WTF_CSRF_ENABLED = False
+    SQLALCHEMY_DATABASE_URI = "sqlite://"
+
+
+@pytest.fixture()
+def app(monkeypatch):
+    monkeypatch.setitem(config, "nested_recipe_test", NestedRecipeTestConfig)
+    application = create_app("nested_recipe_test")
+    with application.app_context():
+        db.create_all()
+        yield application
+        db.session.remove()
+        db.drop_all()
 
 
 class NestedRecipeSupportTests(unittest.TestCase):
     def test_recipe_form_restores_nested_recipe_json_on_submit(self):
-        template = Path("app/templates/recipes/form.html").read_text()
+        validation_script = Path("app/static/js/validation.js").read_text()
 
         self.assertIn(
-            "const ingredientForm = document.getElementById('recipe-form');",
-            template,
+            "formData.set(input.name, input.dataset.rawIngredientJson);",
+            validation_script,
         )
-        self.assertIn("input.value = input.dataset.rawIngredientJson;", template)
 
     def test_recipe_form_clears_stale_nested_recipe_state(self):
         template = Path("app/templates/recipes/form.html").read_text()
@@ -35,7 +58,10 @@ class NestedRecipeSupportTests(unittest.TestCase):
             "input.matches('input, textarea, select') && input.value.trim() === ''",
             template,
         )
-        self.assertIn("input.closest('.ingredient-item')?.classList.remove('has-imported-recipe');", template)
+        self.assertIn(
+            "input.closest('.ingredient-item')?.classList.remove('has-imported-recipe');",
+            template,
+        )
 
     def test_normal_ingredients_stay_unchanged(self):
         ingredient = {"name": "tomaat", "quantity": 2, "unit": ""}
@@ -169,3 +195,121 @@ class NestedRecipeSupportTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@pytest.mark.parametrize("status", [Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC])
+@pytest.mark.parametrize("operation", ["create", "update"])
+def test_deleted_nested_recipe_rejects_create_and_update(app, status, operation):
+    with app.app_context():
+        author = User(
+            username=f"chef-{operation}-{status}",
+            email=f"{operation}-{status}@example.test",
+        )
+        author.set_password("password")
+        db.session.add(author)
+        db.session.commit()
+
+        stale_ingredient = json.dumps(
+            {
+                "type": "recipe",
+                "recipe_id": 999,
+                "display_name": "Verwijderd recept",
+                "quantity": 1,
+                "unit": "portie",
+            }
+        )
+
+        if operation == "create":
+            with pytest.raises(ApiError):
+                create_recipe(
+                    author=author,
+                    title="Nieuw recept",
+                    description=None,
+                    ingredients=[stale_ingredient],
+                    instructions=["Roer."],
+                    prep_time=None,
+                    cook_time=None,
+                    servings=2,
+                    category=None,
+                    status=status,
+                )
+            assert Recipe.query.count() == 0
+        else:
+            recipe = Recipe(
+                title="Bestaand recept",
+                ingredients=["1 tomaat"],
+                instructions=["Snijd."],
+                user_id=author.id,
+                status=Recipe.STATUS_DRAFT,
+            )
+            db.session.add(recipe)
+            db.session.commit()
+
+            with pytest.raises(ApiError):
+                update_recipe(
+                    recipe=recipe,
+                    title=recipe.title,
+                    description=None,
+                    ingredients=[stale_ingredient],
+                    instructions=recipe.instructions,
+                    prep_time=None,
+                    cook_time=None,
+                    servings=2,
+                    category=None,
+                    status=status,
+                )
+
+            db.session.expire_all()
+            saved = db.session.get(Recipe, recipe.id)
+            assert saved.ingredients == ["1 tomaat"]
+            assert saved.status == Recipe.STATUS_DRAFT
+
+
+def test_deactivated_nested_recipe_rejects_save(app):
+    with app.app_context():
+        author = User(
+            username="chef-deactivated",
+            email="deactivated@example.test",
+        )
+        author.set_password("password")
+        db.session.add(author)
+        db.session.commit()
+        deactivated = Recipe(
+            title="Niet beschikbaar",
+            ingredients=["1 tomaat"],
+            instructions=["Snijd."],
+            user_id=author.id,
+            status=Recipe.STATUS_DEACTIVATED,
+        )
+        db.session.add(deactivated)
+        db.session.commit()
+
+        ingredient = {
+            "type": "recipe",
+            "recipe_id": deactivated.id,
+            "display_name": deactivated.title,
+            "quantity": 1,
+            "unit": "portie",
+        }
+
+        with pytest.raises(ValueError, match="bestaat niet meer"):
+            validate_nested_recipe_reference(ingredient)
+
+
+def test_recipe_form_rejects_empty_ingredient_and_instruction_lists(app):
+    with app.test_request_context(
+        "/",
+        method="POST",
+        data={
+            "title": "Test recept",
+            "ingredients-0": "   ",
+            "instructions-0": "",
+            "category": "",
+            "status": "public",
+        },
+    ):
+        form = RecipeForm()
+
+        assert not form.validate()
+        assert "Voeg minstens één ingrediënt toe." in form.ingredients.errors
+        assert "Voeg minstens één instructiestap toe." in form.instructions.errors

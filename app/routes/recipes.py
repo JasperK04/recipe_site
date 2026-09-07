@@ -373,7 +373,7 @@ def add_recipe():
                 else None,
             )
         except ApiError as error:
-            flash(error.message, "danger")
+            form.ingredients.errors = [*form.ingredients.errors, error.message]
             return render_template(
                 "recipes/form.html",
                 form=form,
@@ -524,7 +524,7 @@ def edit_recipe(recipe_id):
                 remove_image=request.form.get("remove_image") == "1",
             )
         except ApiError as error:
-            flash(error.message, "danger")
+            form.ingredients.errors = [*form.ingredients.errors, error.message]
             return render_template(
                 "recipes/form.html",
                 form=form,
@@ -535,7 +535,7 @@ def edit_recipe(recipe_id):
 
         moderation_message = _moderation_alert(recipe)
         if moderation_message:
-            flash(moderation_message, "warning")
+            flash(moderation_message, "danger")
         elif recipe.status == Recipe.STATUS_PUBLIC:
             flash("Recept succesvol bijgewerkt en gepubliceerd.", "success")
         else:
