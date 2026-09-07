@@ -21,6 +21,21 @@ class NestedRecipeSupportTests(unittest.TestCase):
             "const ingredientForm = document.getElementById('recipe-form');",
             template,
         )
+        self.assertIn("input.value = input.dataset.rawIngredientJson;", template)
+
+    def test_recipe_form_clears_stale_nested_recipe_state(self):
+        template = Path("app/templates/recipes/form.html").read_text()
+
+        self.assertIn("function resetIngredientItem(item)", template)
+        self.assertIn("delete input.dataset.rawIngredientJson;", template)
+        self.assertIn("resetIngredientItem(clone);", template)
+        self.assertIn("resetIngredientItem(empty);", template)
+        self.assertIn("list.addEventListener('input'", template)
+        self.assertIn(
+            "input.matches('input, textarea, select') && input.value.trim() === ''",
+            template,
+        )
+        self.assertIn("input.closest('.ingredient-item')?.classList.remove('has-imported-recipe');", template)
 
     def test_normal_ingredients_stay_unchanged(self):
         ingredient = {"name": "tomaat", "quantity": 2, "unit": ""}

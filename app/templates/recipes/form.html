@@ -394,10 +394,12 @@ function ensureOneEmptyAtEnd(list) {
     items.forEach(item => {
         const input = item.querySelector('input, textarea');
 
-        if (!input || input.value.trim() === '')
+        if (!input || input.value.trim() === '') {
+            resetIngredientItem(item);
             empties.push(item);
-        else
+        } else {
             filled.push(item);
+        }
     });
 
     empties.forEach(e => e.remove());
@@ -412,11 +414,27 @@ function ensureOneEmptyAtEnd(list) {
         empty.querySelectorAll('input, textarea, select').forEach(inp => {
             inp.value = '';
         });
+        resetIngredientItem(empty);
     }
 
     list.appendChild(empty);
 
     reindexList(list);
+}
+
+function resetIngredientItem(item) {
+    if (!item.classList.contains('ingredient-item')) {
+        return;
+    }
+
+    const input = item.querySelector('input, textarea, select');
+    if (input) {
+        delete input.dataset.rawIngredientJson;
+        input.classList.remove('nested-recipe-selected');
+    }
+
+    item.classList.remove('has-imported-recipe');
+    item.querySelector('.imported-indicator')?.classList.remove('is-visible');
 }
 
 function finalizeDrop(list, event) {
@@ -573,11 +591,25 @@ function attachListHandlers(listSelector, itemSelector, isIngredient=true) {
             clone.querySelectorAll('input, textarea, select').forEach(input => {
                 input.value = '';
             });
+            resetIngredientItem(clone);
 
             list.appendChild(clone);
             ensureOneEmptyAtEnd(list);
         }
     });
+
+    if (isIngredient) {
+        list.addEventListener('input', function(e) {
+            const input = e.target;
+
+            if (input.matches('input, textarea, select') && input.value.trim() === '') {
+                delete input.dataset.rawIngredientJson;
+                input.classList.remove('nested-recipe-selected');
+                input.closest('.ingredient-item')?.classList.remove('has-imported-recipe');
+                input.closest('.ingredient-item')?.querySelector('.imported-indicator')?.classList.remove('is-visible');
+            }
+        });
+    }
 
     // on blur, remove empty items if there are 2 or more empty items (keep exactly one)
     list.addEventListener('focusout', function(e) {
@@ -761,6 +793,7 @@ document.addEventListener('DOMContentLoaded', function(){
         if (!emptyItem) return;
 
         const importedItem = emptyItem.cloneNode(true);
+        resetIngredientItem(importedItem);
         const importedInput = importedItem.querySelector('input');
         importedInput.dataset.rawIngredientJson = JSON.stringify(payload);
         importedInput.value = ingredientToDisplayString(payload);
