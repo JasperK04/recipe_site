@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import app.api.recipes as recipes_api
 from app import create_app, db
 from app.api.common import ApiError
 from app.api.recipes import create_recipe, update_recipe
@@ -294,6 +295,72 @@ def test_deactivated_nested_recipe_rejects_save(app):
 
         with pytest.raises(ValueError, match="bestaat niet meer"):
             validate_nested_recipe_reference(ingredient)
+
+
+def test_updating_nested_recipe_notifies_referencing_recipe_owner(app, monkeypatch):
+    with app.app_context():
+        referenced_author = User(
+            username="referenced-author",
+            email="referenced@example.test",
+        )
+        parent_author = User(
+            username="parent-author",
+            email="parent@example.test",
+        )
+        referenced_author.set_password("password")
+        parent_author.set_password("password")
+        db.session.add_all([referenced_author, parent_author])
+        db.session.commit()
+
+        referenced_recipe = Recipe(
+            title="Tomatensaus",
+            ingredients=["2 tomaten"],
+            instructions=["Kook."],
+            user_id=referenced_author.id,
+            status=Recipe.STATUS_PUBLIC,
+        )
+        db.session.add(referenced_recipe)
+        db.session.commit()
+
+        parent_recipe = Recipe(
+            title="Pasta",
+            ingredients=[
+                {
+                    "type": "recipe",
+                    "recipe_id": referenced_recipe.id,
+                    "display_name": referenced_recipe.title,
+                    "quantity": 1,
+                    "unit": "portie",
+                }
+            ],
+            instructions=["Meng."],
+            user_id=parent_author.id,
+            status=Recipe.STATUS_PUBLIC,
+        )
+        db.session.add(parent_recipe)
+        db.session.commit()
+
+        notifications = []
+        monkeypatch.setattr(
+            recipes_api,
+            "send_referenced_recipe_update_notification",
+            lambda dependent, recipe: notifications.append((dependent, recipe)),
+        )
+
+        update_recipe(
+            recipe=referenced_recipe,
+            title="Pittige tomatensaus",
+            description=None,
+            ingredients=["2 tomaten", "1 peper"],
+            instructions=referenced_recipe.instructions,
+            prep_time=None,
+            cook_time=None,
+            servings=2,
+            category=None,
+            status=Recipe.STATUS_PUBLIC,
+        )
+
+        assert notifications == [(parent_recipe, referenced_recipe)]
 
 
 def test_recipe_form_rejects_empty_ingredient_and_instruction_lists(app):

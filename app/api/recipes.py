@@ -324,6 +324,15 @@ def update_recipe(
     if moderation.is_flagged:
         send_recipe_moderation_notification(recipe, moderation)
 
+    referencing = handle_referenced_recipe_update(recipe)
+    for dependent in referencing:
+        try:
+            send_referenced_recipe_update_notification(dependent, recipe)
+        except Exception:
+            current_app.logger.exception(
+                "Failed to notify dependent recipe owners after nested recipe update"
+            )
+
     return recipe
 
 
