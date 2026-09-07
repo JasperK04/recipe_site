@@ -9,7 +9,7 @@ import pytest
 import app.api.recipes as recipes_api
 from app import create_app, db
 from app.api.common import ApiError
-from app.api.recipes import create_recipe, update_recipe
+from app.api.recipes import create_recipe, deactivate_recipe, update_recipe
 from app.forms import RecipeForm
 from app.models import Recipe, User
 from app.services.nested_recipes import (
@@ -360,6 +360,65 @@ def test_updating_nested_recipe_notifies_referencing_recipe_owner(app, monkeypat
             status=Recipe.STATUS_PUBLIC,
         )
 
+        assert notifications == [(parent_recipe, referenced_recipe)]
+
+
+def test_deactivating_nested_recipe_drafts_and_notifies_referencing_recipe_owner(
+    app, monkeypatch
+):
+    with app.app_context():
+        referenced_author = User(
+            username="deactivated-referenced-author",
+            email="deactivated-referenced@example.test",
+        )
+        parent_author = User(
+            username="deactivated-parent-author",
+            email="deactivated-parent@example.test",
+        )
+        referenced_author.set_password("password")
+        parent_author.set_password("password")
+        db.session.add_all([referenced_author, parent_author])
+        db.session.commit()
+
+        referenced_recipe = Recipe(
+            title="Tomatensaus",
+            ingredients=["2 tomaten"],
+            instructions=["Kook."],
+            user_id=referenced_author.id,
+            status=Recipe.STATUS_PUBLIC,
+        )
+        db.session.add(referenced_recipe)
+        db.session.commit()
+
+        parent_recipe = Recipe(
+            title="Pasta",
+            ingredients=[
+                {
+                    "type": "recipe",
+                    "recipe_id": referenced_recipe.id,
+                    "display_name": referenced_recipe.title,
+                    "quantity": 1,
+                    "unit": "portie",
+                }
+            ],
+            instructions=["Meng."],
+            user_id=parent_author.id,
+            status=Recipe.STATUS_PUBLIC,
+        )
+        db.session.add(parent_recipe)
+        db.session.commit()
+
+        notifications = []
+        monkeypatch.setattr(
+            recipes_api,
+            "send_referenced_recipe_update_notification",
+            lambda dependent, recipe: notifications.append((dependent, recipe)),
+        )
+
+        deactivate_recipe(referenced_recipe)
+
+        assert referenced_recipe.status == Recipe.STATUS_DEACTIVATED
+        assert parent_recipe.status == Recipe.STATUS_DRAFT
         assert notifications == [(parent_recipe, referenced_recipe)]
 
 

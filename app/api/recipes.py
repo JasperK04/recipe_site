@@ -607,9 +607,17 @@ def score_recipe_endpoint(recipe_id):
 def deactivate_recipe(recipe: Recipe) -> Recipe:
     """Mark a recipe as deactivated."""
     if recipe.status != Recipe.STATUS_DEACTIVATED:
+        referencing = handle_referenced_recipe_deletion(recipe)
         recipe.status_before_deactivation = recipe.status
         recipe.status = Recipe.STATUS_DEACTIVATED
         db.session.commit()
+        for dependent in referencing:
+            try:
+                send_referenced_recipe_update_notification(dependent, recipe)
+            except Exception:
+                current_app.logger.exception(
+                    "Failed to notify dependent recipe owners after nested recipe deactivation"
+                )
     return recipe
 
 
