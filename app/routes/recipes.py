@@ -9,6 +9,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
 from flask_login import current_user, login_required
@@ -59,6 +60,8 @@ RATED_RECIPE_SORT_OPTIONS = {
     SORT_MY_SCORE_DESC: "Mijn score hoog naar laag",
     SORT_MY_SCORE_ASC: "Mijn score laag naar hoog",
 }
+
+PENDING_RECIPE_IMPORT_SESSION_KEY = "pending_recipe_import"
 
 
 def _normalize_sort(value: str | None, *, allow_my_score: bool = False) -> str:
@@ -335,21 +338,25 @@ def add_recipe():
     require_active_creator(current_user)
     user = cast(User, current_user)
     validate_on_load = request.args.get("source") == "upload"
-    if request.method == "GET" and request.args.get("title"):
+    pending_import = (
+        session.pop(PENDING_RECIPE_IMPORT_SESSION_KEY, None)
+        if request.method == "GET" and validate_on_load
+        else None
+    )
+    if pending_import:
         form = RecipeForm(
             data={
-                "title": request.args.get("title"),
-                "description": request.args.get("description"),
-                "prep_time": request.args.get("prep_time"),
-                "cook_time": request.args.get("cook_time"),
-                "total_time": request.args.get("total_time"),
-                "servings": request.args.get("servings"),
+                "title": pending_import.get("name", ""),
+                "description": pending_import.get("description", ""),
+                "prep_time": pending_import.get("prep_time", ""),
+                "cook_time": pending_import.get("cook_time", ""),
+                "servings": pending_import.get("servings", ""),
                 "ingredients": sanitize_recipe_ingredients(
-                    json.loads(request.args.get("ingredients", "[]")),
+                    pending_import.get("ingredients", []),
                     plain_text=True,
                 ),
-                "instructions": json.loads(request.args.get("instructions", "[]")),
-                "category": request.args.get("category"),
+                "instructions": pending_import.get("instructions", []),
+                "category": pending_import.get("category", ""),
             }
         )
     else:
@@ -446,21 +453,10 @@ def upload_recipe():
         data["ingredients"] = sanitize_recipe_ingredients(
             data.get("ingredients", []), plain_text=True
         )
+        session[PENDING_RECIPE_IMPORT_SESSION_KEY] = data
 
         return redirect(
-            url_for(
-                "recipes.add_recipe",
-                source="upload",
-                title=data.get("name", ""),
-                description=data.get("description", ""),
-                prep_time=data.get("prep_time", ""),
-                cook_time=data.get("cook_time", ""),
-                total_time=data.get("total_time", ""),
-                servings=data.get("servings", ""),
-                ingredients=json.dumps(data.get("ingredients", [])),
-                instructions=json.dumps(data.get("instructions", [])),
-                category=data.get("category", ""),
-            )
+            url_for("recipes.add_recipe", source="upload")
         )
     return render_template("recipes/upload.html", form=form, title="Recept uploaden")
 
