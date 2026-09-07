@@ -138,6 +138,7 @@
                     data-api-form="1"
                     data-client-validation="recipe"
                     data-image-crop-enabled="1"
+                    {% if imported_image_url %}data-imported-image-url="{{ imported_image_url }}"{% endif %}
                     {% if validate_on_load %}data-client-validation-on-load="1"{% endif %}
                     novalidate
                 >

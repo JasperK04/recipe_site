@@ -1,14 +1,36 @@
+.recipe-image-crop-dialog {
+    height: 94vh;
+    margin: 3vh auto;
+}
+
+.recipe-image-crop-dialog .modal-content {
+    height: 100%;
+    max-height: none;
+}
+
+.recipe-image-crop-dialog .modal-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.recipe-image-crop-stage-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
 .recipe-image-crop-stage {
     position: relative;
     display: inline-block;
     max-width: 100%;
-    max-height: min(72vh, 640px);
+    max-height: 100%;
 }
 
 .recipe-image-crop-stage img {
     display: block;
     max-width: 100%;
-    max-height: min(72vh, 640px);
+    max-height: 100%;
     user-select: none;
     -webkit-user-drag: none;
 }
@@ -61,6 +83,10 @@
 }
 
 @media (max-width: 767.98px) {
+    .recipe-image-crop-dialog {
+        height: 100vh;
+    }
+
     .recipe-image-crop-selection .crop-handle {
         display: none;
     }

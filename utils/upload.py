@@ -1,10 +1,20 @@
+import io
+import ipaddress
 import json
 import re
+import socket
 from html import unescape
+from pathlib import Path
+from urllib.parse import urljoin, urlparse
+from uuid import uuid4
 
 import requests
 from bs4 import BeautifulSoup
 from flask import flash
+from PIL import Image
+
+MAX_IMPORTED_IMAGE_BYTES = 8 * 1024 * 1024
+IMAGE_DOWNLOAD_TIMEOUT = (5, 15)
 
 
 def sanitize_text(text: str) -> str:
@@ -202,7 +212,105 @@ def read_page_with_llm(soup: BeautifulSoup) -> dict:
     return parse_uploaded_text(page_text)
 
 
-def read_uploaded_page(url: str) -> dict:
+def _image_url(value: object, page_url: str) -> str | None:
+    if isinstance(value, str):
+        candidate = value.strip()
+    elif isinstance(value, dict):
+        candidate = str(value.get("url") or value.get("contentUrl") or "").strip()
+    else:
+        return None
+    if not candidate:
+        return None
+    absolute = urljoin(page_url, candidate)
+    parsed = urlparse(absolute)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return None
+    return absolute
+
+
+def extract_recipe_image_url(
+    recipe: dict, soup: BeautifulSoup, page_url: str
+) -> str | None:
+    image = recipe.get("image")
+    candidates = image if isinstance(image, list) else [image]
+    for candidate in candidates:
+        image_url = _image_url(candidate, page_url)
+        if image_url:
+            return image_url
+
+    og_image = soup.find("meta", attrs={"property": "og:image"})
+    return _image_url(og_image.get("content") if og_image else None, page_url)
+
+
+def _public_hostname(hostname: str) -> bool:
+    try:
+        addresses = socket.getaddrinfo(hostname, None)
+    except socket.gaierror:
+        return False
+    return all(ipaddress.ip_address(address[4][0]).is_global for address in addresses)
+
+
+def download_recipe_image(url: str, target_dir: Path) -> str | None:
+    """Download one validated external image and return its temporary token."""
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return None
+    if not _public_hostname(parsed.hostname):
+        return None
+
+    response = None
+    try:
+        for _ in range(3):
+            response = requests.get(
+                url,
+                headers={"User-Agent": "recipe image retrieval system"},
+                stream=True,
+                timeout=IMAGE_DOWNLOAD_TIMEOUT,
+                allow_redirects=False,
+            )
+            if response.is_redirect:
+                url = urljoin(url, response.headers.get("Location", ""))
+                parsed = urlparse(url)
+                if (
+                    parsed.scheme not in {"http", "https"}
+                    or not parsed.hostname
+                    or not _public_hostname(parsed.hostname)
+                ):
+                    return None
+                continue
+            break
+        else:
+            return None
+
+        if response.status_code != 200:
+            return None
+        content_type = response.headers.get("Content-Type", "").split(";", 1)[0].lower()
+        if content_type and not content_type.startswith("image/"):
+            return None
+        content_length = response.headers.get("Content-Length")
+        if content_length and int(content_length) > MAX_IMPORTED_IMAGE_BYTES:
+            return None
+
+        content = bytearray()
+        for chunk in response.iter_content(chunk_size=64 * 1024):
+            content.extend(chunk)
+            if len(content) > MAX_IMPORTED_IMAGE_BYTES:
+                return None
+        with Image.open(io.BytesIO(content)) as image:
+            image.verify()
+
+        target_dir.mkdir(parents=True, exist_ok=True)
+        token = uuid4().hex
+        (target_dir / f"{token}.img").write_bytes(content)
+        return token
+    except (OSError, ValueError, TypeError, requests.RequestException):
+        return None
+    finally:
+        if response is not None:
+            response.close()
+
+
+def read_uploaded_page(url: str, *, include_image: bool = False) -> dict:
     """Read and parse a web page for recipe data."""
     # Implementation for reading uploaded page
     headers = {
@@ -241,9 +349,19 @@ def read_uploaded_page(url: str) -> dict:
 
     else:
         print("No Recipe type found in JSON-LD, falling back to LLM parsing.")
-        return read_page_with_llm(soup)
+        formatted_data = read_page_with_llm(soup)
+        if include_image:
+            image_url = extract_recipe_image_url({}, soup, url)
+            if image_url:
+                formatted_data["image_url"] = image_url
+        return formatted_data
     if recipe is None:
-        return read_page_with_llm(soup)
+        formatted_data = read_page_with_llm(soup)
+        if include_image:
+            image_url = extract_recipe_image_url({}, soup, url)
+            if image_url:
+                formatted_data["image_url"] = image_url
+        return formatted_data
     # print(recipe)
     prep_time, cook_time, total_time = parse_time(recipe)
     formatted_data = {
@@ -257,6 +375,10 @@ def read_uploaded_page(url: str) -> dict:
         "instructions": normalize_instructions(recipe.get("recipeInstructions", [])),
         "category": normalize_category(recipe.get("recipeCategory")),
     }
+    if include_image:
+        image_url = extract_recipe_image_url(recipe, soup, url)
+        if image_url:
+            formatted_data["image_url"] = image_url
     return validate_uploaded_json(
         formatted_data, required_keys=["name", "ingredients", "instructions"]
     )

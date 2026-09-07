@@ -1,14 +1,18 @@
 import json
+from pathlib import Path
 from typing import cast
 
 from flask import (
     Blueprint,
     abort,
+    after_this_request,
+    current_app,
     flash,
     jsonify,
     redirect,
     render_template,
     request,
+    send_file,
     session,
     url_for,
 )
@@ -37,7 +41,12 @@ from utils import (
     require_active_creator,
     sanitize_recipe_ingredients,
 )
-from utils.upload import parse_uploaded_text, read_uploaded_page, validate_uploaded_json
+from utils.upload import (
+    download_recipe_image,
+    parse_uploaded_text,
+    read_uploaded_page,
+    validate_uploaded_json,
+)
 
 recipes_bp = Blueprint("recipes", __name__)
 recipe_overview_bp = Blueprint("recipe_overview", __name__)
@@ -74,6 +83,16 @@ RATED_RECIPE_SORT_OPTIONS = {
 }
 
 PENDING_RECIPE_IMPORT_SESSION_KEY = "pending_recipe_import"
+PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY = "pending_recipe_image_token"
+
+
+def _pending_recipe_image_path(token: str) -> Path:
+    return Path(current_app.config["DATA_ROOT"]) / "recipe_import" / f"{token}.img"
+
+
+def _delete_pending_recipe_image(token: str | None) -> None:
+    if token:
+        _pending_recipe_image_path(token).unlink(missing_ok=True)
 
 
 def _normalize_sort(value: str | None, *, allow_my_score: bool = False) -> str:
@@ -398,6 +417,7 @@ def add_recipe():
         if request.method == "GET" and validate_on_load
         else None
     )
+    pending_image_token = session.get(PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY)
     if pending_import:
         form = RecipeForm(
             data={
@@ -441,7 +461,16 @@ def add_recipe():
                 form=form,
                 title="Recept toevoegen",
                 validate_on_load=validate_on_load,
+                imported_image_url=(
+                    url_for("recipes.pending_recipe_image", token=pending_image_token)
+                    if pending_image_token
+                    else None
+                ),
             )
+
+        if pending_image_token:
+            _delete_pending_recipe_image(pending_image_token)
+            session.pop(PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY, None)
 
         moderation_message = _moderation_alert(recipe)
         if moderation_message:
@@ -459,7 +488,30 @@ def add_recipe():
         form=form,
         title="Recept toevoegen",
         validate_on_load=validate_on_load,
+        imported_image_url=(
+            url_for("recipes.pending_recipe_image", token=pending_image_token)
+            if pending_image_token
+            else None
+        ),
     )
+
+
+@recipes_bp.route("/importafbeelding/<token>")
+@login_required
+def pending_recipe_image(token):
+    if session.get(PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY) != token:
+        abort(404)
+    image_path = _pending_recipe_image_path(token)
+    if not image_path.is_file():
+        abort(404)
+    response = send_file(image_path, conditional=True)
+
+    @after_this_request
+    def remove_temporary_image(response):
+        _delete_pending_recipe_image(token)
+        return response
+
+    return response
 
 
 @recipes_bp.route("/uploaden", methods=["GET", "POST"])
@@ -476,11 +528,24 @@ def upload_recipe():
         )
 
     if form.validate_on_submit():
+        old_image_token = session.pop(PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY, None)
+        _delete_pending_recipe_image(old_image_token)
         match form.upload_type.data:
             case "url":
                 if not form.url.data:
                     return flash_("URL is vereist voor deze uploadmethode.", "danger")
-                data = read_uploaded_page(form.url.data)
+                data = read_uploaded_page(form.url.data, include_image=True)
+                image_url = data.pop("image_url", None)
+                image_token = (
+                    download_recipe_image(
+                        image_url,
+                        Path(current_app.config["DATA_ROOT"]) / "recipe_import",
+                    )
+                    if image_url
+                    else None
+                )
+                if image_token:
+                    session[PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY] = image_token
             case "textarea":
                 if not form.textarea.data:
                     return flash_("Tekst is vereist voor deze uploadmethode.", "danger")

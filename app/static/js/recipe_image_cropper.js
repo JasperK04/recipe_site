@@ -39,6 +39,7 @@
         const clearBtn = document.getElementById("image-clear-btn");
         const removeFlag = document.getElementById("remove_image");
         const fileInput = form.querySelector('input[type="file"][name="image"]');
+        const importedImageUrl = form.dataset.importedImageUrl || "";
         const imageFrame = document.querySelector(".image-frame");
         const originalPreviewSrc = preview ? (preview.dataset.originalSrc || "") : "";
 
@@ -630,6 +631,21 @@
                 }
                 target.value = "";
             });
+        }
+
+        if (importedImageUrl && cropModal) {
+            fetch(importedImageUrl)
+                .then((response) => response.ok ? response.blob() : null)
+                .then((blob) => {
+                    if (!blob) {
+                        return;
+                    }
+                    const extension = blob.type === "image/png" ? "png" : "img";
+                    setPendingFile(new File([blob], `imported-recipe-image.${extension}`, {
+                        type: blob.type || "image/jpeg",
+                    }));
+                })
+                .catch(() => {});
         }
 
         if (clearBtn) {

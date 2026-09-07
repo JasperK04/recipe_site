@@ -210,6 +210,7 @@ __marimo__/
 *.db
 data/backup.zip
 data/recipe/
+data/recipe_import/
 *json
 !ingredient_normalization.json
 *.txt
