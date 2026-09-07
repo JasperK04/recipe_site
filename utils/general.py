@@ -456,10 +456,12 @@ def parse_ingredient(text: str) -> tuple[float | int | None, str | None, str]:
     elif len(remaining) >= 2:
         first = remaining[0]
 
-        unit, multiplier = normalize_unit(first)
-        amount *= multiplier
-
-        name = " ".join(remaining[1:])
+        if is_configured_unit(first):
+            unit, multiplier = normalize_unit(first)
+            amount *= multiplier
+            name = " ".join(remaining[1:])
+        else:
+            name = " ".join(remaining)
 
     else:
         name = ""

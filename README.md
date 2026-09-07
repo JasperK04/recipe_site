@@ -180,11 +180,19 @@ flask db-stats
 flask normalize-recipe-ingredients
 ```
 
-Ingredient aliases are configured in `ingredient_normalization.json`. Each entry
-maps an input unit to its canonical unit; entries may also multiply the quantity:
+Run this command once during deployment after changing the unit configuration to
+update already stored recipe entries. It is idempotent and only writes changed
+recipes.
+
+Ingredient aliases are configured in `ingredient_normalization.json`. Each
+canonical unit declares its aliases, conversions, and optional self units:
 
 ```json
-"kg": {"unit": "g", "multiplier": 1000}
+"g": {
+   "aliases": ["g", "gr", "gram"],
+   "conversions": {"ons": 100}
+},
+"it_self": {"aliases": ["teentje", "teentjes"]}
 ```
 
 Set `INGREDIENT_NORMALIZATION_FILE` to use a configuration file at another path.

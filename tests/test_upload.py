@@ -13,8 +13,11 @@ from utils.upload import (
 
 class UploadHelperTests(unittest.TestCase):
     sample_scrapes_dir = Path(__file__).parent / "sample_scrapes"
+
     def test_time_and_category_normalization(self):
-        self.assertEqual(parse_time({"prepTime": "PT15M", "cookTime": "PT1H"}), (15, 60, 75))
+        self.assertEqual(
+            parse_time({"prepTime": "PT15M", "cookTime": "PT1H"}), (15, 60, 75)
+        )
         self.assertEqual(normalize_category(["hoofdgerecht"]), "Hoofdgerecht")
         self.assertEqual(normalize_category("unknown"), "Overig")
 
@@ -29,18 +32,20 @@ class UploadHelperTests(unittest.TestCase):
                 ],
             }
         ]
-        self.assertEqual(normalize_instructions(instructions), ["Snijd de ui.", "Bak de ui."])
+        self.assertEqual(
+            normalize_instructions(instructions), ["Snijd de ui.", "Bak de ui."]
+        )
 
     @patch("utils.upload.requests.get")
     def test_scraper_reads_recipe_json_ld(self, get):
         response = Mock()
-        response.content = b'''<html><head><script type="application/ld+json">
+        response.content = b"""<html><head><script type="application/ld+json">
         {"@graph": [{"@type": ["Thing", "Recipe"], "name": "Pasta", "description": "lekker",
         "recipeYield": "4", "prepTime": "PT10M", "cookTime": "PT20M",
         "recipeIngredient": ["200 g pasta"],
         "recipeInstructions": [{"@type": "HowToStep", "text": "Kook de pasta."}],
         "recipeCategory": "Hoofdgerecht"}]}
-        </script></head></html>'''
+        </script></head></html>"""
         get.return_value = response
 
         self.assertEqual(
@@ -58,18 +63,23 @@ class UploadHelperTests(unittest.TestCase):
             },
         )
         get.assert_called_once_with(
-            "https://example.test/pasta", headers={"User-Agent": "recipe retrieval system"}
+            "https://example.test/pasta",
+            headers={"User-Agent": "recipe retrieval system"},
         )
         response.raise_for_status.assert_called_once_with()
 
     @patch("utils.upload.read_page_with_llm", return_value={"name": "Fallback"})
     @patch("utils.upload.requests.get")
-    def test_scraper_skips_invalid_json_ld_and_uses_fallback(self, get, read_page_with_llm):
+    def test_scraper_skips_invalid_json_ld_and_uses_fallback(
+        self, get, read_page_with_llm
+    ):
         response = Mock()
         response.content = b'<script type="application/ld+json">not valid json</script>'
         get.return_value = response
 
-        self.assertEqual(read_uploaded_page("https://example.test/broken"), {"name": "Fallback"})
+        self.assertEqual(
+            read_uploaded_page("https://example.test/broken"), {"name": "Fallback"}
+        )
         read_page_with_llm.assert_called_once()
 
     def test_saved_pages_match_their_gold_standard(self):
@@ -84,10 +94,13 @@ class UploadHelperTests(unittest.TestCase):
             with self.subTest(page=html_path.name):
                 expected_path = html_path.with_suffix(".json")
                 expected = json.loads(expected_path.read_text(encoding="utf-8"))
-                with patch(
-                    "utils.upload.requests.get",
-                    return_value=Response(html_path.read_bytes()),
-                ), patch("utils.upload.read_page_with_llm", return_value={}):
+                with (
+                    patch(
+                        "utils.upload.requests.get",
+                        return_value=Response(html_path.read_bytes()),
+                    ),
+                    patch("utils.upload.read_page_with_llm", return_value={}),
+                ):
                     actual = read_uploaded_page("https://fixture.test/recipe")
                 self.assertEqual(actual, expected)
 

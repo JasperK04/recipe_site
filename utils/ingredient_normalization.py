@@ -22,38 +22,66 @@ def _config_path() -> Path:
 
 @lru_cache(maxsize=1)
 def _load_unit_rules(path: str) -> dict[str, tuple[str | None, float]]:
-    """Load aliases from the JSON configuration file.
-
-    A unit may be written as a string (``"gram": "g"``) or as an object when
-    the amount must also be converted (``"kg": {"unit": "g", "multiplier": 1000}``).
-    """
+    """Load a direct, case-insensitive alias lookup from the configuration."""
     with Path(path).open(encoding="utf-8") as config_file:
         raw_rules = json.load(config_file).get("units", {})
 
     if not isinstance(raw_rules, dict):
         raise TypeError("ingredient normalization config 'units' must be an object")
 
-    rules: dict[str, tuple[str, float]] = {}
-    for alias, value in raw_rules.items():
+    rules: dict[str, tuple[str | None, float]] = {}
+
+    def add_rule(alias: str, unit: str | None, multiplier: object, source: str) -> None:
         if not isinstance(alias, str):
             raise TypeError("ingredient normalization unit aliases must be strings")
-        if isinstance(value, str):
-            unit, multiplier = value, 1
-        elif isinstance(value, dict):
-            unit = value.get("unit")
-            multiplier = value.get("multiplier", 1)
-        else:
-            raise TypeError(f"invalid normalization rule for unit {alias!r}")
-        if not isinstance(unit, str):
-            raise TypeError(f"normalization rule for unit {alias!r} needs a unit")
+        if unit is not None and not isinstance(unit, str):
+            raise TypeError(f"normalization rule for unit {source!r} needs a unit")
         if not isinstance(multiplier, (int, float)) or isinstance(multiplier, bool):
             raise TypeError(
-                f"normalization rule for unit {alias!r} has an invalid multiplier"
+                f"normalization rule for unit {source!r} has an invalid multiplier"
             )
-        # An empty target unit intentionally means a countable ingredient: for
-        # example, ``2 st eieren`` becomes ``2 eieren`` without a unit.
-        rules[alias.strip().casefold()] = (unit.strip() or None, float(multiplier))  # type: ignore[assignment]
-    return rules  # type: ignore
+        normalized_alias = alias.strip().casefold()
+        if normalized_alias:
+            rules[normalized_alias] = (
+                unit.strip() if unit else None,
+                float(multiplier),
+            )
+
+    for canonical, value in raw_rules.items():
+        if not isinstance(canonical, str):
+            raise TypeError("ingredient normalization unit names must be strings")
+        if isinstance(value, str):
+            add_rule(canonical, value, 1, canonical)
+            continue
+        if not isinstance(value, dict):
+            raise TypeError(f"invalid normalization rule for unit {canonical!r}")
+        if "aliases" not in value:
+            add_rule(
+                canonical, value.get("unit"), value.get("multiplier", 1), canonical
+            )
+            continue
+
+        aliases = value["aliases"]
+        if not isinstance(aliases, list) or not all(
+            isinstance(alias, str) for alias in aliases
+        ):
+            raise TypeError(
+                f"normalization aliases for unit {canonical!r} must be a list"
+            )
+        self_unit = canonical == "it_self"
+        target = None if canonical == "" else canonical
+        for alias in aliases:
+            add_rule(alias, alias if self_unit else target, 1, canonical)
+
+        conversions = value.get("conversions", {})
+        if not isinstance(conversions, dict):
+            raise TypeError(
+                f"normalization conversions for unit {canonical!r} must be an object"
+            )
+        for alias, multiplier in conversions.items():
+            add_rule(alias, target, multiplier, canonical)
+
+    return rules
 
 
 def normalize_unit(unit: str | None) -> tuple[str | None, float]:
@@ -121,6 +149,23 @@ def normalize_stored_ingredients(ingredients: object) -> list[dict[str, Any]]:
         if not name:
             continue
         quantity = ingredient.get("quantity")
+        if (
+            isinstance(quantity, (int, float))
+            and not isinstance(quantity, bool)
+            and ingredient.get("unit")
+        ):
+            quantity, unit, name = parse_ingredient(
+                f"{quantity} {ingredient['unit']} {name}"
+            )
+            normalized.append(
+                {
+                    "type": "ingredient",
+                    "display_name": name,
+                    "quantity": quantity,
+                    "unit": unit or "",
+                }
+            )
+            continue
         unit, multiplier = normalize_unit(ingredient.get("unit"))
         if isinstance(quantity, (int, float)) and not isinstance(quantity, bool):
             quantity *= multiplier

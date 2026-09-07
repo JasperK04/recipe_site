@@ -455,9 +455,7 @@ def upload_recipe():
         )
         session[PENDING_RECIPE_IMPORT_SESSION_KEY] = data
 
-        return redirect(
-            url_for("recipes.add_recipe", source="upload")
-        )
+        return redirect(url_for("recipes.add_recipe", source="upload"))
     return render_template("recipes/upload.html", form=form, title="Recept uploaden")
 
 

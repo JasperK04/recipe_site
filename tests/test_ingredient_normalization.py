@@ -26,6 +26,32 @@ class IngredientNormalizationTests(unittest.TestCase):
         self.assertEqual(parse_ingredient("2 st eieren"), (2, None, "eieren"))
         self.assertEqual(parse_ingredient("1 dozijn eieren"), (12, None, "eieren"))
 
+    def test_only_configured_words_are_consumed_as_units(self):
+        self.assertEqual(parse_ingredient("1 rode ui"), (1, None, "rode ui"))
+        self.assertEqual(
+            parse_ingredient("2 teentjes knoflook"), (2, "teentjes", "knoflook")
+        )
+
+    def test_aliases_conversions_and_self_units_use_the_config(self):
+        self.assertEqual(parse_ingredient("1 gram bloem"), (1, "g", "bloem"))
+        self.assertEqual(parse_ingredient("1 ons bloem"), (100, "g", "bloem"))
+        self.assertEqual(
+            parse_ingredient("1 teentje knoflook"), (1, "teentje", "knoflook")
+        )
+
+    def test_common_dutch_self_units_are_preserved(self):
+        cases = {
+            "een snufje zout": (1, "snufje", "zout"),
+            "2 scheutjes olie": (2, "scheutjes", "olie"),
+            "een handje peterselie": (1, "handje", "peterselie"),
+            "3 takjes tijm": (3, "takjes", "tijm"),
+            "2 plakjes kaas": (2, "plakjes", "kaas"),
+            "1 mespuntje peper": (1, "mespuntje", "peper"),
+        }
+        for text, expected in cases.items():
+            with self.subTest(text=text):
+                self.assertEqual(parse_ingredient(text), expected)
+
     def test_implicit_and_absent_units(self):
         self.assertEqual(parse_ingredient("kg bloem"), (1, "kg", "bloem"))
         self.assertEqual(parse_ingredient("st eieren"), (1, None, "eieren"))
@@ -33,8 +59,8 @@ class IngredientNormalizationTests(unittest.TestCase):
         self.assertEqual(parse_ingredient("2 eieren"), (2, None, "eieren"))
         self.assertEqual(parse_ingredient("eieren"), (None, None, "eieren"))
 
-    def test_unknown_units_are_kept_as_units(self):
-        self.assertEqual(parse_ingredient("2 snuf zout"), (2, "snuf", "zout"))
+    def test_unknown_words_are_kept_in_the_ingredient_name(self):
+        self.assertEqual(parse_ingredient("2 schep zout"), (2, None, "schep zout"))
         self.assertEqual(normalize_unit("SnUf"), ("snuf", 1))
 
     def test_existing_number_and_fraction_parsing_is_preserved(self):
@@ -185,6 +211,21 @@ class IngredientNormalizationTests(unittest.TestCase):
                     "quantity": 3,
                     "unit": "el",
                 },
+            ],
+        )
+
+    def test_backfill_reparses_previously_misclassified_units(self):
+        self.assertEqual(
+            normalize_stored_ingredients(
+                [{"display_name": "ui", "quantity": 1, "unit": "rode"}]
+            ),
+            [
+                {
+                    "type": "ingredient",
+                    "display_name": "rode ui",
+                    "quantity": 1,
+                    "unit": "",
+                }
             ],
         )
 
