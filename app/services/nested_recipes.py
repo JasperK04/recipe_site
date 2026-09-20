@@ -6,7 +6,8 @@ from typing import Any
 
 from flask import has_app_context
 
-from app.models import Recipe
+from app import db
+from app.models import Recipe, RecipeDependency
 
 
 def _coerce_recipe_id(value: object) -> int | None:
@@ -124,6 +125,30 @@ def build_recipe_dependency_graph(recipes: Iterable[Recipe]) -> dict[int, list[i
     return graph
 
 
+def build_tagged_recipe_dependency_graph() -> dict[int, list[int]]:
+    graph: dict[int, list[int]] = {}
+    for dependency in RecipeDependency.query.all():
+        graph.setdefault(dependency.dependent_recipe_id, []).append(
+            dependency.dependency_recipe_id
+        )
+    return graph
+
+
+def sync_recipe_dependencies(recipe: Recipe) -> None:
+    """Make reverse dependency tags match the recipe's nested ingredients."""
+    RecipeDependency.query.filter_by(dependent_recipe_id=recipe.id).delete(
+        synchronize_session=False
+    )
+    for dependency_id in set(nested_recipe_dependency_ids(recipe)):
+        if dependency_id != recipe.id:
+            db.session.add(
+                RecipeDependency(
+                    dependent_recipe_id=recipe.id,
+                    dependency_recipe_id=dependency_id,
+                )
+            )
+
+
 def validate_recipe_dependency_graph(
     recipe_id: int, graph: dict[int, list[int]]
 ) -> None:
@@ -182,7 +207,17 @@ def resolve_recipe_reference(value: str | int) -> Recipe:
 def find_recipes_referencing_recipe(
     recipe_id: int, recipes: Iterable[Recipe] | None = None
 ) -> list[Recipe]:
-    candidates = recipes if recipes is not None else Recipe.query.all()
+    if recipes is None:
+        return (
+            Recipe.query.join(
+                RecipeDependency,
+                RecipeDependency.dependent_recipe_id == Recipe.id,
+            )
+            .filter(RecipeDependency.dependency_recipe_id == recipe_id)
+            .all()
+        )
+
+    candidates = recipes
     matches: list[Recipe] = []
     for recipe in candidates:
         for ingredient in recipe.ingredients or []:
@@ -268,7 +303,7 @@ def handle_referenced_recipe_deletion(recipe: Recipe) -> list[Recipe]:
         return []
 
     for dependent in referencing_recipes:
-        dependent.status = Recipe.STATUS_DRAFT
+        dependent.status = Recipe.STATUS_PRIVATE
         dependent.moderation_status = "allowed"
         dependent.moderation_issues = []
         dependent.status_before_moderation = None

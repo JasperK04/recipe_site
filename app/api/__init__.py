@@ -8,6 +8,7 @@ from app.api.common import ApiError
 from app.api.recipes import (
     allow_recipe_moderation,
     create_recipe,
+    create_recipe_adaptation,
     deactivate_recipe,
     delete_recipe,
     pending_recipe_moderation_count,
@@ -40,6 +41,7 @@ __all__ = [
     "complete_password_reset",
     "create_password_reset_credential",
     "create_recipe",
+    "create_recipe_adaptation",
     "create_registration_otc",
     "deactivate_recipe",
     "deactivate_user",

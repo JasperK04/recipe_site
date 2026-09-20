@@ -14,9 +14,9 @@ function updateRecipeStatusBadge(row, status) {
     if (status === "public") {
         badge.classList.add("bg-success")
         badge.textContent = "Openbaar"
-    } else if (status === "draft") {
-        badge.classList.add("bg-warning", "text-dark")
-        badge.textContent = "Concept"
+    } else if (status === "private") {
+        badge.classList.add("bg-secondary")
+        badge.textContent = "Privé"
     } else {
         badge.classList.add("bg-danger")
         badge.textContent = "Gedeactiveerd"

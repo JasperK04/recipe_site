@@ -84,6 +84,7 @@ RATED_RECIPE_SORT_OPTIONS = {
 
 PENDING_RECIPE_IMPORT_SESSION_KEY = "pending_recipe_import"
 PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY = "pending_recipe_image_token"
+PENDING_RECIPE_ADAPTATION_SESSION_KEY = "pending_recipe_adaptation"
 
 
 def _pending_recipe_image_path(token: str) -> Path:
@@ -263,8 +264,8 @@ def list_recipes():
 
 
 def _status_badge(status):
-    if status == Recipe.STATUS_DRAFT:
-        return ("Concept", "warning text-dark")
+    if status == Recipe.STATUS_PRIVATE:
+        return ("Privé", "secondary")
     if status == Recipe.STATUS_DEACTIVATED:
         return ("Gedeactiveerd", "danger")
     return ("Openbaar", "success")
@@ -333,6 +334,12 @@ def view_recipe(recipe_id, title=None):
         and current_user.can_score_recipes
         and recipe.status == Recipe.STATUS_PUBLIC
     )
+    can_adapt_recipe = (
+        current_user.is_authenticated
+        and current_user.can_create_recipes
+        and recipe.status == Recipe.STATUS_PUBLIC
+        and recipe.user_id != current_user.id
+    )
     status_label, status_badge_class = _status_badge(recipe.status)
 
     return render_template(
@@ -342,10 +349,37 @@ def view_recipe(recipe_id, title=None):
         can_delete_recipe=can_delete_recipe,
         can_moderate_recipe=can_moderate_recipe,
         can_score_recipe=can_score_recipe,
+        can_adapt_recipe=can_adapt_recipe,
         my_score=my_score,
         status_label=status_label,
         status_badge_class=status_badge_class,
     )
+
+
+@recipes_bp.route("/<int:recipe_id>/aanpassen", methods=["POST"])
+@login_required
+def adapt_recipe(recipe_id):
+    """Prefill a new recipe form from a public recipe without persisting it."""
+    require_active_creator(current_user)
+    original_recipe = Recipe.query.get_or_404(recipe_id)
+    if not original_recipe.is_visible_to(current_user):
+        abort(404)
+
+    session[PENDING_RECIPE_ADAPTATION_SESSION_KEY] = {
+        "title": original_recipe.title,
+        "description": original_recipe.description or "",
+        "ingredients": [
+            _ingredient_field_value(ingredient)
+            for ingredient in original_recipe.ingredients or []
+        ],
+        "instructions": original_recipe.instructions or [],
+        "prep_time": original_recipe.prep_time,
+        "cook_time": original_recipe.cook_time,
+        "servings": original_recipe.servings,
+        "category": original_recipe.category or "",
+        "copied_image_id": original_recipe.image_id,
+    }
+    return redirect(url_for("recipes.add_recipe", source="adaptatie"))
 
 
 @recipes_bp.route("/<int:recipe_id>/afbeelding")
@@ -412,13 +446,23 @@ def add_recipe():
     require_active_creator(current_user)
     user = cast(User, current_user)
     validate_on_load = request.args.get("source") == "upload"
+    adaptation_requested = (
+        request.args.get("source") == "adaptatie" or request.method == "POST"
+    )
+    pending_adaptation = (
+        session.get(PENDING_RECIPE_ADAPTATION_SESSION_KEY)
+        if adaptation_requested
+        else None
+    )
     pending_import = (
         session.pop(PENDING_RECIPE_IMPORT_SESSION_KEY, None)
         if request.method == "GET" and validate_on_load
         else None
     )
     pending_image_token = session.get(PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY)
-    if pending_import:
+    if pending_adaptation and request.args.get("source") == "adaptatie":
+        form = RecipeForm(data=pending_adaptation)
+    elif pending_import:
         form = RecipeForm(
             data={
                 "title": pending_import.get("name", ""),
@@ -438,6 +482,7 @@ def add_recipe():
         form = RecipeForm()
 
     if form.validate_on_submit():
+        is_adaptation = bool(pending_adaptation)
         try:
             recipe = create_recipe(
                 author=user,
@@ -449,10 +494,15 @@ def add_recipe():
                 cook_time=form.cook_time.data,
                 servings=form.servings.data,
                 category=form.category.data if form.category.data else None,
-                status=form.status.data,
+                status=Recipe.STATUS_PRIVATE if is_adaptation else form.status.data,
                 image_file=form.image.data
                 if getattr(form, "image", None) and form.image.data
                 else None,
+                copied_image_id=(
+                    pending_adaptation.get("copied_image_id")
+                    if is_adaptation
+                    else None
+                ),
             )
         except ApiError as error:
             form.ingredients.errors = [*form.ingredients.errors, error.message]
@@ -460,6 +510,7 @@ def add_recipe():
                 "recipes/form.html",
                 form=form,
                 title="Recept toevoegen",
+                adaptation_mode=is_adaptation,
                 validate_on_load=validate_on_load,
                 imported_image_url=(
                     url_for("recipes.pending_recipe_image", token=pending_image_token)
@@ -468,6 +519,8 @@ def add_recipe():
                 ),
             )
 
+        if is_adaptation:
+            session.pop(PENDING_RECIPE_ADAPTATION_SESSION_KEY, None)
         if pending_image_token:
             _delete_pending_recipe_image(pending_image_token)
             session.pop(PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY, None)
@@ -478,7 +531,7 @@ def add_recipe():
         elif recipe.status == Recipe.STATUS_PUBLIC:
             flash("Recept succesvol gepubliceerd!", "success")
         else:
-            flash("Concept opgeslagen.", "success")
+            flash("Privérecept opgeslagen.", "success")
         return redirect(
             url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title)
         )
@@ -486,7 +539,8 @@ def add_recipe():
     return render_template(
         "recipes/form.html",
         form=form,
-        title="Recept toevoegen",
+        title="Recept aanpassen" if pending_adaptation else "Recept toevoegen",
+        adaptation_mode=bool(pending_adaptation),
         validate_on_load=validate_on_load,
         imported_image_url=(
             url_for("recipes.pending_recipe_image", token=pending_image_token)
@@ -653,7 +707,7 @@ def edit_recipe(recipe_id):
         elif recipe.status == Recipe.STATUS_PUBLIC:
             flash("Recept succesvol bijgewerkt en gepubliceerd.", "success")
         else:
-            flash("Concept succesvol bijgewerkt.", "success")
+            flash("Privérecept succesvol bijgewerkt.", "success")
         return redirect(
             url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title)
         )

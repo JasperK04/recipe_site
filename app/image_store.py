@@ -50,3 +50,14 @@ def delete_recipe_image(image_id: str | None) -> None:
     path = _image_path(image_id)
     if path.is_file():
         path.unlink()
+
+
+def copy_recipe_image(image_id: str | None) -> str | None:
+    """Create an independent copy of an existing recipe image."""
+    image_data = read_recipe_image_bytes(image_id)
+    if not image_data:
+        return None
+
+    copied_image_id = uuid4().hex
+    _image_path(copied_image_id).write_bytes(image_data)
+    return copied_image_id

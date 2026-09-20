@@ -310,7 +310,7 @@ def register_commands(app: Flask):
             if r < 0.70:
                 recipe.status = "public"
             elif r < 0.85:
-                recipe.status = "draft"
+                recipe.status = "private"
             else:
                 recipe.status = "deactivated"
 

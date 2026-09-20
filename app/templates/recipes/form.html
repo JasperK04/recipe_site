@@ -293,9 +293,11 @@
                         <a href="{{ back_url('recipe_overview.list_recipes') }}" class="btn btn-secondary">Annuleren</a>
                         <div>
                             {% if form.status %}
-                                <input type="hidden" name="status" id="status-field" value="{{ form.status.data or 'public' }}">
-                                <button type="submit" class="btn btn-secondary me-2" onclick="document.getElementById('status-field').value='draft'">Concept</button>
+                                <input type="hidden" name="status" id="status-field" value="{{ 'private' if adaptation_mode else (form.status.data or 'public') }}">
+                                <button type="submit" class="btn btn-secondary{% if not adaptation_mode %} me-2{% endif %}" onclick="document.getElementById('status-field').value='private'">Privé opslaan</button>
+                                {% if not adaptation_mode %}
                                 <button type="submit" class="btn btn-primary" onclick="document.getElementById('status-field').value='public'">Publiceren</button>
+                                {% endif %}
                             {% else %}
                                 {{ form.submit(class="btn btn-primary") }}
                             {% endif %}

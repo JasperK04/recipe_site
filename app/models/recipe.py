@@ -13,9 +13,12 @@ class Recipe(PaginationMixin, db.Model):
     __tablename__ = "recipes"
 
     STATUS_PUBLIC = "public"
-    STATUS_DRAFT = "draft"
+    STATUS_PRIVATE = "private"
+    # Kept as a source-compatible alias for integrations that imported the
+    # constant.  Persisted recipes use the ``private`` value exclusively.
+    STATUS_DRAFT = STATUS_PRIVATE
     STATUS_DEACTIVATED = "deactivated"
-    VALID_STATUSES = (STATUS_PUBLIC, STATUS_DRAFT, STATUS_DEACTIVATED)
+    VALID_STATUSES = (STATUS_PUBLIC, STATUS_PRIVATE, STATUS_DEACTIVATED)
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -41,8 +44,40 @@ class Recipe(PaginationMixin, db.Model):
         onupdate=lambda: datetime.now(UTC),
     )
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    original_recipe_id = db.Column(
+        db.Integer,
+        db.ForeignKey("recipes.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "user_id", "original_recipe_id", name="uq_recipes_user_original_recipe"
+        ),
+    )
 
     scores = db.relationship("RecipeScore", back_populates="recipe", cascade="all, delete-orphan")
+    original_recipe = db.relationship(
+        "Recipe",
+        remote_side=[id],
+        backref=db.backref("adaptations"),
+    )
+    dependencies = db.relationship(
+        "Recipe",
+        secondary="recipe_dependencies",
+        primaryjoin="Recipe.id == RecipeDependency.dependent_recipe_id",
+        secondaryjoin="Recipe.id == RecipeDependency.dependency_recipe_id",
+        back_populates="dependents",
+        lazy="selectin",
+    )
+    dependents = db.relationship(
+        "Recipe",
+        secondary="recipe_dependencies",
+        primaryjoin="Recipe.id == RecipeDependency.dependency_recipe_id",
+        secondaryjoin="Recipe.id == RecipeDependency.dependent_recipe_id",
+        back_populates="dependencies",
+        lazy="selectin",
+    )
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
@@ -108,6 +143,28 @@ class Recipe(PaginationMixin, db.Model):
 
     def __repr__(self):
         return f"<Recipe {self.title}>"
+
+
+class RecipeDependency(db.Model):
+    __tablename__ = "recipe_dependencies"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "dependent_recipe_id",
+            "dependency_recipe_id",
+            name="uq_recipe_dependencies_edge",
+        ),
+    )
+
+    dependent_recipe_id = db.Column(
+        db.Integer,
+        db.ForeignKey("recipes.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    dependency_recipe_id = db.Column(
+        db.Integer,
+        db.ForeignKey("recipes.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
 
 
 class RecipeScore(db.Model):

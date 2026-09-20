@@ -278,11 +278,11 @@ def reactivate_user(target: User) -> User:
 
         if recipe.status_before_deactivation in (
             Recipe.STATUS_PUBLIC,
-            Recipe.STATUS_DRAFT,
+            Recipe.STATUS_PRIVATE,
         ):
             recipe.status = recipe.status_before_deactivation
         else:
-            recipe.status = Recipe.STATUS_DRAFT
+            recipe.status = Recipe.STATUS_PRIVATE
 
         recipe.status_before_deactivation = None
 

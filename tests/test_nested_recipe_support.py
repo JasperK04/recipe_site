@@ -11,9 +11,10 @@ from app import create_app, db
 from app.api.common import ApiError
 from app.api.recipes import create_recipe, deactivate_recipe, update_recipe
 from app.forms import RecipeForm
-from app.models import Recipe, User
+from app.models import Recipe, RecipeDependency, User
 from app.services.nested_recipes import (
     find_recipes_referencing_recipe,
+    sync_recipe_dependencies,
     validate_nested_recipe_reference,
     validate_recipe_dependency_graph,
 )
@@ -339,6 +340,13 @@ def test_updating_nested_recipe_notifies_referencing_recipe_owner(app, monkeypat
         )
         db.session.add(parent_recipe)
         db.session.commit()
+        sync_recipe_dependencies(parent_recipe)
+        db.session.commit()
+
+        assert RecipeDependency.query.filter_by(
+            dependent_recipe_id=parent_recipe.id,
+            dependency_recipe_id=referenced_recipe.id,
+        ).one()
 
         notifications = []
         monkeypatch.setattr(
@@ -406,6 +414,8 @@ def test_deactivating_nested_recipe_drafts_and_notifies_referencing_recipe_owner
             status=Recipe.STATUS_PUBLIC,
         )
         db.session.add(parent_recipe)
+        db.session.commit()
+        sync_recipe_dependencies(parent_recipe)
         db.session.commit()
 
         notifications = []

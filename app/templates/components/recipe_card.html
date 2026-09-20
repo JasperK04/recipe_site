@@ -1,7 +1,7 @@
 <div class="card recipe-card h-100 position-relative">
     {% if current_user.is_authenticated and (current_user == recipe.author or current_user.is_admin) %}
-        {% if recipe.status == 'draft' %}
-        <span class="position-absolute top-0 start-0 m-2 badge bg-warning text-dark">Concept</span>
+        {% if recipe.status == 'private' %}
+        <span class="position-absolute top-0 start-0 m-2 badge bg-secondary">Privé</span>
         {% endif %}
         {% if recipe.status == 'deactivated' %}
         <span class="position-absolute top-0 start-0 m-2 badge bg-danger">Gedeactiveerd</span>

@@ -226,6 +226,21 @@ div > a.x {
                         </div>
                         {% endif %}
 
+                        {% if can_adapt_recipe %}
+                        <form method="POST" action="{{ url_for('recipes.adapt_recipe', recipe_id=recipe.id) }}" class="w-100">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button
+                            type="submit"
+                            class="btn btn-sm btn-outline-secondary w-100 w-md-auto"
+                            aria-label="Recept aanpassen"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="Recept aanpassen">
+                                <i class="bi bi-shuffle"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+
                         {% if can_moderate_recipe %}
                         {% if recipe.moderation_status == 'flagged' %}
                         <form method="POST" action="{{ url_for('api.allow_recipe_moderation_endpoint', recipe_id=recipe.id) }}" class="w-100 moderate-allow-form" data-recipe-moderation="1">

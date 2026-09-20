@@ -16,7 +16,7 @@
                     <select class="form-select" name="status" onchange="this.form.submit()">
                         <option value="all" {% if status == 'all' %}selected{% endif %}>Alle statussen</option>
                         <option value="public" {% if status == 'public' %}selected{% endif %}>Openbaar</option>
-                        <option value="draft" {% if status == 'draft' %}selected{% endif %}>Concept</option>
+                        <option value="private" {% if status == 'private' %}selected{% endif %}>Privé</option>
                         <option value="deactivated" {% if status == 'deactivated' %}selected{% endif %}>Gedeactiveerd</option>
                     </select>
                 </form>
@@ -55,8 +55,8 @@
                         <td data-label="Status">
                             {% if recipe.status == 'public' %}
                             <span class="badge bg-success">Openbaar</span>
-                            {% elif recipe.status == 'draft' %}
-                            <span class="badge bg-warning text-dark">Concept</span>
+                            {% elif recipe.status == 'private' %}
+                            <span class="badge bg-secondary">Privé</span>
                             {% else %}
                             <span class="badge bg-danger">Gedeactiveerd</span>
                             {% endif %}

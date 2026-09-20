@@ -316,7 +316,7 @@ class RecipeForm(FlaskForm):
     )
     status = SelectField(
         "Status",
-        choices=[("public", "Openbaar"), ("draft", "Concept")],
+        choices=[("public", "Openbaar"), ("private", "Privé")],
         default="public",
     )
     image = FileField(

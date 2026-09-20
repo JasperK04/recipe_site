@@ -6,12 +6,13 @@ from typing import Any, cast
 
 from flask import abort, current_app, flash, jsonify, request, url_for
 from flask_login import current_user, login_required
+from sqlalchemy.exc import IntegrityError
 
 from app import db
 from app.api import api_bp
 from app.api.common import ApiError
 from app.forms import RecipeForm
-from app.image_store import delete_recipe_image, save_recipe_image
+from app.image_store import copy_recipe_image, delete_recipe_image, save_recipe_image
 from app.models import Recipe, RecipeScore, User
 from app.services.email import (
     send_recipe_moderation_notification,
@@ -19,9 +20,11 @@ from app.services.email import (
     send_referenced_recipe_update_notification,
 )
 from app.services.nested_recipes import (
-    build_recipe_dependency_graph,
+    build_tagged_recipe_dependency_graph,
     handle_referenced_recipe_deletion,
     handle_referenced_recipe_update,
+    nested_recipe_dependency_ids,
+    sync_recipe_dependencies,
     validate_recipe_dependency_graph,
 )
 from utils import (
@@ -72,7 +75,7 @@ def _apply_recipe_moderation(
     if moderation_result.is_flagged:
         recipe.status_before_moderation = requested_status
         recipe.status = (
-            Recipe.STATUS_DRAFT
+            Recipe.STATUS_PRIVATE
             if requested_status == Recipe.STATUS_PUBLIC
             else requested_status
         )
@@ -95,11 +98,11 @@ def _flash_recipe_save_message(recipe: Recipe, *, updated: bool) -> None:
         issues = recipe.moderation_issue_messages
         if issues:
             flash(
-                "Recept opgeslagen als concept vanwege moderatie: " + "; ".join(issues),
+                "Recept privé opgeslagen vanwege moderatie: " + "; ".join(issues),
                 "warning",
             )
         else:
-            flash("Recept opgeslagen als concept vanwege moderatie.", "warning")
+            flash("Recept privé opgeslagen vanwege moderatie.", "warning")
     elif recipe.status == Recipe.STATUS_PUBLIC:
         flash(
             "Recept succesvol bijgewerkt en gepubliceerd."
@@ -109,7 +112,9 @@ def _flash_recipe_save_message(recipe: Recipe, *, updated: bool) -> None:
         )
     else:
         flash(
-            "Concept succesvol bijgewerkt." if updated else "Concept opgeslagen.",
+            "Privérecept succesvol bijgewerkt."
+            if updated
+            else "Privérecept opgeslagen.",
             "success",
         )
 
@@ -127,12 +132,14 @@ def create_recipe(
     category: str | None,
     status: str | None,
     image_file: Any = None,
+    copied_image_id: str | None = None,
+    original_recipe_id: int | None = None,
 ) -> Recipe:
     """Create a recipe and persist the optional image."""
     requested_status = normalize_choice(
         status,
-        allowed=(Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC),
-        default=Recipe.STATUS_DRAFT,
+        allowed=(Recipe.STATUS_PRIVATE, Recipe.STATUS_PUBLIC),
+        default=Recipe.STATUS_PRIVATE,
     )
     moderation = _moderate_recipe(
         title=title,
@@ -150,6 +157,7 @@ def create_recipe(
         servings=servings,
         category=category if category else None,
         user_id=author.id,
+        original_recipe_id=original_recipe_id,
     )
     _apply_recipe_moderation(
         recipe=recipe,
@@ -158,6 +166,19 @@ def create_recipe(
     )
 
     db.session.add(recipe)
+    db.session.flush()
+    graph = build_tagged_recipe_dependency_graph()
+    graph[recipe.id] = [
+        dependency_id
+        for dependency_id in nested_recipe_dependency_ids(recipe)
+        if dependency_id > 0
+    ]
+    try:
+        validate_recipe_dependency_graph(recipe.id, graph)
+    except ValueError as exc:
+        db.session.rollback()
+        raise ApiError(str(exc), 400) from exc
+    sync_recipe_dependencies(recipe)
     uploaded_image_id = None
     if image_file:
         try:
@@ -165,6 +186,12 @@ def create_recipe(
             recipe.image_id = uploaded_image_id
         except (OSError, ValueError):
             current_app.logger.exception("Unable to save recipe image")
+    elif copied_image_id:
+        try:
+            uploaded_image_id = copy_recipe_image(copied_image_id)
+            recipe.image_id = uploaded_image_id
+        except OSError:
+            current_app.logger.exception("Unable to copy recipe image")
 
     try:
         db.session.commit()
@@ -187,6 +214,45 @@ def create_recipe(
             )
 
     return recipe
+
+
+def create_recipe_adaptation(*, author: User, original_recipe: Recipe) -> Recipe:
+    """Create a private, independent copy of a public recipe for one user."""
+    if original_recipe.status != Recipe.STATUS_PUBLIC:
+        raise ApiError("Alleen openbare recepten kunnen worden aangepast.", 403)
+    if original_recipe.user_id == author.id:
+        raise ApiError("U kunt uw eigen recept niet aanpassen.", 400)
+
+    existing = Recipe.query.filter_by(
+        user_id=author.id, original_recipe_id=original_recipe.id
+    ).first()
+    if existing:
+        raise ApiError("U hebt dit recept al aangepast.", 409, payload={"recipe_id": existing.id})
+
+    try:
+        return create_recipe(
+            author=author,
+            title=original_recipe.title,
+            description=original_recipe.description,
+            ingredients=original_recipe.ingredients,
+            instructions=original_recipe.instructions,
+            prep_time=original_recipe.prep_time,
+            cook_time=original_recipe.cook_time,
+            servings=original_recipe.servings,
+            category=original_recipe.category,
+            status=Recipe.STATUS_PRIVATE,
+            copied_image_id=original_recipe.image_id,
+            original_recipe_id=original_recipe.id,
+        )
+    except IntegrityError as exc:
+        existing = Recipe.query.filter_by(
+            user_id=author.id, original_recipe_id=original_recipe.id
+        ).first()
+        raise ApiError(
+            "U hebt dit recept al aangepast.",
+            409,
+            payload={"recipe_id": existing.id} if existing else None,
+        ) from exc
 
 
 @api_bp.route("/recipes", methods=["POST"])
@@ -254,7 +320,7 @@ def update_recipe(
     """Update a recipe and handle image replacement/removal."""
     requested_status = normalize_choice(
         status,
-        allowed=(Recipe.STATUS_DRAFT, Recipe.STATUS_PUBLIC),
+        allowed=(Recipe.STATUS_PRIVATE, Recipe.STATUS_PUBLIC),
         default=recipe.status,
     )
     moderation = _moderate_recipe(
@@ -272,18 +338,13 @@ def update_recipe(
     recipe.servings = servings
     recipe.category = category if category else None
 
-    graph: dict[int, list[int]] = build_recipe_dependency_graph(
-        Recipe.query.filter(Recipe.id != recipe.id).all()
-    )
-    dependency_ids = []
-    for dep in recipe.ingredients or []:
-        if isinstance(dep, dict):
-            dependency_ids.append(int(dep.get("recipe_id", 0)))
-    graph[recipe.id] = [item for item in dependency_ids if item > 0]
+    graph = build_tagged_recipe_dependency_graph()
+    graph[recipe.id] = nested_recipe_dependency_ids(recipe)
     try:
         validate_recipe_dependency_graph(recipe.id, graph)
     except ValueError as exc:
         raise ApiError(str(exc), 400) from exc
+    sync_recipe_dependencies(recipe)
 
     _apply_recipe_moderation(
         recipe=recipe,
@@ -441,7 +502,7 @@ def retest_recipe_moderation(recipe: Recipe) -> Recipe:
             if recipe.status_before_moderation is None:
                 recipe.status_before_moderation = recipe.status
             if recipe.status == Recipe.STATUS_PUBLIC:
-                recipe.status = Recipe.STATUS_DRAFT
+                recipe.status = Recipe.STATUS_PRIVATE
     else:
         recipe.moderation_notification_signature = None
         _restore_requested_status(recipe)
@@ -635,11 +696,11 @@ def reactivate_recipe(recipe: Recipe) -> Recipe:
     if recipe.status == Recipe.STATUS_DEACTIVATED:
         if recipe.status_before_deactivation in (
             Recipe.STATUS_PUBLIC,
-            Recipe.STATUS_DRAFT,
+            Recipe.STATUS_PRIVATE,
         ):
             recipe.status = recipe.status_before_deactivation
         else:
-            recipe.status = Recipe.STATUS_DRAFT
+            recipe.status = Recipe.STATUS_PRIVATE
         recipe.status_before_deactivation = None
         db.session.commit()
     return recipe
