@@ -74,6 +74,7 @@ def test_reset_request_is_enumeration_safe_and_accepts_username_or_email(
             .order_by(Credential.created_at.desc())
             .first()
         )
+        assert credential is not None
         assert credential.subject_id == user
         assert credential.secret_hash != sent[0][1]
         assert credential.used_at is None
@@ -114,6 +115,7 @@ def test_reset_verification_and_completion_are_single_use(
     )
     with app.app_context():
         refreshed = db.session.get(User, user)
+        assert refreshed is not None
         assert refreshed.check_password("new-password")
         assert refreshed.password_hash != "new-password"
 

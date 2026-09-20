@@ -227,7 +227,9 @@ def create_recipe_adaptation(*, author: User, original_recipe: Recipe) -> Recipe
         user_id=author.id, original_recipe_id=original_recipe.id
     ).first()
     if existing:
-        raise ApiError("U hebt dit recept al aangepast.", 409, payload={"recipe_id": existing.id})
+        raise ApiError(
+            "U hebt dit recept al aangepast.", 409, payload={"recipe_id": existing.id}
+        )
 
     try:
         return create_recipe(
@@ -545,7 +547,9 @@ def delete_recipe_endpoint(recipe_id):
         abort(403)
 
     delete_recipe(recipe)
-    return jsonify({"status": "ok", "redirect_url": url_for("recipe_overview.list_recipes")})
+    return jsonify(
+        {"status": "ok", "redirect_url": url_for("recipe_overview.list_recipes")}
+    )
 
 
 @api_bp.route("/recipes/<int:recipe_id>/moderation/allow", methods=["POST"])

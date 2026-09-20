@@ -263,6 +263,7 @@ def test_deleted_nested_recipe_rejects_create_and_update(app, status, operation)
 
             db.session.expire_all()
             saved = db.session.get(Recipe, recipe.id)
+            assert saved is not None
             assert saved.ingredients == ["1 tomaat"]
             assert saved.status == Recipe.STATUS_DRAFT
 

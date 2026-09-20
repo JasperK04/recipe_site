@@ -75,6 +75,8 @@ def create_app(config_name="default"):
 
     @app.context_processor
     def inject_recipe_url():
+        from app.seo import recipe_description
+
         def recipe_url(recipe, *, external=False):
             return url_for(
                 "recipes.view_recipe",
@@ -83,7 +85,11 @@ def create_app(config_name="default"):
                 _external=external,
             )
 
-        return {"recipe_url": recipe_url, "back_url": back_url}
+        return {
+            "recipe_url": recipe_url,
+            "back_url": back_url,
+            "recipe_description": recipe_description,
+        }
 
     # Register CLI commands
     from app.cli import register_commands

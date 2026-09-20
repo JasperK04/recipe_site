@@ -4,15 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{% block title %}Recepten{% endblock %}</title>
-    {% block meta %}
-    <!-- Site-wide OpenGraph / Twitter defaults -->
+    <title>{% block title %}Recepten Register{% endblock %}</title>
+    <meta name="description" content="{{ meta_description|default('Sla op, deel en ontdek heerlijke recepten in het Recepten Register.') }}">
+    <meta name="robots" content="{{ robots|default('noindex,follow' if request.endpoint and (request.endpoint.startswith('auth.') or request.endpoint.startswith('admin.')) else 'index,follow') }}">
     <meta property="og:site_name" content="Recepten" />
-    <meta property="og:description" content="Sla op, deel en ontdek heerlijke kookrecepten." />
+    <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}" />
+    <meta property="og:description" content="{{ meta_description|default('Sla op, deel en ontdek heerlijke recepten in het Recepten Register.') }}" />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="{{ request.url }}" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:creator" content="@recepten" />
-    {% endblock %}
+    <meta name="twitter:title" content="{{ self.title() }}" />
+    <meta name="twitter:description" content="{{ meta_description|default('Sla op, deel en ontdek heerlijke recepten in het Recepten Register.') }}" />
+    {% block meta %}{% endblock %}
     <meta name="color-scheme" content="light dark">
     {% block extra_meta %}{% endblock %}
     <script>

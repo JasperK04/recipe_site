@@ -35,6 +35,7 @@ from app.api import (
 from app.forms import RecipeForm, RecipeUploadForm
 from app.image_store import read_recipe_image_bytes
 from app.models import Recipe, RecipeScore, User
+from app.seo import recipe_description, recipe_schema
 from app.services.nested_recipes import resolve_recipe_search_term
 from utils import (
     ingredient_to_string,
@@ -248,6 +249,12 @@ def list_recipes():
         query = _apply_recipe_sort(query, sort)
 
     recipes = query.paginate(page=page, per_page=24, error_out=False)
+    indexable_overview = (
+        filter_name == OVERVIEW_FILTER_ALL
+        and not search
+        and sort == SORT_NEWEST
+        and page == 1
+    )
     return render_template(
         "recipes/overview.html",
         recipes=recipes,
@@ -260,6 +267,9 @@ def list_recipes():
         filter_name=filter_name,
         filter_options=filter_options,
         overview_title=OVERVIEW_FILTERS[filter_name],
+        indexable_overview=indexable_overview,
+        meta_description=f"{OVERVIEW_FILTERS[filter_name]}: ontdek openbare recepten in het Recepten Register.",
+        robots="index,follow" if indexable_overview else "noindex,follow",
     )
 
 
@@ -341,6 +351,12 @@ def view_recipe(recipe_id, title=None):
         and recipe.user_id != current_user.id
     )
     status_label, status_badge_class = _status_badge(recipe.status)
+    canonical_url = url_for(
+        "recipes.view_recipe",
+        recipe_id=recipe.id,
+        title=recipe.url_title,
+        _external=True,
+    )
 
     return render_template(
         "recipes/view.html",
@@ -353,6 +369,19 @@ def view_recipe(recipe_id, title=None):
         my_score=my_score,
         status_label=status_label,
         status_badge_class=status_badge_class,
+        meta_description=recipe_description(recipe),
+        robots="index,follow"
+        if recipe.status == Recipe.STATUS_PUBLIC
+        else "noindex,nofollow",
+        recipe_schema=recipe_schema(
+            recipe,
+            url=canonical_url,
+            image_url=(
+                url_for("recipes.recipe_image", recipe_id=recipe.id, _external=True)
+                if recipe.has_image
+                else None
+            ),
+        ),
     )
 
 
@@ -499,9 +528,7 @@ def add_recipe():
                 if getattr(form, "image", None) and form.image.data
                 else None,
                 copied_image_id=(
-                    pending_adaptation.get("copied_image_id")
-                    if is_adaptation
-                    else None
+                    pending_adaptation.get("copied_image_id") if is_adaptation else None
                 ),
             )
         except ApiError as error:

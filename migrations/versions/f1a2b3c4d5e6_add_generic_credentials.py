@@ -48,7 +48,10 @@ def upgrade():
         "ix_credentials_secret_hash", "credentials", ["secret_hash"], unique=False
     )
     op.create_index(
-        "ix_credentials_subject", "credentials", ["subject_type", "subject_id"], unique=False
+        "ix_credentials_subject",
+        "credentials",
+        ["subject_type", "subject_id"],
+        unique=False,
     )
 
     # Preserve legacy secrets by hashing the values while they are still available.

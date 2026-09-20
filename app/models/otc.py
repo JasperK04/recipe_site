@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 
 from app import db
-
 
 class Credential(db.Model):
     __tablename__ = "credentials"
@@ -18,7 +18,9 @@ class Credential(db.Model):
     subject_type = db.Column(db.String(40), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC), nullable=False)
+    created_at = db.Column(
+        db.DateTime, default=lambda: datetime.now(UTC), nullable=False
+    )
     expires_at = db.Column(db.DateTime, nullable=False)
     used_at = db.Column(db.DateTime, nullable=True)
     revoked_at = db.Column(db.DateTime, nullable=True)
@@ -29,6 +31,9 @@ class Credential(db.Model):
     subject_user = db.relationship(
         "User", foreign_keys=[subject_id], backref="credentials", lazy="joined"
     )
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
 
     def is_expired(self):
         expires_at = self.expires_at

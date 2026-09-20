@@ -34,9 +34,7 @@ def _normalize_otc_code(value: str | None) -> str | None:
 
 PASSWORD_RESET_PURPOSE = "password_reset"
 REGISTRATION_PURPOSE = "registration_invitation"
-PASSWORD_RESET_MESSAGE = (
-    "Als een account overeenkomt met de opgegeven gegevens, sturen we herstel-instructies."
-)
+PASSWORD_RESET_MESSAGE = "Als een account overeenkomt met de opgegeven gegevens, sturen we herstel-instructies."
 
 
 def _find_user_by_identifier(identifier: str | None) -> User | None:
@@ -69,12 +67,18 @@ def create_password_reset_credential(user: User) -> tuple[Credential, str]:
 
 def get_valid_password_reset_credential(token: str | None) -> Credential | None:
     credential = find_usable_credential(purpose=PASSWORD_RESET_PURPOSE, token=token)
-    if not credential or credential.subject_type != "user" or not credential.subject_user:
+    if (
+        not credential
+        or credential.subject_type != "user"
+        or not credential.subject_user
+    ):
         return None
     return credential
 
 
-def get_valid_password_reset_credential_by_id(credential_id: int | None) -> Credential | None:
+def get_valid_password_reset_credential_by_id(
+    credential_id: int | None,
+) -> Credential | None:
     if not credential_id:
         return None
     credential = db.session.get(Credential, credential_id)
@@ -133,7 +137,7 @@ def complete_password_reset(
         raise ApiError("Deze herstel-link is ongeldig of verlopen.", 400)
     user.set_password(new_password)
     db.session.commit()
-    return user
+    return cast(User, user)
 
 
 def create_registration_otc(
@@ -253,7 +257,7 @@ def deactivate_user(*, actor: User, target: User) -> User:
     if not target.is_active:
         return target
 
-    target.is_active = False
+    setattr(target, "is_active", False)
     target.creator_request_pending = False
 
     for recipe in target.recipes.all():
@@ -270,7 +274,7 @@ def reactivate_user(target: User) -> User:
     if target.is_active:
         return target
 
-    target.is_active = True
+    setattr(target, "is_active", True)
 
     for recipe in target.recipes.all():
         if recipe.status != Recipe.STATUS_DEACTIVATED:
@@ -363,7 +367,10 @@ def password_reset_request_endpoint():
 def password_reset_verify_endpoint():
     """A positive result only proves possession of this still-valid token."""
     return jsonify(
-        {"valid": get_valid_password_reset_credential(_request_value("token")) is not None}
+        {
+            "valid": get_valid_password_reset_credential(_request_value("token"))
+            is not None
+        }
     )
 
 
@@ -372,7 +379,8 @@ def password_reset_complete_endpoint():
     try:
         complete_password_reset(
             token=_request_value("token"),
-            new_password=_request_value("newPassword") or _request_value("new_password"),
+            new_password=_request_value("newPassword")
+            or _request_value("new_password"),
             confirm_password=_request_value("confirmPassword")
             or _request_value("confirm_password"),
         )

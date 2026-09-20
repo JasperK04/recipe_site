@@ -57,7 +57,7 @@ def back_url(fallback_endpoint: str, **fallback_values: object) -> str:
     return (
         pending_back_url
         or safe_referrer_url()
-        or url_for(fallback_endpoint, **fallback_values)
+        or url_for(fallback_endpoint, **fallback_values)  # pyright: ignore[reportArgumentType]
     )
 
 

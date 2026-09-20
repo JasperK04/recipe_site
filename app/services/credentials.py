@@ -71,6 +71,7 @@ def issue_credential(
         expires_at = now + timedelta(minutes=lifetime)
 
     credential = Credential(
+        # SQLAlchemy's untyped declarative constructor is not visible to Pyright.
         purpose=purpose,
         secret_hash=_token_digest(token),
         subject_type=subject_type,

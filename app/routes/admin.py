@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import cast
+from typing import Any, cast
 
 from flask import (
     Blueprint,
@@ -40,7 +40,7 @@ from utils import require_active_admin
 admin_bp = Blueprint("admin", __name__)
 
 
-def _panel_context(*, section: str):
+def _panel_context(*, section: str) -> Any:
     stats = {
         "pending_creator_requests": pending_creator_request_count(),
         "pending_recipe_moderation": pending_recipe_moderation_count(),
@@ -142,7 +142,7 @@ def _panel_context(*, section: str):
             }
         )
 
-    return context
+    return cast(dict[str, Any], context)
 
 
 def _user_row_response(user: User):

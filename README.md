@@ -214,8 +214,8 @@ flask shell
 Example commands in the shell:
 ```python
 # Create a new user
-user = User(username='testuser', email='test@example.com')
-user.set_password('password123')
+user = User(username="testuser", email="test@example.com")
+user.set_password("password123")
 db.session.add(user)
 db.session.commit()
 

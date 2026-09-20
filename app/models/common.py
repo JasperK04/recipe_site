@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 from app import db
 
 users_favorites = db.Table(
@@ -23,7 +25,7 @@ class PaginationMixin:
         except (TypeError, ValueError):
             per_page = 10
 
-        q = query or cls.query
+        q = query or cast(Any, cls).query
         if order_by is not None:
             q = q.order_by(order_by)
 

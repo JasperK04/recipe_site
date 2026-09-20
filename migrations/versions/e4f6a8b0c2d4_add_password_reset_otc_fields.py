@@ -17,7 +17,9 @@ depends_on = None
 def upgrade():
     # batch mode also supports SQLite, the application's default database.
     with op.batch_alter_table("otc") as batch_op:
-        batch_op.add_column(sa.Column("token_hash", sa.String(length=64), nullable=True))
+        batch_op.add_column(
+            sa.Column("token_hash", sa.String(length=64), nullable=True)
+        )
         batch_op.add_column(sa.Column("user_id", sa.Integer(), nullable=True))
         batch_op.add_column(sa.Column("used_at", sa.DateTime(), nullable=True))
         batch_op.create_index("ix_otc_token_hash", ["token_hash"], unique=True)

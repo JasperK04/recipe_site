@@ -26,7 +26,9 @@ def upgrade():
             )
         )
         batch_op.add_column(
-            sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.true())
+            sa.Column(
+                "is_active", sa.Boolean(), nullable=False, server_default=sa.true()
+            )
         )
         batch_op.add_column(
             sa.Column(
@@ -62,7 +64,9 @@ def upgrade():
         sa.ForeignKeyConstraint(["recipe_id"], ["recipes.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("recipe_id", "user_id", name="uq_recipe_scores_recipe_user"),
+        sa.UniqueConstraint(
+            "recipe_id", "user_id", name="uq_recipe_scores_recipe_user"
+        ),
     )
 
 

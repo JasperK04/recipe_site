@@ -39,7 +39,9 @@ class User(UserMixin, db.Model):
         default=ROLE_FIJNPROEVER,
         server_default=text(str(ROLE_FIJNPROEVER)),
     )
-    is_active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
+    is_active = db.Column(  # pyright: ignore[reportIncompatibleMethodOverride]
+        db.Boolean, nullable=False, default=True, server_default=db.true()
+    )
     creator_request_pending = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.false()
     )
@@ -54,7 +56,10 @@ class User(UserMixin, db.Model):
         lazy="dynamic",
         backref=db.backref("favorited_by", lazy="dynamic"),
     )
-    scores = db.relationship("RecipeScore", back_populates="user", cascade="all, delete-orphan")
+    scores = db.relationship(
+        "RecipeScore", back_populates="user", cascade="all, delete-orphan"
+    )
+
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
 

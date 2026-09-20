@@ -1,6 +1,7 @@
 {% extends "components/base.html" %}
 {% block extra_meta %}
 <link rel="canonical" href="{{ recipe_url(recipe, external=True) }}" />
+<script type="application/ld+json">{{ recipe_schema|tojson }}</script>
 {% endblock %}
 
 {% block title %}{{ recipe.title }} - Recepten{% endblock %}

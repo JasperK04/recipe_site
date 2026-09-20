@@ -10,7 +10,6 @@ import json
 import sqlalchemy as sa
 from alembic import op
 
-
 revision = "b5c6d7e8f901"
 down_revision = "a4e8c2d9f713"
 branch_labels = None
@@ -43,9 +42,7 @@ def upgrade():
         sa.column("dependency_recipe_id"),
     )
     connection = op.get_bind()
-    rows = connection.execute(
-        sa.select(recipes.c.id, recipes.c.ingredients)
-    ).fetchall()
+    rows = connection.execute(sa.select(recipes.c.id, recipes.c.ingredients)).fetchall()
     for recipe_id, raw_ingredients in rows:
         if isinstance(raw_ingredients, str):
             try:

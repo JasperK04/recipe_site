@@ -125,7 +125,6 @@ MODERATION_RULES: tuple[ModerationRule, ...] = (
     _rule("nsfw", "sexshop", 'Bevat mogelijk NSFW-content: "sexshop".'),
     _rule("nsfw", "erotisch", 'Bevat mogelijk NSFW-content: "erotisch".'),
     _rule("nsfw", "erotiek", 'Bevat mogelijk NSFW-content: "erotiek".'),
-
     # General profanity / insults
     _rule("profanity", "fuck", 'Bevat aanstootgevende taal: "fuck".'),
     _rule("profanity", "shit", 'Bevat aanstootgevende taal: "shit".'),

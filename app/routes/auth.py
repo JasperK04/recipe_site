@@ -1,6 +1,15 @@
 from typing import cast
 
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import (
+    Blueprint,
+    abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import func, or_
 
@@ -82,7 +91,7 @@ def login():
     next_page = safe_redirect_target(request.values.get("next"))
     form = LoginForm()
     if form.validate_on_submit():
-        identifier = form.username.data.strip()
+        identifier = (form.username.data or "").strip()
         user = User.query.filter(
             or_(
                 User.username == identifier,
@@ -146,6 +155,9 @@ def reset_password():
             )
 
     form = PasswordResetForm()
+    subject_user = credential.subject_user
+    if subject_user is None:
+        abort(404)
     if form.validate_on_submit():
         try:
             complete_password_reset(
@@ -159,7 +171,7 @@ def reset_password():
                 "auth/reset_password.html",
                 form=form,
                 token_valid=True,
-                reset_email=credential.subject_user.email,
+                reset_email=subject_user.email,
             )
         session.pop("password_reset_credential_id", None)
         flash("Je wachtwoord is gewijzigd. Je kunt nu inloggen.", "success")
@@ -168,7 +180,7 @@ def reset_password():
         "auth/reset_password.html",
         form=form,
         token_valid=True,
-        reset_email=credential.subject_user.email,
+        reset_email=subject_user.email,
     )
 
 

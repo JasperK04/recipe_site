@@ -27,3 +27,17 @@ dependencies = [
 
 [tool.uv.sources]
 nl-core-news-sm = { url = "https://github.com/explosion/spacy-models/releases/download/nl_core_news_sm-3.8.0/nl_core_news_sm-3.8.0-py3-none-any.whl" }
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.414",
+]
+
+[tool.pyright]
+include = ["."]
+exclude = [
+    "**/__pycache__",
+    "**/.*",
+    ".venv",
+]
+typeCheckingMode = "standard"
