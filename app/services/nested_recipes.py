@@ -294,6 +294,11 @@ def resolve_recipe_search_term(term: str) -> list[Recipe]:
 
 def handle_referenced_recipe_update(recipe: Recipe) -> list[Recipe]:
     referencing_recipes = find_recipes_referencing_recipe(recipe.id)
+    if recipe.status != Recipe.STATUS_PUBLIC:
+        for dependent in referencing_recipes:
+            dependent.status = Recipe.STATUS_PRIVATE
+        if referencing_recipes:
+            db.session.commit()
     return referencing_recipes
 
 

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ subject }}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#e9e9e9;font-family:Arial,Helvetica,sans-serif;color:#212529;">
+    <div style="width:100%;padding:24px 12px;box-sizing:border-box;background-color:#e9e9e9;">
+        <div style="max-width:720px;margin:0 auto;">
+            <table role="presentation" style="width:100%;border-collapse:collapse;background-color:#0d6efd;border-radius:8px 8px 0 0;">
+                <tr>
+                    <td style="padding:15px 22px;color:#ffffff;">
+                        <span style="display:inline-block;width:26px;height:26px;margin-right:8px;border:2px solid #ffffff;border-radius:6px;vertical-align:middle;text-align:center;font-size:17px;line-height:22px;font-weight:700;">R</span>
+                        <span style="font-size:18px;line-height:26px;font-weight:700;vertical-align:middle;">Recepten</span>
+                    </td>
+                    <td style="padding:15px 22px;color:#dbeafe;text-align:right;font-size:12px;line-height:26px;">Recepten Register</td>
+                </tr>
+            </table>
+            <div style="padding:26px 28px 24px;background-color:{{ accent|default('#0d6efd') }};background-image:linear-gradient(135deg,{{ accent|default('#0d6efd') }},#0756c9);color:#ffffff;">
+                <div style="margin-bottom:9px;color:#dbeafe;font-size:12px;line-height:1.4;font-weight:700;letter-spacing:.09em;text-transform:uppercase;">{{ eyebrow|default('Recepten Register') }}</div>
+                <h1 style="margin:0;font-size:30px;line-height:1.15;font-weight:700;">{{ heading }}</h1>
+                {% if subtitle %}<p style="max-width:520px;margin:10px 0 0;color:#f3f7ff;font-size:16px;line-height:1.5;">{{ subtitle }}</p>{% endif %}
+            </div>
+            <main style="padding:28px;background-color:#ffffff;border:1px solid rgba(0,0,0,0.16);border-top:0;border-radius:0 0 8px 8px;">
+                {% block content %}{% endblock %}
+            </main>
+            <footer style="padding:20px 22px;text-align:center;font-size:12px;line-height:1.6;color:#6c757d;">
+                <strong style="color:#212529;">Recepten Register</strong><br>
+                Sla op, deel en ontdek heerlijke recepten. · <a href="{{ site_url|default('#') }}" style="color:#0d6efd;">Naar de website</a>
+            </footer>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<div style="margin:0 0 22px;padding:14px 16px;border-left:4px solid {% if notification_type == "unavailable" %}#dc3545{% else %}#0d6efd{% endif %};background-color:{% if notification_type == "unavailable" %}rgba(220,53,69,.08){% else %}rgba(13,110,253,.08){% endif %};font-size:15px;line-height:1.5;">
+{% if notification_type == "updated" %}
+Je recept verwijst naar een ander recept dat is aangepast.
+{% elif dependency_status == "private" %}
+Het recept waarnaar je verwijst is privé gemaakt en daardoor niet meer beschikbaar als onderdeel van je recept.
+{% elif dependency_status == "deactivated" %}
+Het recept waarnaar je verwijst is gedeactiveerd en daardoor niet meer beschikbaar als onderdeel van je recept.
+{% else %}
+Het recept waarnaar je verwijst is verwijderd en daardoor niet meer beschikbaar als onderdeel van je recept.
+{% endif %}
+</div>
+<div style="margin:0 0 10px;color:#6c757d;font-size:12px;line-height:1.4;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">Verwijzing
+</div>
+<div style="padding:16px;background-color:#f8f9fa;border:1px solid rgba(0,0,0,.08);border-radius:8px;">
+{% if notification_type == "updated" %}
+<p style="margin:0 0 10px;line-height:1.6;"><strong>Bijbehorende eigenaar:</strong> {{ owner }}</p>
+<p style="margin:0 0 10px;line-height:1.6;"><strong>Recept:</strong> {{ recipe_title }}</p>
+<p style="margin:0 0 18px;line-height:1.6;"><strong>Aangepast recept:</strong> {{ referenced_title }}</p>
+<p style="margin:0;line-height:1.6;">Controleer je recept om te zien of de verwijzing nog klopt.</p>
+{% else %}
+<p style="margin:0 0 10px;line-height:1.6;"><strong>Niet beschikbaar recept:</strong> {{ referenced_title }}</p>
+<p style="margin:0 0 18px;line-height:1.6;"><strong>Jouw recept:</strong> {{ recipe_title }}</p>
+<p style="margin:0 0 10px;line-height:1.6;">Je recept is automatisch privé gemaakt omdat het niet langer naar een beschikbaar recept kan verwijzen.</p>
+<p style="margin:0;line-height:1.6;">Controleer de verwijzing en pas je recept aan voordat je het opnieuw openbaar maakt.</p>
+{% endif %}
+</div>
+{% endblock %}

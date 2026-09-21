@@ -1,17 +1,82 @@
 from __future__ import annotations
 
 import hashlib
-import html
 import smtplib
+from dataclasses import dataclass
 from email.message import EmailMessage
 from email.utils import formatdate
 from typing import cast
 
-from flask import current_app, url_for
+from flask import current_app, render_template, url_for
 
 from app import db
 from app.models import Recipe, User
 from utils.moderation import ModerationResult
+
+
+@dataclass(frozen=True, slots=True)
+class Email:
+    subject: str
+    recipient: str
+    html_body: str
+    sender_fallback: str = "recipient"
+    error_message: str = "Failed to send email"
+
+    def send(self) -> bool:
+        return EmailFactory.send(self)
+
+
+class EmailFactory:
+    """Create application emails and own all delivery infrastructure."""
+
+    @staticmethod
+    def create(
+        *,
+        subject: str,
+        recipient: str,
+        template: str,
+        sender_fallback: str = "recipient",
+        error_message: str = "Failed to send email",
+        **context: object,
+    ) -> Email:
+        context.setdefault("site_url", url_for("main.index", _external=True))
+        return Email(
+            subject=subject,
+            recipient=recipient,
+            html_body=render_template(template, subject=subject, **context),
+            sender_fallback=sender_fallback,
+            error_message=error_message,
+        )
+
+    @staticmethod
+    def send(email: Email) -> bool:
+        settings = _mail_settings()
+        server = settings["server"]
+        sender = settings["sender"] or settings[email.sender_fallback]
+        if not server or not email.recipient or not sender:
+            return False
+
+        message = EmailMessage()
+        message["Subject"] = email.subject
+        message["From"] = str(sender)
+        message["To"] = email.recipient
+        message["Date"] = formatdate(localtime=True)
+        message.add_alternative(email.html_body, subtype="html")
+
+        try:
+            port = cast(int, settings["port"])
+            if bool(settings["use_ssl"]):
+                with smtplib.SMTP_SSL(str(server), port) as smtp:
+                    _authenticate_and_send(smtp, settings, message)
+            else:
+                with smtplib.SMTP(str(server), port) as smtp:
+                    if bool(settings["use_tls"]):
+                        smtp.starttls()
+                    _authenticate_and_send(smtp, settings, message)
+        except Exception:
+            current_app.logger.exception(email.error_message)
+            return False
+        return True
 
 
 def _mail_settings() -> dict[str, object]:
@@ -29,161 +94,41 @@ def _mail_settings() -> dict[str, object]:
 
 
 def send_creator_request_notification(user: User) -> bool:
-    """Send a notification email when a creator request is submitted.
-
-    Returns True when an email was sent, False when notifications are disabled
-    or required SMTP settings are missing.
-    """
-    settings = _mail_settings()
-    server = settings["server"]
-    recipient = settings["recipient"]
-    sender = settings["sender"] or recipient
-    admin_url = _creator_requests_url()
-
-    if not server or not recipient or not sender:
+    """Send a notification email when a creator request is submitted."""
+    recipient = _mail_settings()["recipient"]
+    if not recipient:
         return False
-
     subject = "[Recipe Site] Nieuwe creator-aanvraag"
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = str(sender)
-    message["To"] = str(recipient)
-    message["Date"] = formatdate(localtime=True)
-    text_body = "\n".join(
-        [
-            "Er is een nieuwe creator-aanvraag ingediend.",
-            "",
-            f"Gebruikersnaam: {user.username}",
-            f"E-mail: {user.email}",
-            f"Gebruikers-ID: {user.id}",
-            "",
-            f"Open de beheerpagina: {admin_url}",
-        ]
-    )
-    escaped_username = html.escape(user.username)
-    escaped_email = html.escape(user.email)
-    escaped_admin_url = html.escape(admin_url, quote=True)
-    html_body = f"""\
-<!doctype html>
-<html>
-  <body style="margin:0;padding:0;background:#f8f9fa;font-family:Arial,Helvetica,sans-serif;color:#212529;">
-    <div style="max-width:680px;margin:0 auto;padding:32px 20px;">
-      <div style="border:1px solid rgba(0,0,0,0.2);border-radius:8px;overflow:hidden;background:#ffffff;">
-        <div style="background:#0d6efd;color:#ffffff;padding:22px 28px;">
-          <div style="font-size:14px;letter-spacing:0.04em;text-transform:uppercase;font-weight:700;opacity:0.95;">
-            Recepten
-          </div>
-          <div style="margin-top:8px;font-size:24px;line-height:1.2;font-weight:700;">
-            Nieuwe creator-aanvraag
-          </div>
-          <div style="margin-top:8px;font-size:15px;line-height:1.5;opacity:0.95;">
-            Sla op, deel en ontdek heerlijke recepten.
-          </div>
-        </div>
-        <div style="padding:28px;">
-          <p style="margin:0 0 18px;font-size:16px;line-height:1.6;">
-            Er is een nieuwe creator-aanvraag ingediend. Hieronder staan de gegevens van de aanvrager.
-          </p>
-          <table style="width:100%;border-collapse:collapse;margin:0 0 24px;background:#f8f9fa;border-radius:6px;overflow:hidden;">
-            <tr>
-              <td style="padding:12px 16px;border-bottom:1px solid rgba(0,0,0,0.08);font-weight:700;width:160px;">Gebruikersnaam</td>
-              <td style="padding:12px 16px;border-bottom:1px solid rgba(0,0,0,0.08);">{escaped_username}</td>
-            </tr>
-            <tr>
-              <td style="padding:12px 16px;border-bottom:1px solid rgba(0,0,0,0.08);font-weight:700;">E-mail</td>
-              <td style="padding:12px 16px;border-bottom:1px solid rgba(0,0,0,0.08);">{escaped_email}</td>
-            </tr>
-            <tr>
-              <td style="padding:12px 16px;font-weight:700;">Gebruikers-ID</td>
-              <td style="padding:12px 16px;">{user.id}</td>
-            </tr>
-          </table>
-          <a href="{escaped_admin_url}" style="display:inline-block;background:#0d6efd;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:6px;font-weight:700;">
-            Open gebruikersbeheer
-          </a>
-          <p style="margin:20px 0 0;font-size:13px;line-height:1.5;color:#6c757d;">
-            Als de knop niet werkt, gebruik deze link: <a href="{escaped_admin_url}" style="color:#0d6efd;">{escaped_admin_url}</a>
-          </p>
-        </div>
-        <div style="padding:16px 28px;background:#f8f9fa;border-top:1px solid rgba(0,0,0,0.08);font-size:12px;line-height:1.5;color:#6c757d;">
-          Recepten • Een plek om je kookrecepten op te slaan en te delen.
-        </div>
-      </div>
-    </div>
-  </body>
-</html>
-"""
-    message.set_content(text_body)
-    message.add_alternative(html_body, subtype="html")
-
-    try:
-        port = cast(int, settings["port"])
-        if bool(settings["use_ssl"]):
-            with smtplib.SMTP_SSL(str(server), port) as smtp:
-                _authenticate_and_send(smtp, settings, message)
-        else:
-            with smtplib.SMTP(str(server), port) as smtp:
-                if bool(settings["use_tls"]):
-                    smtp.starttls()
-                _authenticate_and_send(smtp, settings, message)
-    except Exception:
-        current_app.logger.exception(
-            "Failed to send creator-request notification email"
-        )
-        return False
-
-    return True
+    return EmailFactory.create(
+        subject=subject,
+        recipient=str(recipient),
+        template="emails/creator_request.html",
+        error_message="Failed to send creator-request notification email",
+        heading="Nieuwe creator-aanvraag",
+        subtitle="Sla op, deel en ontdek heerlijke recepten.",
+        username=user.username,
+        email=user.email,
+        user_id=user.id,
+        admin_url=_creator_requests_url(),
+    ).send()
 
 
 def send_password_reset_email(user: User, token: str) -> bool:
     """Send a reset link to its account owner without disclosing account data."""
-    settings = _mail_settings()
-    server = settings["server"]
-    sender = settings["sender"] or settings["username"]
-    if not server or not sender:
-        return False
-
-    reset_url = url_for("auth.reset_password", token=token, _external=True)
-    minutes = int(current_app.config.get("PASSWORD_RESET_TOKEN_LIFETIME_MINUTES", 60))
-    message = EmailMessage()
-    message["Subject"] = "[Recepten] Herstel je wachtwoord"
-    message["From"] = str(sender)
-    message["To"] = user.email
-    message["Date"] = formatdate(localtime=True)
-    text_body = "\n".join(
-        [
-            "Er is een verzoek gedaan om je wachtwoord te herstellen.",
-            "",
-            f"Gebruik deze link om een nieuw wachtwoord te kiezen: {reset_url}",
-            f"Deze link verloopt over {minutes} minuten en kan maar één keer worden gebruikt.",
-            "",
-            "Heb je dit niet aangevraagd? Dan hoef je niets te doen.",
-        ]
-    )
-    escaped_url = html.escape(reset_url, quote=True)
-    html_body = f"""<!doctype html>
-<html><body style="font-family:Arial,Helvetica,sans-serif;color:#212529;line-height:1.5;">
-  <p>Er is een verzoek gedaan om je wachtwoord te herstellen.</p>
-  <p><a href="{escaped_url}">Kies een nieuw wachtwoord</a></p>
-  <p>Deze link verloopt over {minutes} minuten en kan maar één keer worden gebruikt.</p>
-  <p>Heb je dit niet aangevraagd? Dan hoef je niets te doen.</p>
-</body></html>"""
-    message.set_content(text_body)
-    message.add_alternative(html_body, subtype="html")
-    try:
-        port = cast(int, settings["port"])
-        if bool(settings["use_ssl"]):
-            with smtplib.SMTP_SSL(str(server), port) as smtp:
-                _authenticate_and_send(smtp, settings, message)
-        else:
-            with smtplib.SMTP(str(server), port) as smtp:
-                if bool(settings["use_tls"]):
-                    smtp.starttls()
-                _authenticate_and_send(smtp, settings, message)
-    except Exception:
-        current_app.logger.exception("Failed to send password-reset email")
-        return False
-    return True
+    subject = "[Recepten] Herstel je wachtwoord"
+    return EmailFactory.create(
+        subject=subject,
+        recipient=user.email,
+        template="emails/password_reset.html",
+        sender_fallback="username",
+        error_message="Failed to send password-reset email",
+        heading="Herstel je wachtwoord",
+        subtitle=None,
+        reset_url=url_for("auth.reset_password", token=token, _external=True),
+        minutes=int(
+            current_app.config.get("PASSWORD_RESET_TOKEN_LIFETIME_MINUTES", 60)
+        ),
+    ).send()
 
 
 def send_recipe_moderation_notification(
@@ -192,115 +137,30 @@ def send_recipe_moderation_notification(
     """Notify the configured recipient about a flagged recipe."""
     if not moderation.is_flagged:
         return False
-
     signature = _recipe_moderation_signature(recipe, moderation)
     if recipe.moderation_notification_signature == signature:
         return False
-
-    settings = _mail_settings()
-    server = settings["server"]
-    recipient = settings["recipient"]
-    sender = settings["sender"] or recipient
-    admin_url = _recipe_admin_url()
-
-    if not server or not recipient or not sender:
+    recipient = _mail_settings()["recipient"]
+    if not recipient:
         return False
 
     subject = f"[Recipe Site] Moderatieprobleem: {recipe.title}"
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = str(sender)
-    message["To"] = str(recipient)
-    message["Date"] = formatdate(localtime=True)
-    issue_lines = [f"- {issue.message}" for issue in moderation.issues]
-    text_body = "\n".join(
-        [
-            "Er is een recept opgeslagen dat moderatie nodig heeft.",
-            "",
-            f"Titel: {recipe.title}",
-            f"Auteur: {recipe.author.username}",
-            f"Recept-ID: {recipe.id}",
-            f"Status: {recipe.status}",
-            "",
-            "Gevonden problemen:",
-            *issue_lines,
-            "",
-            f"Open de beheerpagina: {admin_url}",
-        ]
-    )
-    escaped_title = html.escape(recipe.title)
-    escaped_username = html.escape(recipe.author.username)
-    escaped_admin_url = html.escape(admin_url, quote=True)
-    escaped_status = html.escape(recipe.status)
-    escaped_issue_items = "".join(
-        f"<li>{html.escape(issue.message)}</li>" for issue in moderation.issues
-    )
-    html_body = f"""\
-<!doctype html>
-<html>
-  <body style="margin:0;padding:0;background:#f8f9fa;font-family:Arial,Helvetica,sans-serif;color:#212529;">
-    <div style="max-width:680px;margin:0 auto;padding:32px 20px;">
-      <div style="border:1px solid rgba(0,0,0,0.2);border-radius:8px;overflow:hidden;background:#ffffff;">
-        <div style="background:#dc3545;color:#ffffff;padding:22px 28px;">
-          <div style="font-size:14px;letter-spacing:0.04em;text-transform:uppercase;font-weight:700;opacity:0.95;">
-            Recepten
-          </div>
-          <div style="margin-top:8px;font-size:24px;line-height:1.2;font-weight:700;">
-            Moderatieprobleem gevonden
-          </div>
-        </div>
-        <div style="padding:28px;">
-          <p style="margin:0 0 18px;font-size:16px;line-height:1.6;">
-            Een recept is gemarkeerd tijdens moderatie. Hieronder staan de details en alle gevonden problemen.
-          </p>
-          <table style="width:100%;border-collapse:collapse;margin:0 0 24px;background:#f8f9fa;border-radius:6px;overflow:hidden;">
-            <tr>
-              <td style="padding:12px 16px;border-bottom:1px solid rgba(0,0,0,0.08);font-weight:700;width:160px;">Titel</td>
-              <td style="padding:12px 16px;border-bottom:1px solid rgba(0,0,0,0.08);">{escaped_title}</td>
-            </tr>
-            <tr>
-              <td style="padding:12px 16px;border-bottom:1px solid rgba(0,0,0,0.08);font-weight:700;">Auteur</td>
-              <td style="padding:12px 16px;border-bottom:1px solid rgba(0,0,0,0.08);">{escaped_username}</td>
-            </tr>
-            <tr>
-              <td style="padding:12px 16px;border-bottom:1px solid rgba(0,0,0,0.08);font-weight:700;">Recept-ID</td>
-              <td style="padding:12px 16px;border-bottom:1px solid rgba(0,0,0,0.08);">{recipe.id}</td>
-            </tr>
-            <tr>
-              <td style="padding:12px 16px;font-weight:700;">Status</td>
-              <td style="padding:12px 16px;">{escaped_status}</td>
-            </tr>
-          </table>
-          <div style="margin:0 0 18px;font-weight:700;">Gevonden problemen</div>
-          <ul style="margin:0 0 24px;padding-left:22px;line-height:1.6;">
-            {escaped_issue_items}
-          </ul>
-          <a href="{escaped_admin_url}" style="display:inline-block;background:#0d6efd;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:6px;font-weight:700;">
-            Open receptmoderatie
-          </a>
-        </div>
-      </div>
-    </div>
-  </body>
-</html>
-"""
-    message.set_content(text_body)
-    message.add_alternative(html_body, subtype="html")
-
-    try:
-        port = cast(int, settings["port"])
-        if bool(settings["use_ssl"]):
-            with smtplib.SMTP_SSL(str(server), port) as smtp:
-                _authenticate_and_send(smtp, settings, message)
-        else:
-            with smtplib.SMTP(str(server), port) as smtp:
-                if bool(settings["use_tls"]):
-                    smtp.starttls()
-                _authenticate_and_send(smtp, settings, message)
-    except Exception:
-        current_app.logger.exception(
-            "Failed to send recipe-moderation notification email"
-        )
+    sent = EmailFactory.create(
+        subject=subject,
+        recipient=str(recipient),
+        template="emails/moderation.html",
+        error_message="Failed to send recipe-moderation notification email",
+        heading="Moderatieprobleem gevonden",
+        subtitle=None,
+        accent="#dc3545",
+        title=recipe.title,
+        author=recipe.author.username,
+        recipe_id=recipe.id,
+        status=recipe.status,
+        issues=[issue.message for issue in moderation.issues],
+        admin_url=_recipe_admin_url(),
+    ).send()
+    if not sent:
         return False
 
     recipe.moderation_notification_signature = signature
@@ -312,7 +172,6 @@ def send_recipe_moderation_notification(
             "Failed to persist recipe moderation notification signature"
         )
         return False
-
     return True
 
 
@@ -335,94 +194,78 @@ def _recipe_moderation_signature(recipe: Recipe, moderation: ModerationResult) -
     return digest.hexdigest()
 
 
+def _send_referenced_recipe_notification(
+    *,
+    recipe: Recipe,
+    referenced_recipe: Recipe,
+    subject: str,
+    heading: str,
+    notification_type: str,
+    error_message: str,
+    dependency_status: str | None = None,
+) -> bool:
+    if not recipe.author or not recipe.author.email:
+        return False
+    return EmailFactory.create(
+        subject=subject,
+        recipient=recipe.author.email,
+        template="emails/recipe_reference.html",
+        error_message=error_message,
+        heading=heading,
+        subtitle=None,
+        notification_type=notification_type,
+        dependency_status=dependency_status,
+        owner=recipe.author.username,
+        recipe_title=recipe.title,
+        referenced_title=referenced_recipe.title,
+        dependent_status=recipe.status,
+    ).send()
+
+
 def send_referenced_recipe_update_notification(
     recipe: Recipe, referenced_recipe: Recipe
 ) -> bool:
     """Notify owners when a nested referenced recipe was updated."""
-    if not recipe.author or not recipe.author.email:
-        return False
-
-    settings = _mail_settings()
-    server = settings["server"]
-    recipient = recipe.author.email
-    sender = settings["sender"] or settings["recipient"]
-    if not server or not sender:
-        return False
-
-    subject = f"[Recipe Site] Recept waar je naar verwijst is aangepast: {referenced_recipe.title}"
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = str(sender)
-    message["To"] = str(recipient)
-    message["Date"] = formatdate(localtime=True)
-    text_body = "\n".join(
-        [
-            "Je recept verwijst naar een ander recept dat is aangepast.",
-            "",
-            f"Bijbehorende eigenaar: {recipe.author.username}",
-            f"Recept: {recipe.title}",
-            f"Aangepast recept: {referenced_recipe.title}",
-            "",
-            "Controleer je recept om te zien of de verwijzing nog klopt.",
-        ]
+    notification_type = (
+        "unavailable" if referenced_recipe.status != Recipe.STATUS_PUBLIC else "updated"
     )
-    message.set_content(text_body)
-    try:
-        with smtplib.SMTP(str(server), cast(int, settings["port"])) as smtp:
-            if bool(settings["use_tls"]):
-                smtp.starttls()
-            _authenticate_and_send(smtp, settings, message)
-    except Exception:
-        current_app.logger.exception(
-            "Failed to send referenced recipe update notification email"
+    heading = (
+        "Recept niet meer beschikbaar"
+        if notification_type == "unavailable"
+        else "Recept aangepast"
+    )
+    subject = (
+        f"[Recipe Site] Recept niet meer beschikbaar: {referenced_recipe.title}"
+        if notification_type == "unavailable"
+        else (
+            "[Recipe Site] Recept waar je naar verwijst is aangepast: "
+            f"{referenced_recipe.title}"
         )
-        return False
-    return True
+    )
+    return _send_referenced_recipe_notification(
+        recipe=recipe,
+        referenced_recipe=referenced_recipe,
+        subject=subject,
+        heading=heading,
+        notification_type=notification_type,
+        dependency_status=referenced_recipe.status,
+        error_message="Failed to send referenced recipe update notification email",
+    )
 
 
 def send_referenced_recipe_deletion_notification(
     recipe: Recipe, deleted_recipe: Recipe
 ) -> bool:
     """Notify owners when a referenced recipe was deleted and their recipe was converted to concept."""
-    if not recipe.author or not recipe.author.email:
-        return False
-
-    settings = _mail_settings()
-    server = settings["server"]
-    recipient = recipe.author.email
-    sender = settings["sender"] or settings["recipient"]
-    if not server or not sender:
-        return False
-
-    subject = f"[Recipe Site] Recept verwijderd: {deleted_recipe.title}"
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = str(sender)
-    message["To"] = str(recipient)
-    message["Date"] = formatdate(localtime=True)
-    text_body = "\n".join(
-        [
-            "Een recept waarnaar je verwijst is verwijderd.",
-            "",
-            f"Verwijderd recept: {deleted_recipe.title}",
-            f"Jouw recept: {recipe.title}",
-            "",
-            "Je recept is automatisch omgezet naar concept en vereist actie.",
-            "Controleer en corrigeer de verwijzing om de status weer te herstellen.",
-        ]
+    return _send_referenced_recipe_notification(
+        recipe=recipe,
+        referenced_recipe=deleted_recipe,
+        subject=f"[Recipe Site] Recept verwijderd: {deleted_recipe.title}",
+        heading="Recept verwijderd",
+        notification_type="unavailable",
+        dependency_status="deleted",
+        error_message="Failed to send referenced recipe deletion notification email",
     )
-    message.set_content(text_body)
-    try:
-        with smtplib.SMTP(str(server), cast(int, settings["port"])) as smtp:
-            if bool(settings["use_tls"]):
-                smtp.starttls()
-            _authenticate_and_send(smtp, settings, message)
-    except Exception:
-        current_app.logger.exception(
-            "Failed to send referenced recipe deletion notification email"
-        )
-        return False
-    return True
 
 
 def _authenticate_and_send(
