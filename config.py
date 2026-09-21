@@ -55,6 +55,10 @@ class Config:
         or os.environ.get("admin_email")
     )
     MODERATION_ENABLED = _env_bool("MODERATION_ENABLED", True)
+    ANALYTICS_SLOW_REQUEST_MS = _env_int("ANALYTICS_SLOW_REQUEST_MS", 1000)
+    ANALYTICS_RAW_RETENTION_DAYS = _env_int("ANALYTICS_RAW_RETENTION_DAYS", 90)
+    ANALYTICS_DAILY_RETENTION_DAYS = _env_int("ANALYTICS_DAILY_RETENTION_DAYS", 730)
+    ANALYTICS_ERROR_BUCKET_MINUTES = _env_int("ANALYTICS_ERROR_BUCKET_MINUTES", 15)
 
     # Central data root for all generated data: db file, image files, backups.
     DATA_ROOT = resolve_data_root(os.environ.get("DATAROOT"), base_dir=BASE_DIR)

@@ -35,6 +35,7 @@ from app.api.users import (
 from app.forms import OTCCreateForm
 from app.models import Credential, Recipe, User
 from app.navigation import safe_referrer_url
+from app.services.analytics import Analytics
 from utils import require_active_admin
 
 admin_bp = Blueprint("admin", __name__)
@@ -139,6 +140,19 @@ def _panel_context(*, section: str) -> Any:
                 .all(),
                 "created_otc": created_otc,
                 "registration_link": registration_link,
+            }
+        )
+    elif section == "analytics":
+        period = request.args.get("period", "30", type=int)
+        if period not in {1, 7, 30, 90}:
+            period = 30
+        context.update(
+            {
+                "period": period,
+                "analytics_summary": Analytics.summary(period),
+                "top_recipes": Analytics.top_recipes(period),
+                "slow_routes": Analytics.slow_routes(period),
+                "recent_errors": Analytics.recent_errors(period),
             }
         )
 
@@ -292,6 +306,13 @@ def manage_otc():
     if isinstance(context, Response):
         return context
     return render_template("admin/panel.html", **context)
+
+
+@admin_bp.route("/analytics")
+@login_required
+def analytics():
+    require_active_admin(current_user)
+    return render_template("admin/panel.html", **_panel_context(section="analytics"))
 
 
 @admin_bp.route("/otc/<int:credential_id>/delete", methods=["POST"])

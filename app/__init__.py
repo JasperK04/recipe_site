@@ -1,10 +1,11 @@
 from datetime import UTC, datetime
 
-from flask import Flask, flash, jsonify, redirect, request, url_for
+from flask import Flask, flash, g, jsonify, redirect, request, url_for
 from flask_login import LoginManager, current_user, logout_user
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFError, CSRFProtect, generate_csrf
+from werkzeug.exceptions import HTTPException
 
 from config import config
 from flask_session import Session
@@ -21,12 +22,14 @@ from app.navigation import (
     remember_back_url_for_login,
 )
 from app.routes import admin_bp, auth_bp, main_bp, recipe_overview_bp, recipes_bp
+from app.services.analytics import VISITOR_COOKIE, Analytics
 
 
 def create_app(config_name="default"):
     """Application factory pattern."""
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+    app.config.setdefault("ANALYTICS_SLOW_REQUEST_MS", 1000)
 
     # Initialize extensions
     db.init_app(app)
@@ -40,6 +43,7 @@ def create_app(config_name="default"):
     @app.errorhandler(CSRFError)
     def handle_csrf_error(error):
         """Return JSON for AJAX forms instead of Flask-WTF's HTML error page."""
+        Analytics.error(error)
         if (
             request.path.startswith("/api/")
             or request.headers.get("X-Requested-With") == "XMLHttpRequest"
@@ -51,6 +55,15 @@ def create_app(config_name="default"):
                 }
             ), 400
         return error.description, 400
+
+    @app.errorhandler(HTTPException)
+    def handle_http_error(error):
+        expected_temporary_image_miss = (
+            request.endpoint == "recipes.pending_recipe_image" and error.code == 404
+        )
+        if error.code != 500 and not expected_temporary_image_miss:
+            Analytics.error(error)
+        return error
 
     # Configure login
     login_manager.login_view = "auth.login"  # type: ignore
@@ -98,6 +111,7 @@ def create_app(config_name="default"):
 
     @app.before_request
     def navigation_and_account_checks():
+        g.analytics_started_at = datetime.now(UTC)
         load_pending_back_url()
         # Deactivated accounts are logged out immediately, including existing sessions.
         if current_user.is_authenticated and not current_user.is_active:
@@ -109,6 +123,21 @@ def create_app(config_name="default"):
             if request.endpoint == "auth.login":
                 return None
             return redirect(url_for("auth.login"))
+
+    @app.after_request
+    def record_analytics(response):
+        Analytics.record_request(response)
+        visitor_cookie = getattr(g, "analytics_set_visitor_cookie", None)
+        if visitor_cookie:
+            response.set_cookie(
+                VISITOR_COOKIE,
+                visitor_cookie,
+                max_age=395 * 24 * 60 * 60,
+                httponly=True,
+                samesite="Lax",
+                secure=request.is_secure,
+            )
+        return response
 
     # expose csrf_token() in templates for manual forms
     @app.context_processor

@@ -8,7 +8,12 @@
         {% endif %}
     {% endif %}
     {% if recipe.has_image %}
-    <img src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="{{ recipe.title }}" class="card-img-top recipe-card-media rounded-top bg-light" />
+    <img 
+        src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" 
+        alt="{{ recipe.title }}" 
+        loading="lazy"
+        class="card-img-top recipe-card-media rounded-top bg-light" 
+    />
     {% else %}
     <div class="card-img-top recipe-card-media bg-light d-flex align-items-center justify-content-center text-muted rounded-top">
         <div class="text-center" aria-hidden="true"><i class="bi bi-image" style="font-size:2rem;"></i></div>

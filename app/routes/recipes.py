@@ -5,7 +5,6 @@ from typing import cast
 from flask import (
     Blueprint,
     abort,
-    after_this_request,
     current_app,
     flash,
     jsonify,
@@ -37,6 +36,11 @@ from app.image_store import read_recipe_image_bytes
 from app.models import Recipe, RecipeScore, User
 from app.seo import recipe_description, recipe_schema
 from app.services.nested_recipes import resolve_recipe_search_term
+from app.services.recipe_import import (
+    PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY,
+    delete_pending_recipe_image,
+    pending_recipe_image_path,
+)
 from utils import (
     ingredient_to_string,
     require_active_creator,
@@ -84,17 +88,7 @@ RATED_RECIPE_SORT_OPTIONS = {
 }
 
 PENDING_RECIPE_IMPORT_SESSION_KEY = "pending_recipe_import"
-PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY = "pending_recipe_image_token"
 PENDING_RECIPE_ADAPTATION_SESSION_KEY = "pending_recipe_adaptation"
-
-
-def _pending_recipe_image_path(token: str) -> Path:
-    return Path(current_app.config["DATA_ROOT"]) / "recipe_import" / f"{token}.img"
-
-
-def _delete_pending_recipe_image(token: str | None) -> None:
-    if token:
-        _pending_recipe_image_path(token).unlink(missing_ok=True)
 
 
 def _normalize_sort(value: str | None, *, allow_my_score: bool = False) -> str:
@@ -297,9 +291,15 @@ def _moderation_alert(recipe: Recipe) -> str | None:
 @recipes_bp.route("/<int:recipe_id>/<string:title>")
 def view_recipe(recipe_id, title=None):
     """View a single recipe."""
-    recipe = Recipe.query.get_or_404(recipe_id)
+    recipe = db.session.get(Recipe, recipe_id)
+    if recipe is None:
+        abort(404)
     if not recipe.is_visible_to(current_user):
         abort(404)
+    if recipe.status == Recipe.STATUS_PUBLIC:
+        from flask import g
+
+        g.analytics_recipe_id = recipe.id
 
     # The ID is the only lookup key. Redirect missing or stale title suffixes to
     # the current canonical URL so renamed recipes keep a single shareable URL.
@@ -549,7 +549,7 @@ def add_recipe():
         if is_adaptation:
             session.pop(PENDING_RECIPE_ADAPTATION_SESSION_KEY, None)
         if pending_image_token:
-            _delete_pending_recipe_image(pending_image_token)
+            delete_pending_recipe_image(pending_image_token)
             session.pop(PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY, None)
 
         moderation_message = _moderation_alert(recipe)
@@ -582,17 +582,10 @@ def add_recipe():
 def pending_recipe_image(token):
     if session.get(PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY) != token:
         abort(404)
-    image_path = _pending_recipe_image_path(token)
+    image_path = pending_recipe_image_path(token)
     if not image_path.is_file():
         abort(404)
-    response = send_file(image_path, conditional=True)
-
-    @after_this_request
-    def remove_temporary_image(response):
-        _delete_pending_recipe_image(token)
-        return response
-
-    return response
+    return send_file(image_path, conditional=True, max_age=300)
 
 
 @recipes_bp.route("/uploaden", methods=["GET", "POST"])
@@ -610,7 +603,7 @@ def upload_recipe():
 
     if form.validate_on_submit():
         old_image_token = session.pop(PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY, None)
-        _delete_pending_recipe_image(old_image_token)
+        delete_pending_recipe_image(old_image_token)
         match form.upload_type.data:
             case "url":
                 if not form.url.data:

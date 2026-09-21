@@ -23,6 +23,7 @@ from app.models import (
     User,
 )
 from app.recipe_generator import generate_recipes
+from app.services.analytics import Analytics
 from config import BASE_DIR
 from utils import (
     clear_directory_files,
@@ -194,6 +195,20 @@ def register_commands(app: Flask):
                 f"{flagged_count} flagged, {restored_count} restored.",
                 fg="green",
             )
+        )
+
+    @app.cli.command("cleanup-analytics")
+    @click.option("--raw-days", type=click.IntRange(min=1), default=None)
+    @click.option("--daily-days", type=click.IntRange(min=1), default=None)
+    def cleanup_analytics(raw_days, daily_days):
+        """Remove analytics data older than the configured retention windows."""
+        raw_count, daily_days_used = Analytics.cleanup(
+            raw_days=raw_days or app.config["ANALYTICS_RAW_RETENTION_DAYS"],
+            daily_days=daily_days or app.config["ANALYTICS_DAILY_RETENTION_DAYS"],
+        )
+        click.echo(
+            f"Analytics cleanup completed: {raw_count} raw events removed; "
+            f"daily data retained for {daily_days_used} days."
         )
 
     @app.cli.command("normalize-recipe-ingredients")

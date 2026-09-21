@@ -85,6 +85,20 @@ recipe_site/
    ```
    
    Edit `.env` and update the following:
+   ## Analytics
+
+   Administrators can open **Adminpanel > Analytics** to inspect unique visitors, pageviews, public recipe popularity, recent errors, and slow routes over 1, 7, 30, or 90 days.
+
+   Definitions:
+
+   - A visitor is a random, opaque browser cookie whose HMAC digest is stored; no IP address or user-agent is saved.
+   - A pageview is a successful public HTML `GET` request with a 2xx response. Recipe pages are also counted as recipe views.
+   - Identical errors are grouped into fixed UTC quarter-hour buckets: `:00-:14`, `:15-:29`, `:30-:44`, and `:45-:59`. The bucket size is configurable with `ANALYTICS_ERROR_BUCKET_MINUTES`; it is not a rolling window.
+   - Authenticated-user counts are distinct active user IDs on pageviews; they are not added to anonymous visitor counts.
+   - Raw analytics events are retained for 90 days and daily rollups for 730 days by default; these periods are configurable with `ANALYTICS_RAW_RETENTION_DAYS` and `ANALYTICS_DAILY_RETENTION_DAYS`. Run `flask cleanup-analytics` from a scheduled job.
+
+   Private recipes are excluded from public recipe popularity queries. Analytics writes are best-effort and cannot make a normal request fail.
+
    - `SECRET_KEY`: Generate a secure secret key
    - `OPENAI_API_KEY`: Required by the app configuration
    - `DATABASE_URL`: (Optional)

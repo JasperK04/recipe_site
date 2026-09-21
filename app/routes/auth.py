@@ -13,7 +13,7 @@ from flask import (
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import func, or_
 
-from app import login_manager
+from app import db, login_manager
 from app.api import (
     ApiError,
     complete_password_reset,
@@ -44,7 +44,7 @@ auth_bp = Blueprint("auth", __name__)
 @login_manager.user_loader
 def load_user(user_id):
     """Load user by ID for Flask-Login."""
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 
 @auth_bp.route("/registreren", methods=["GET", "POST"])

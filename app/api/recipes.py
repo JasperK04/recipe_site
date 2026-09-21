@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from datetime import UTC, datetime
 from typing import Any, cast
 
-from flask import abort, current_app, flash, jsonify, request, url_for
+from flask import abort, current_app, flash, jsonify, request, session, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 
@@ -26,6 +26,10 @@ from app.services.nested_recipes import (
     nested_recipe_dependency_ids,
     sync_recipe_dependencies,
     validate_recipe_dependency_graph,
+)
+from app.services.recipe_import import (
+    PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY,
+    delete_pending_recipe_image,
 )
 from utils import (
     moderate_recipe_payload,
@@ -294,6 +298,8 @@ def create_recipe_endpoint():
             {"status": "error", "message": error.message, **payload}
         ), error.status_code
     _flash_recipe_save_message(recipe, updated=False)
+    pending_image_token = session.pop(PENDING_RECIPE_IMAGE_TOKEN_SESSION_KEY, None)
+    delete_pending_recipe_image(pending_image_token)
     return jsonify(
         {
             "status": "ok",
