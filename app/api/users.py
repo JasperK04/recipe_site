@@ -257,7 +257,7 @@ def deactivate_user(*, actor: User, target: User) -> User:
     if not target.is_active:
         return target
 
-    setattr(target, "is_active", False)
+    target.is_active = False
     target.creator_request_pending = False
 
     for recipe in target.recipes.all():
@@ -274,7 +274,7 @@ def reactivate_user(target: User) -> User:
     if target.is_active:
         return target
 
-    setattr(target, "is_active", True)
+    target.is_active = True
 
     for recipe in target.recipes.all():
         if recipe.status != Recipe.STATUS_DEACTIVATED:

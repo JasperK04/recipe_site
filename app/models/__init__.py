@@ -10,11 +10,11 @@ from app.models.recipe import Recipe, RecipeDependency, RecipeScore
 from app.models.user import User
 
 __all__ = [
-    "Credential",
     "AnalyticsDaily",
     "AnalyticsDailyVisitor",
     "AnalyticsErrorGroup",
     "AnalyticsEvent",
+    "Credential",
     "PaginationMixin",
     "Recipe",
     "RecipeDependency",
