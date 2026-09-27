@@ -2,7 +2,7 @@
     <p class="text-muted mb-0">Een bezoeker is een privacyvriendelijke browser-ID; pageviews zijn geslaagde openbare HTML-GET-verzoeken.</p>
     <form method="GET" class="d-flex align-items-center gap-2">
         <label for="analytics-period" class="form-label mb-0">Periode</label>
-        <select id="analytics-period" name="period" class="form-select" onchange="this.form.submit()">
+        <select id="analytics-period" name="period" class="form-select" data-submit-on-change>
             {% for option in (1, 7, 30, 90) %}
             <option value="{{ option }}" {% if period == option %}selected{% endif %}>{{ option }} dagen</option>
             {% endfor %}

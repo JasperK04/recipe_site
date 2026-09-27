@@ -93,7 +93,7 @@
                                         </div>
                                     </div>
                                     <div class="otc-item-actions">
-                                        <form method="POST" action="{{ url_for('admin.delete_otc', credential_id=otc.id) }}" onsubmit="return confirm('Weet je zeker dat je deze registratie-uitnodiging wilt verwijderen?');">
+                                        <form method="POST" action="{{ url_for('admin.delete_otc', credential_id=otc.id) }}" data-confirm-message="Weet je zeker dat je deze registratie-uitnodiging wilt verwijderen?">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></button>
                                         </form>

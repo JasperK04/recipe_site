@@ -13,7 +13,7 @@
                 <form method="GET">
                     <input type="hidden" name="search" value="{{ search }}">
                     <input type="hidden" name="moderation" value="{{ moderation }}">
-                    <select class="form-select" name="status" onchange="this.form.submit()">
+                    <select class="form-select" name="status" data-submit-on-change>
                         <option value="all" {% if status == 'all' %}selected{% endif %}>Alle statussen</option>
                         <option value="public" {% if status == 'public' %}selected{% endif %}>Openbaar</option>
                         <option value="private" {% if status == 'private' %}selected{% endif %}>Privé</option>
@@ -25,7 +25,7 @@
                 <form method="GET">
                     <input type="hidden" name="search" value="{{ search }}">
                     <input type="hidden" name="status" value="{{ status }}">
-                    <select class="form-select" name="moderation" onchange="this.form.submit()">
+                    <select class="form-select" name="moderation" data-submit-on-change>
                         <option value="all" {% if moderation == 'all' %}selected{% endif %}>Alle moderatie</option>
                         <option value="flagged" {% if moderation == 'flagged' %}selected{% endif %}>Gevlagd</option>
                         <option value="allowed" {% if moderation == 'allowed' %}selected{% endif %}>Toegestaan</option>

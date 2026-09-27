@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from typing import cast
 
+import requests
 from flask import (
     Blueprint,
     abort,
@@ -225,7 +226,7 @@ def list_recipes():
         query = Recipe.query.filter_by(status=Recipe.STATUS_PUBLIC)
 
     if category:
-        query = query.filter_by(category=category)
+        query = query.filter(Recipe.category == category)
     if search:
         search_pattern = f"%{search}%"
         query = query.filter(
@@ -608,7 +609,14 @@ def upload_recipe():
             case "url":
                 if not form.url.data:
                     return flash_("URL is vereist voor deze uploadmethode.", "danger")
-                data = read_uploaded_page(form.url.data, include_image=True)
+                try:
+                    data = read_uploaded_page(form.url.data, include_image=True)
+                except requests.RequestException:
+                    return flash_(
+                        "De webpagina kon niet worden gelezen. Controleer de URL "
+                        "of gebruik een andere uploadmethode.",
+                        "danger",
+                    )
                 image_url = data.pop("image_url", None)
                 image_token = (
                     download_recipe_image(

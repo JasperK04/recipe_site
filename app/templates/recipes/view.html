@@ -539,7 +539,8 @@ div > a.x {
     </div>
 </div>
 {% endif %}
-<script>
+<script src="{{ url_for('static', filename='js/recipe-view.js') }}" defer></script>
+<!--
 document.addEventListener('DOMContentLoaded', function(){
     const shareModal = document.getElementById('shareModal');
     if (shareModal) {
@@ -867,7 +868,8 @@ document.addEventListener('DOMContentLoaded', function(){
     updateScaledIngredients();
 });
 </script>
-<script>
+-->
+<!--
 const wakeLockToggle = document.getElementById("wake-lock-toggle");
 
 let wakeLock = null;
@@ -929,8 +931,10 @@ document.addEventListener("visibilitychange", async () => {
     }
 });
 </script>
+-->
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/wake-lock.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/validation.js') }}" defer></script>
 {% endblock %}

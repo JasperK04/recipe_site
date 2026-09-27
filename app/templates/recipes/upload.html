@@ -96,25 +96,7 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/validation.js') }}" defer></script>
-<script>
-function showRelevantField() {
-    const uploadType = document.getElementById('upload_type').value;
-    document.getElementById('url-field').style.display = uploadType === 'url' ? 'block' : 'none';
-    document.getElementById('textarea-field').style.display = uploadType === 'textarea' ? 'block' : 'none';
-    document.getElementById('json-field').style.display = uploadType === 'json' ? 'block' : 'none';
-    document.getElementById('example-json').style.display = uploadType === 'json' ? 'block' : 'none';
-    document.getElementById('text-field').style.display = uploadType === 'text' ? 'block' : 'none';
-    document.getElementById('blank-field').style.display = uploadType === 'blank' ? 'block' : 'none';
-}
-
-window.addEventListener('pageshow', showRelevantField);
-
-document.addEventListener('DOMContentLoaded', function(){
-    showRelevantField();
-});
-
-document.getElementById('upload_type').addEventListener('change', showRelevantField);
-</script>
+<script src="{{ url_for('static', filename='js/upload.js') }}" defer></script>
 {% endblock %}
 
 {% endblock %}

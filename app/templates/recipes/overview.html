@@ -52,7 +52,7 @@
                 <input type="hidden" name="search" value="{{ search }}">
                 <input type="hidden" name="sort" value="{{ sort }}">
                 <label class="visually-hidden" for="recipe-category">Categorie</label>
-                <select id="recipe-category" class="form-select" name="category" onchange="this.form.submit()">
+                <select id="recipe-category" class="form-select" name="category" data-submit-on-change>
                     <option value="" {% if not category %}selected{% endif %}>Alle categorieën</option>
                     <option value="Voorgerecht" {% if category == 'Voorgerecht' %}selected{% endif %}>Voorgerecht</option>
                     <option value="Ontbijt" {% if category == 'Ontbijt' %}selected{% endif %}>Ontbijt</option>

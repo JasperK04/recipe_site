@@ -294,9 +294,9 @@
                         <div>
                             {% if form.status %}
                                 <input type="hidden" name="status" id="status-field" value="{{ 'private' if adaptation_mode else (form.status.data or 'public') }}">
-                                <button type="submit" class="btn btn-secondary{% if not adaptation_mode %} me-2{% endif %}" onclick="document.getElementById('status-field').value='private'">Privé opslaan</button>
+                                <button type="submit" class="btn btn-secondary{% if not adaptation_mode %} me-2{% endif %}" data-recipe-status="private">Privé opslaan</button>
                                 {% if not adaptation_mode %}
-                                <button type="submit" class="btn btn-primary" onclick="document.getElementById('status-field').value='public'">Publiceren</button>
+                                <button type="submit" class="btn btn-primary" data-recipe-status="public">Publiceren</button>
                                 {% endif %}
                             {% else %}
                                 {{ form.submit(class="btn btn-primary") }}
@@ -351,8 +351,8 @@
 <!-- Sortable for drag-and-drop -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script src="{{ url_for('static', filename='js/recipe_image_cropper.js') }}" defer></script>
-<script>
-function reindexList(container) {
+<script src="{{ url_for('static', filename='js/recipe-form.js') }}" defer></script>
+<!--
     const items = Array.from(container.children)
         .filter(c => c.classList && c.classList.contains('list-group-item'));
 
@@ -799,7 +799,7 @@ document.addEventListener('DOMContentLoaded', function(){
         bootstrap.Modal.getInstance(nestedModal)?.hide();
     });
 });
-</script>
+-->
 {% endblock %}
 
 {% endblock %}
