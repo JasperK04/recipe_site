@@ -19,201 +19,22 @@
     <meta name="color-scheme" content="light dark">
     {% block extra_meta %}{% endblock %}
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-    <noscript>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    </noscript>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('main.index') }}">
-                <i class="bi bi-book"></i> Recepten
-            </a>
-            <form
-                class="navbar-search navbar-search-medium d-lg-none"
-                method="GET"
-                action="{{ url_for('recipe_overview.list_recipes') }}"
-                role="search"
-            >
-                <label class="visually-hidden" for="navbar-search-medium-input">Zoek recepten</label>
-                <input
-                    id="navbar-search-medium-input"
-                    class="form-control navbar-search-input"
-                    type="search"
-                    name="search"
-                    placeholder="Zoek recepten"
-                    autocomplete="off"
-                    aria-autocomplete="list"
-                    aria-expanded="false"
-                >
-                <button class="btn navbar-search-button" type="submit" aria-label="Zoek recepten">
-                    <i class="bi bi-search" aria-hidden="true"></i>
-                </button>
-                <div class="navbar-search-suggestions list-group" hidden></div>
-            </form>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.index') }}">Startpagina</a>
-                    </li>
-                    <li class="nav-item d-lg-none">
-                        <a class="nav-link" href="{{ url_for('recipe_overview.list_recipes') }}">Alle recepten</a>
-                    </li>
-                    <li class="nav-item dropdown d-none d-lg-block">
-                        <a class="nav-link dropdown-toggle"
-                        href="{{ url_for('recipe_overview.list_recipes') }}">
-                            Alle recepten
-                        </a>
-                        <ul class="dropdown-menu">
-                            {% for category in ["Ontbijt", "Lunch", "Voorgerecht", "Hoofdgerecht", "Nagerecht", "Snack", "Drank", "Overig"] %}
-                            <li>
-                                <a class="dropdown-item"
-                                href="{{ url_for('recipe_overview.list_recipes', category=category) }}">
-                                    <i class="bi bi-list"></i> {{ category }}
-                                </a>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </li>
-                    {% if current_user.is_authenticated and current_user.can_create_recipes %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle"
-                        href="#"
-                        id="recipeDropdown"
-                        role="button"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                            Receptbeheer
-                        </a>
+    <header>
 
-                        <ul class="dropdown-menu" aria-labelledby="recipeDropdown">
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('recipes.add_recipe') }}">
-                                    <i class="bi bi-plus-circle"></i> Recept toevoegen
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('recipes.upload_recipe') }}">
-                                    <i class="bi bi-upload"></i> Recept uploaden
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    {% endif %}
-                    <li class="nav-item navbar-search-item navbar-search-desktop d-none d-lg-block">
-                        <form
-                            class="navbar-search"
-                            method="GET"
-                            action="{{ url_for('recipe_overview.list_recipes') }}"
-                            role="search"
-                        >
-                            <label class="visually-hidden" for="navbar-search-desktop-input">Zoek recepten</label>
-                            <input
-                                id="navbar-search-desktop-input"
-                                class="form-control navbar-search-input"
-                                type="search"
-                                name="search"
-                                placeholder="Zoek recepten"
-                                autocomplete="off"
-                                aria-autocomplete="list"
-                                aria-expanded="false"
-                            >
-                            <button class="btn navbar-search-button" type="submit" aria-label="Zoek recepten">
-                                <i class="bi bi-search" aria-hidden="true"></i>
-                            </button>
-                            <div class="navbar-search-suggestions list-group" hidden></div>
-                        </form>
-                    </li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item navbar-search-item navbar-search-mobile">
-                        <form
-                            class="navbar-search"
-                            method="GET"
-                            action="{{ url_for('recipe_overview.list_recipes') }}"
-                            role="search"
-                        >
-                            <label class="visually-hidden" for="navbar-search-input">Zoek recepten</label>
-                            <input
-                                id="navbar-search-input"
-                                class="form-control navbar-search-input"
-                                type="search"
-                                name="search"
-                                placeholder="Zoek recepten"
-                                autocomplete="off"
-                                aria-autocomplete="list"
-                                aria-expanded="false"
-                            >
-                            <button class="btn navbar-search-button" type="submit" aria-label="Zoek recepten">
-                                <i class="bi bi-search" aria-hidden="true"></i>
-                            </button>
-                            <div class="navbar-search-suggestions list-group" hidden></div>
-                        </form>
-                    </li>
-                    <li class="nav-item">
-                        <a id="theme-toggle" class="nav-link" role="button" title="Wijzig thema" aria-label="Wijzig thema">
-                            <i id="theme-icon" class="bi bi-moon-fill"></i>
-                        </a>
-                    </li>
-                    {% if current_user.is_authenticated %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle"></i> {{ current_user.username }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">Mijn profiel</a></li>
-                            {% if current_user.is_admin %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <a class="dropdown-item d-flex align-items-center justify-content-between gap-2" href="{{ url_for('admin.panel') }}">
-                                    <span>Adminpanel</span>
-                                    <span class="d-inline-flex align-items-center gap-1" aria-hidden="true">
-                                        <span
-                                            class="creator-request-dot creator-request-badge {% if pending_recipe_moderation == 0 %}d-none{% endif %}"
-                                            data-recipe-moderation-badge
-                                        ></span>
-                                        <span
-                                            class="creator-request-dot creator-request-badge {% if pending_creator_requests == 0 %}d-none{% endif %}"
-                                            data-creator-request-badge
-                                        ></span>
-                                    </span>
-                                </a>
-                            </li>
-                            {% endif %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Uitloggen</a></li>
-                        </ul>
-                    </li>
-                    {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('auth.login') }}">Inloggen</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('auth.register') }}">Registreren</a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
-    </nav>
-
+    </header>
     <main>
-        <div class="container mt-4">
+        <div>
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
+                        
                     {% endfor %}
                 {% endif %}
             {% endwith %}
@@ -222,13 +43,10 @@
         </div>
     </main>
 
-    <footer class="py-4 mt-5">
-        <div class="container text-center">
-            <p class="text-muted mb-0">&copy; {{ current_year }} Recepten. Een plek om je kookrecepten op te slaan en te delen. <a href="{{ url_for('main.about') }}">Over</a></p>
-        </div>
+    <footer>
+
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/form_behaviors.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/base.js') }}" defer></script>
     {% block extra_js %}{% endblock %}

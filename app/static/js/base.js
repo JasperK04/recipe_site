@@ -86,6 +86,7 @@
         function applyTheme(theme) {
             const dark = theme === 'dark';
             body.classList.toggle('dark-mode', dark);
+            body.classList.toggle('light-mode', !dark);
             if (icon) icon.className = dark ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
             if (toggle) toggle.setAttribute('title', dark ? 'Schakel naar licht thema' : 'Schakel naar donker thema');
         }
@@ -112,5 +113,79 @@
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.navbar-search').forEach(initializeSearch);
         initializeTheme();
+    });
+})();
+// Small native replacements for the navigation and modal interactions previously
+// provided by Bootstrap. Modal's tiny compatibility surface keeps existing page
+// scripts working while the styling and behavior remain application owned.
+(function () {
+    const openModal = modal => {
+        if (!modal) return;
+        modal.classList.add('show');
+        modal.removeAttribute('aria-hidden');
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        document.body.classList.add('modal-open');
+        modal.querySelector('button, a, input, select, textarea')?.focus();
+    };
+    const closeModal = modal => {
+        if (!modal) return;
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+        modal.removeAttribute('aria-modal');
+        if (!document.querySelector('.modal.show')) document.body.classList.remove('modal-open');
+    };
+
+    window.bootstrap = window.bootstrap || {};
+    window.bootstrap.Modal = class {
+        constructor(element) { this.element = element; }
+        static getInstance(element) { return element?._nativeModal || null; }
+        static getOrCreateInstance(element) {
+            if (!element) return null;
+            return element._nativeModal || (element._nativeModal = new window.bootstrap.Modal(element));
+        }
+        show() { openModal(this.element); }
+        hide() { closeModal(this.element); }
+    };
+
+    document.addEventListener('click', event => {
+        const toggler = event.target.closest('.navbar-toggler');
+        if (toggler) {
+            const panel = document.getElementById('navbarNav');
+            const open = panel?.classList.toggle('show') || false;
+            toggler.setAttribute('aria-expanded', String(open));
+            return;
+        }
+        const modalTrigger = event.target.closest('[data-bs-toggle="modal"]');
+        if (modalTrigger) {
+            const target = document.querySelector(modalTrigger.getAttribute('data-bs-target'));
+            if (target) { event.preventDefault(); window.bootstrap.Modal.getOrCreateInstance(target).show(); }
+            return;
+        }
+        const dismiss = event.target.closest('[data-bs-dismiss="modal"]');
+        if (dismiss) { closeModal(dismiss.closest('.modal')); return; }
+        const alertDismiss = event.target.closest('[data-bs-dismiss="alert"]');
+        if (alertDismiss) { alertDismiss.closest('.alert')?.remove(); return; }
+        const dropdownToggle = event.target.closest('.dropdown-toggle[data-bs-toggle="dropdown"]');
+        if (dropdownToggle) {
+            event.preventDefault();
+            const dropdown = dropdownToggle.closest('.dropdown');
+            const open = dropdown?.classList.toggle('show') || false;
+            dropdownToggle.setAttribute('aria-expanded', String(open));
+            return;
+        }
+        if (event.target.classList.contains('modal')) closeModal(event.target);
+        document.querySelectorAll('.dropdown.show').forEach(dropdown => {
+            if (!dropdown.contains(event.target)) {
+                dropdown.classList.remove('show');
+                dropdown.querySelector('[data-bs-toggle="dropdown"]')?.setAttribute('aria-expanded', 'false');
+            }
+        });
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            document.querySelectorAll('.modal.show').forEach(closeModal);
+            document.querySelectorAll('.dropdown.show').forEach(el => el.classList.remove('show'));
+        }
     });
 })();
