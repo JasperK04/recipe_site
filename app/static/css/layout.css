@@ -1,0 +1,26 @@
+.page-container {
+  width: min(100% - 32px, var(--content-width));
+  margin: 0 auto;
+}
+.site-main {
+  min-height: calc(100vh - 240px);
+  padding: 32px 0 64px;
+}
+
+@media (width >= 600px) {
+  .page-container {
+    width: min(100% - 48px, var(--content-width));
+  }
+}
+
+@media (width >= 900px) {
+  .site-main {
+    padding-top: 48px;
+  }
+}
+
+@media (width >= 1200px) {
+  .page-container {
+    width: min(100% - 64px, var(--content-width));
+  }
+}

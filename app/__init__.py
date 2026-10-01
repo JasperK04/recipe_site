@@ -17,6 +17,7 @@ migrate = Migrate()
 
 from app.api import api_bp
 from app.navigation import (
+    RECIPE_CATEGORIES,
     back_url,
     load_pending_back_url,
     remember_back_url_for_login,
@@ -100,6 +101,7 @@ def create_app(config_name="default"):
 
         return {
             "recipe_url": recipe_url,
+            "recipe_categories": RECIPE_CATEGORIES,
             "back_url": back_url,
             "recipe_description": recipe_description,
         }

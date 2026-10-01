@@ -148,12 +148,28 @@
         hide() { closeModal(this.element); }
     };
 
+    let lastMenuTrigger = null;
+
+    function setNavigation(open) {
+        const panel = document.getElementById('navbarNav');
+        const toggler = document.querySelector('.navbar-toggler');
+        if (!panel || !toggler) return;
+        panel.classList.toggle('show', open);
+        toggler.setAttribute('aria-expanded', String(open));
+        toggler.setAttribute('aria-label', open ? 'Sluit navigatie' : 'Open navigatie');
+        if (open) {
+            lastMenuTrigger = toggler;
+            panel.querySelector('a, input, button')?.focus();
+        } else {
+            lastMenuTrigger?.focus();
+        }
+    }
+
     document.addEventListener('click', event => {
         const toggler = event.target.closest('.navbar-toggler');
         if (toggler) {
             const panel = document.getElementById('navbarNav');
-            const open = panel?.classList.toggle('show') || false;
-            toggler.setAttribute('aria-expanded', String(open));
+            setNavigation(!panel?.classList.contains('show'));
             return;
         }
         const modalTrigger = event.target.closest('[data-bs-toggle="modal"]');
@@ -184,6 +200,7 @@
     });
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape') {
+            if (document.getElementById('navbarNav')?.classList.contains('show')) setNavigation(false);
             document.querySelectorAll('.modal.show').forEach(closeModal);
             document.querySelectorAll('.dropdown.show').forEach(el => el.classList.remove('show'));
         }
