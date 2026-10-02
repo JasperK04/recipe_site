@@ -3,11 +3,13 @@
 	rel="canonical"
 	href="{{ url_for('recipe_overview.list_recipes', filter=filter_name, category=category, _external=True) }}"
 />
-{% endblock %} {% block title %}{{ overview_title }} - Recepten{% endblock %} 
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/cards.css') }}">
-{% endblock %}
-{% block content %}
+{% endblock %} {% block title %}{{ overview_title }} - Recepten{% endblock %} {%
+block extra_css %}
+<link
+	rel="stylesheet"
+	href="{{ url_for('static', filename='css/cards.css') }}"
+/>
+{% endblock %} {% block content %}
 <header class="discovery-header">
 	<div>
 		<p class="eyebrow">Recepten ontdekken</p>
@@ -20,10 +22,6 @@
 	{% endif %}
 </header>
 
-{% include "components/grid.html" with context %}
-
-{% if recipes.has_prev or recipes.has_next %}
-{% include "components/pagination.html" with context %}
-{% endif %}
-
-{% endblock %}
+{% include "components/grid.html" with context %} {% if recipes.has_prev or
+recipes.has_next %} {% include "components/pagination.html" with context %} {%
+endif %} {% endblock %}

@@ -1,135 +1,332 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{% block title %}Recepten Register{% endblock %}</title>
-    <meta name="description" content="{{ meta_description|default('Sla op, deel en ontdek heerlijke recepten in het Recepten Register.') }}">
-    <meta name="robots" content="{{ robots|default('noindex,follow' if request.endpoint and (request.endpoint.startswith('auth.') or request.endpoint.startswith('admin.')) else 'index,follow') }}">
-    <meta property="og:site_name" content="Recepten" />
-    <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}" />
-    <meta property="og:description" content="{{ meta_description|default('Sla op, deel en ontdek heerlijke recepten in het Recepten Register.') }}" />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="{{ request.base_url }}" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="{{ self.title() }}" />
-    <meta name="twitter:description" content="{{ meta_description|default('Sla op, deel en ontdek heerlijke recepten in het Recepten Register.') }}" />
-    {% block meta %}{% endblock %}
-    <meta name="color-scheme" content="light dark">
-    {% block extra_meta %}{% endblock %}
-    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-    {% block extra_css %}{% endblock %}
-</head>
-<body>
-    <header class="site-header">
-        <nav class="navbar" aria-label="Hoofdnavigatie">
-            <div class="navbar-inner">
-                <a class="brand" href="{{ url_for('main.index') }}" aria-label="Recepten Register home">
-                    <span class="brand-mark" aria-hidden="true"><i class="bi bi-flower1"></i></span>
-                    <span>Recepten<em>Register</em></span>
-                </a>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="csrf-token" content="{{ csrf_token() }}" />
+		<title>{% block title %}Recepten Register{% endblock %}</title>
+		<meta
+			name="description"
+			content="{{ meta_description|default('Sla op, deel en ontdek heerlijke recepten in het Recepten Register.') }}"
+		/>
+		<meta
+			name="robots"
+			content="{{ robots|default('noindex,follow' if request.endpoint and (request.endpoint.startswith('auth.') or request.endpoint.startswith('admin.')) else 'index,follow') }}"
+		/>
+		<meta property="og:site_name" content="Recepten" />
+		<meta
+			property="og:title"
+			content="{% block og_title %}{{ self.title() }}{% endblock %}"
+		/>
+		<meta
+			property="og:description"
+			content="{{ meta_description|default('Sla op, deel en ontdek heerlijke recepten in het Recepten Register.') }}"
+		/>
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content="{{ request.base_url }}" />
+		<meta name="twitter:card" content="summary" />
+		<meta name="twitter:title" content="{{ self.title() }}" />
+		<meta
+			name="twitter:description"
+			content="{{ meta_description|default('Sla op, deel en ontdek heerlijke recepten in het Recepten Register.') }}"
+		/>
+		{% block meta %}{% endblock %}
+		<meta name="color-scheme" content="light dark" />
+		{% block extra_meta %}{% endblock %}
+		<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+		/>
+		<link
+			rel="stylesheet"
+			href="{{ url_for('static', filename='css/base.css') }}"
+		/>
+		{% block extra_css %}{% endblock %}
+	</head>
+	<body>
+		<header class="site-header">
+			<nav class="navbar" aria-label="Hoofdnavigatie">
+				<div class="navbar-inner">
+					<a
+						class="brand"
+						href="{{ url_for('main.index') }}"
+						aria-label="Recepten Register home"
+					>
+						<span class="brand-mark" aria-hidden="true"
+							><i class="bi bi-flower1"></i
+						></span>
+						<span>Recepten<em>Register</em></span>
+					</a>
 
-                <form class="navbar-search navbar-search-mobile" action="{{ url_for('recipe_overview.list_recipes') }}" method="get" role="search">
-                    <label class="visually-hidden" for="navbar-search-input">Zoek recepten</label>
-                    <div class="search-field">
-                        <i class="bi bi-search" aria-hidden="true"></i>
-                        <input class="navbar-search-input" id="navbar-search-input" name="search" type="search" placeholder="Zoek een recept" autocomplete="off" aria-expanded="false" aria-controls="navbar-search-suggestions">
-                    </div>
-                    <div class="navbar-search-suggestions" id="navbar-search-suggestions" hidden></div>
-                </form>
+					<form
+						class="navbar-search navbar-search-mobile"
+						action="{{ url_for('recipe_overview.list_recipes') }}"
+						method="get"
+						role="search"
+					>
+						<label class="visually-hidden" for="navbar-search-input"
+							>Zoek recepten</label
+						>
+						<div class="search-field">
+							<i class="bi bi-search" aria-hidden="true"></i>
+							<input
+								class="navbar-search-input"
+								id="navbar-search-input"
+								name="search"
+								type="search"
+								placeholder="Zoek een recept"
+								autocomplete="off"
+								aria-expanded="false"
+								aria-controls="navbar-search-suggestions"
+							/>
+						</div>
+						<div
+							class="navbar-search-suggestions"
+							id="navbar-search-suggestions"
+							hidden
+						></div>
+					</form>
 
-                <button class="navbar-toggler" type="button" aria-controls="navbarNav" aria-expanded="false" aria-label="Open navigatie">
-                    <i class="bi bi-list" aria-hidden="true"></i>
-                </button>
-            </div>
-            <div class="navbar-collapse" id="navbarNav">
-                <div class="nav-links" aria-label="Recepten">
-                    <a href="{{ url_for('recipe_overview.list_recipes') }}">Alle recepten</a>
-                    {% for category in recipe_categories %}
-                    <a href="{{ url_for('recipe_overview.list_recipes', category=category) }}">{{ category }}</a>
-                    {% endfor %}
-                </div>
+					<button
+						class="navbar-toggler"
+						type="button"
+						aria-controls="navbarNav"
+						aria-expanded="false"
+						aria-label="Open navigatie"
+					>
+						<i class="bi bi-list" aria-hidden="true"></i>
+					</button>
+				</div>
+				<div class="navbar-collapse" id="navbarNav">
+					<div class="nav-links" aria-label="Recepten">
+						<a href="{{ url_for('recipe_overview.list_recipes') }}"
+							>Alle recepten</a
+						>
+						{% for category in recipe_categories %}
+						<a
+							href="{{ url_for('recipe_overview.list_recipes', category=category) }}"
+							>{{ category }}</a
+						>
+						{% endfor %}
+					</div>
 
-                <div class="navbar-actions">
-                    {% if current_user.is_authenticated %}
-                        <div class="dropdown">
-                            <button class="account-button dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span class="avatar" aria-hidden="true">{{ current_user.username[:1]|upper }}</span>
-                                <span class="account-name">{{ current_user.username }}</span>
-                                <i class="bi bi-chevron-down" aria-hidden="true"></i>
-                                {% if current_user.is_admin and (pending_recipe_moderation or pending_creator_requests) %}<span class="notification-dot" aria-label="Openstaande beheertaken"></span>{% endif %}
-                            </button>
-                            <div class="dropdown-menu">
-                                {% if current_user.can_create_recipes %}
-                                <a class="button button-primary button-small" href="{{ url_for('recipes.add_recipe') }}"><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Recept toevoegen</span></a>
-                                {% endif %}
-                                <a href="{{ url_for('auth.profile') }}"><i class="bi bi-person" aria-hidden="true"></i> Mijn profiel</a>
-                                {% if current_user.can_create_recipes %}<a href="{{ url_for('recipe_overview.list_recipes', filter='mijn') }}"><i class="bi bi-journal-text" aria-hidden="true"></i> Mijn recepten</a>{% endif %}
-                                {% if current_user.is_admin %}
-                                <a href="{{ url_for('admin.panel') }}"><i class="bi bi-speedometer2" aria-hidden="true"></i> Beheer <span class="nav-badge" data-recipe-moderation-badge {% if not pending_recipe_moderation %}hidden{% endif %}>{{ pending_recipe_moderation }}</span><span class="nav-badge" data-creator-request-badge {% if not pending_creator_requests %}hidden{% endif %}>{{ pending_creator_requests }}</span></a>
-                                {% endif %}
-                                <div class="dropdown-divider"></div>
-                                <a href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Uitloggen</a>
-                            </div>
-                        </div>
-                        <button class="icon-button" id="favorite-button" type="button" title="mijn Favorieten" aria-label="mijn Favorieten"><i class="bi bi-heart" id="favorite-icon" aria-hidden="true"></i></button>
-                    {% else %}
-                        <a class="button button-secondary button-small" href="{{ url_for('auth.login') }}">Inloggen</a>
-                        <a class="button button-primary button-small" href="{{ url_for('auth.register') }}">Registreren</a>
-                    {% endif %}
-                    <button class="icon-button" id="theme-toggle" type="button" title="Schakel naar donker thema" aria-label="Schakel naar donker thema"><i class="bi bi-moon-fill" id="theme-icon" aria-hidden="true"></i></button>
-                </div>
-            </div>
-        </nav>
-    </header>
+					<div class="navbar-actions">
+						{% if current_user.is_authenticated %}
+						<div class="dropdown">
+							<button
+								class="account-button dropdown-toggle"
+								type="button"
+								data-bs-toggle="dropdown"
+								aria-expanded="false"
+							>
+								<span class="avatar" aria-hidden="true"
+									>{{ current_user.username[:1]|upper }}</span
+								>
+								<span class="account-name"
+									>{{ current_user.username }}</span
+								>
+								<i
+									class="bi bi-chevron-down"
+									aria-hidden="true"
+								></i>
+								{% if current_user.is_admin and
+								(pending_recipe_moderation or
+								pending_creator_requests) %}<span
+									class="notification-dot"
+									aria-label="Openstaande beheertaken"
+								></span
+								>{% endif %}
+							</button>
+							<div class="dropdown-menu">
+								{% if current_user.can_create_recipes %}
+								<a
+									class="button button-primary button-small"
+									href="{{ url_for('recipes.add_recipe') }}"
+									><i
+										class="bi bi-plus-lg"
+										aria-hidden="true"
+									></i
+									><span>Recept toevoegen</span></a
+								>
+								{% endif %}
+								<a href="{{ url_for('auth.profile') }}"
+									><i
+										class="bi bi-person"
+										aria-hidden="true"
+									></i>
+									Mijn profiel</a
+								>
+								{% if current_user.can_create_recipes %}<a
+									href="{{ url_for('recipe_overview.list_recipes', filter='mijn') }}"
+									><i
+										class="bi bi-journal-text"
+										aria-hidden="true"
+									></i>
+									Mijn recepten</a
+								>{% endif %} {% if current_user.is_admin %}
+								<a href="{{ url_for('admin.panel') }}"
+									><i
+										class="bi bi-speedometer2"
+										aria-hidden="true"
+									></i>
+									Beheer
+									<span
+										class="nav-badge"
+										data-recipe-moderation-badge
+										{%
+										if
+										not
+										pending_recipe_moderation
+										%}hidden{%
+										endif
+										%}
+										>{{ pending_recipe_moderation }}</span
+									><span
+										class="nav-badge"
+										data-creator-request-badge
+										{%
+										if
+										not
+										pending_creator_requests
+										%}hidden{%
+										endif
+										%}
+										>{{ pending_creator_requests }}</span
+									></a
+								>
+								{% endif %}
+								<div class="dropdown-divider"></div>
+								<a href="{{ url_for('auth.logout') }}"
+									><i
+										class="bi bi-box-arrow-right"
+										aria-hidden="true"
+									></i>
+									Uitloggen</a
+								>
+							</div>
+						</div>
+						<button
+							class="icon-button"
+							id="favorite-button"
+							type="button"
+							title="mijn Favorieten"
+							aria-label="mijn Favorieten"
+						>
+							<i
+								class="bi bi-heart"
+								id="favorite-icon"
+								aria-hidden="true"
+							></i>
+						</button>
+						{% else %}
+						<a
+							class="button button-secondary button-small"
+							href="{{ url_for('auth.login') }}"
+							>Inloggen</a
+						>
+						<a
+							class="button button-primary button-small"
+							href="{{ url_for('auth.register') }}"
+							>Registreren</a
+						>
+						{% endif %}
+						<button
+							class="icon-button"
+							id="theme-toggle"
+							type="button"
+							title="Schakel naar donker thema"
+							aria-label="Schakel naar donker thema"
+						>
+							<i
+								class="bi bi-moon-fill"
+								id="theme-icon"
+								aria-hidden="true"
+							></i>
+						</button>
+					</div>
+				</div>
+			</nav>
+		</header>
 
-    <main id="main-content" class="site-main">
-        <div class="page-container">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                <div class="flash-stack" aria-live="polite">
-                    {% for category, message in messages %}
-                    <div class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'info' }}" role="alert">
-                        <i class="bi {% if category == 'success' %}bi-check-circle{% elif category == 'danger' %}bi-exclamation-octagon{% elif category == 'warning' %}bi-exclamation-triangle{% else %}bi-info-circle{% endif %}" aria-hidden="true"></i>
-                        <span>{{ message }}</span>
-                        <button type="button" class="alert-close" data-bs-dismiss="alert" aria-label="Melding sluiten"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-            {% endwith %}
+		<main id="main-content" class="site-main">
+			<div class="page-container">
+				{% with messages = get_flashed_messages(with_categories=true) %}
+				{% if messages %}
+				<div class="flash-stack" aria-live="polite">
+					{% for category, message in messages %}
+					<div
+						class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'info' }}"
+						role="alert"
+					>
+						<i
+							class="bi {% if category == 'success' %}bi-check-circle{% elif category == 'danger' %}bi-exclamation-octagon{% elif category == 'warning' %}bi-exclamation-triangle{% else %}bi-info-circle{% endif %}"
+							aria-hidden="true"
+						></i>
+						<span>{{ message }}</span>
+						<button
+							type="button"
+							class="alert-close"
+							data-bs-dismiss="alert"
+							aria-label="Melding sluiten"
+						>
+							<i class="bi bi-x-lg" aria-hidden="true"></i>
+						</button>
+					</div>
+					{% endfor %}
+				</div>
+				{% endif %} {% endwith %} {% block content %}{% endblock %}
+			</div>
+		</main>
 
-            {% block content %}{% endblock %}
-        </div>
-    </main>
+		<footer class="site-footer">
+			<div class="footer-inner">
+				<div class="footer-brand">
+					<a class="brand" href="{{ url_for('main.index') }}"
+						><span class="brand-mark" aria-hidden="true"
+							><i class="bi bi-flower1"></i></span
+						><span>Recepten<em>Register</em></span></a
+					>
+					<p>
+						Een fijne plek voor recepten die je wilt bewaren, delen
+						en maken.
+					</p>
+				</div>
+				<div class="footer-links">
+					<a href="{{ url_for('recipe_overview.list_recipes') }}"
+						>Recepten ontdekken</a
+					>
+					<a href="{{ url_for('main.about') }}">Over het register</a>
+					{% if current_user.is_authenticated %}<a
+						href="{{ url_for('auth.profile') }}"
+						>Mijn profiel</a
+					>{% else %}<a href="{{ url_for('auth.login') }}">Inloggen</a
+					>{% endif %}
+				</div>
+				<div class="footer-legal" aria-label="Juridische informatie">
+					<span data-legal-document="privacy">Privacy statement</span>
+					<span data-legal-document="cookies">Cookie statement</span>
+				</div>
+				<p class="footer-note">
+					&copy; {{ current_year }} Recepten Register
+				</p>
+			</div>
+		</footer>
 
-    <footer class="site-footer">
-        <div class="footer-inner">
-            <div class="footer-brand">
-                <a class="brand" href="{{ url_for('main.index') }}"><span class="brand-mark" aria-hidden="true"><i class="bi bi-flower1"></i></span><span>Recepten<em>Register</em></span></a>
-                <p>Een fijne plek voor recepten die je wilt bewaren, delen en maken.</p>
-            </div>
-            <div class="footer-links">
-                <a href="{{ url_for('recipe_overview.list_recipes') }}">Recepten ontdekken</a>
-                <a href="{{ url_for('main.about') }}">Over het register</a>
-                {% if current_user.is_authenticated %}<a href="{{ url_for('auth.profile') }}">Mijn profiel</a>{% else %}<a href="{{ url_for('auth.login') }}">Inloggen</a>{% endif %}
-            </div>
-            <div class="footer-legal" aria-label="Juridische informatie">
-                <span data-legal-document="privacy">Privacy statement</span>
-                <span data-legal-document="cookies">Cookie statement</span>
-            </div>
-            <p class="footer-note">&copy; {{ current_year }} Recepten Register</p>
-        </div>
-    </footer>
-
-    <script src="{{ url_for('static', filename='js/form_behaviors.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='js/base.js') }}" defer></script>
-    {% block extra_js %}{% endblock %}
-</body>
+		<script
+			src="{{ url_for('static', filename='js/form_behaviors.js') }}"
+			defer
+		></script>
+		<script
+			src="{{ url_for('static', filename='js/base.js') }}"
+			defer
+		></script>
+		{% block extra_js %}{% endblock %}
+	</body>
 </html>

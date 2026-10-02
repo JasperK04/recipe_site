@@ -1,45 +1,45 @@
 * {
-  box-sizing: border-box;
+	box-sizing: border-box;
 }
 html {
-  scroll-behavior: smooth;
+	scroll-behavior: smooth;
 }
 body {
-  margin: 0;
-  background: var(--background);
-  color: var(--text);
-  font-family: Inter, system-ui, sans-serif;
-  font-size: 16px;
-  line-height: 1.6;
+	margin: 0;
+	background: var(--background);
+	color: var(--text);
+	font-family: Inter, system-ui, sans-serif;
+	font-size: 16px;
+	line-height: 1.6;
 }
 a {
-  color: var(--primary-strong);
-  text-decoration: none;
+	color: var(--primary-strong);
+	text-decoration: none;
 }
 a:hover {
-  color: var(--primary);
+	color: var(--primary);
 }
 button,
 input {
-  font: inherit;
+	font: inherit;
 }
 button {
-  color: inherit;
+	color: inherit;
 }
 .visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
 }
 :focus-visible {
-  z-index: 1000;
-  outline: 3px solid var(--primary);
-  outline-offset: 1px;
-  border-radius: 3px;
+	z-index: 1000;
+	outline: 3px solid var(--primary);
+	outline-offset: 1px;
+	border-radius: 3px;
 }

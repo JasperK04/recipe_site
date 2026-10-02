@@ -1,22 +1,25 @@
-{% extends "components/base.html" %}
-{% block extra_meta %}
+{% extends "components/base.html" %} {% block extra_meta %}
 <link rel="canonical" href="{{ url_for('auth.register', _external=True) }}" />
-<meta name="description" content="Maak een account aan voor het Recepten Register." />
+<meta
+	name="description"
+	content="Maak een account aan voor het Recepten Register."
+/>
 <meta name="robots" content="index,follow" />
-{% endblock %}
-
-{% block title %}Registreren - Recepten{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block title %}Registreren - Recepten{% endblock %} {% block
+extra_css %}
+<link
+	rel="stylesheet"
+	href="{{ url_for('static', filename='css/auth.css') }}"
+/>
+{% endblock %} {% block content %}
 <section class="auth-page" aria-labelledby="register-title">
 	<div class="auth-layout">
 		<aside class="auth-aside" aria-label="Over Recepten Register">
 			<strong>Bewaar wat je graag nog eens maakt.</strong>
-			<p>Van een doordeweekse favoriet tot dat ene recept voor een lange tafel.</p>
+			<p>
+				Van een doordeweekse favoriet tot dat ene recept voor een lange
+				tafel.
+			</p>
 		</aside>
 
 		<div class="auth-intro">
@@ -26,32 +29,57 @@
 		</div>
 
 		<div class="auth-panel">
-			<form class="auth-form" method="post" action="{{ url_for('auth.register') }}" data-client-validation="register" novalidate>
-				{{ form.hidden_tag() }}
-				{{ form.otc(type="hidden") }}
+			<form
+				class="auth-form"
+				method="post"
+				action="{{ url_for('auth.register') }}"
+				data-client-validation="register"
+				novalidate
+			>
+				{{ form.hidden_tag() }} {{ form.otc(type="hidden") }}
 
 				<div class="auth-field">
-					{{ form.username.label }}
-					{{ form.username(class_="form-control" + (" is-invalid" if form.username.errors else ""), autocomplete="username", placeholder="Kies een gebruikersnaam", aria_invalid="true" if form.username.errors else none) }}
-					{% for error in form.username.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+					{{ form.username.label }} {{
+					form.username(class_="form-control" + (" is-invalid" if
+					form.username.errors else ""), autocomplete="username",
+					placeholder="Kies een gebruikersnaam", aria_invalid="true"
+					if form.username.errors else none) }} {% for error in
+					form.username.errors %}
+					<div class="invalid-feedback">{{ error }}</div>
+					{% endfor %}
 				</div>
 
 				<div class="auth-field">
-					{{ form.email.label }}
-					{{ form.email(class_="form-control" + (" is-invalid" if form.email.errors else ""), autocomplete="email", placeholder="jij@example.com", aria_invalid="true" if form.email.errors else none) }}
-					{% for error in form.email.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+					{{ form.email.label }} {{ form.email(class_="form-control" +
+					(" is-invalid" if form.email.errors else ""),
+					autocomplete="email", placeholder="jij@example.com",
+					aria_invalid="true" if form.email.errors else none) }} {%
+					for error in form.email.errors %}
+					<div class="invalid-feedback">{{ error }}</div>
+					{% endfor %}
 				</div>
 
 				<div class="auth-field">
-					{{ form.password.label }}
-					{{ form.password(class_="form-control" + (" is-invalid" if form.password.errors else ""), autocomplete="new-password", placeholder="Minimaal 6 tekens", aria_invalid="true" if form.password.errors else none) }}
-					{% for error in form.password.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+					{{ form.password.label }} {{
+					form.password(class_="form-control" + (" is-invalid" if
+					form.password.errors else ""), autocomplete="new-password",
+					placeholder="Minimaal 6 tekens", aria_invalid="true" if
+					form.password.errors else none) }} {% for error in
+					form.password.errors %}
+					<div class="invalid-feedback">{{ error }}</div>
+					{% endfor %}
 				</div>
 
 				<div class="auth-field">
-					{{ form.confirm_password.label }}
-					{{ form.confirm_password(class_="form-control" + (" is-invalid" if form.confirm_password.errors else ""), autocomplete="new-password", placeholder="Herhaal je wachtwoord", aria_invalid="true" if form.confirm_password.errors else none) }}
-					{% for error in form.confirm_password.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+					{{ form.confirm_password.label }} {{
+					form.confirm_password(class_="form-control" + (" is-invalid"
+					if form.confirm_password.errors else ""),
+					autocomplete="new-password", placeholder="Herhaal je
+					wachtwoord", aria_invalid="true" if
+					form.confirm_password.errors else none) }} {% for error in
+					form.confirm_password.errors %}
+					<div class="invalid-feedback">{{ error }}</div>
+					{% endfor %}
 				</div>
 
 				<div class="d-grid">
@@ -60,14 +88,18 @@
 			</form>
 
 			<div class="auth-links">
-				<span>Al een account? <a href="{{ url_for('auth.login') }}">Inloggen</a></span>
+				<span
+					>Al een account?
+					<a href="{{ url_for('auth.login') }}">Inloggen</a></span
+				>
 			</div>
 		</div>
 	</div>
 </section>
 
-{% endblock %}
-
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/validation.js') }}" defer></script>
+{% endblock %} {% block extra_js %}
+<script
+	src="{{ url_for('static', filename='js/validation.js') }}"
+	defer
+></script>
 {% endblock %}

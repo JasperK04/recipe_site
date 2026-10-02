@@ -1,18 +1,13 @@
-{% extends "components/base.html" %}
-
-{% block title %}Adminpanel - Recepten{% endblock %}
-
-{% block content %}
-
-{% endblock %}
-
-{% block extra_js %}
-{% if section == 'users' %}
-    <script src="{{ url_for('static', filename='js/admin/users.js') }}"></script>
+{% extends "components/base.html" %} {% block title %}Adminpanel - Recepten{%
+endblock %} {% block content %} {% endblock %} {% block extra_js %} {% if
+section == 'users' %}
+<script src="{{ url_for('static', filename='js/admin/users.js') }}"></script>
 {% elif section == 'recipes' %}
-    <script src="{{ url_for('static', filename='js/validation.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='js/admin/recipes.js') }}"></script>
+<script
+	src="{{ url_for('static', filename='js/validation.js') }}"
+	defer
+></script>
+<script src="{{ url_for('static', filename='js/admin/recipes.js') }}"></script>
 {% elif section == 'otc' %}
-    <script src="{{ url_for('static', filename='js/admin/otc.js') }}"></script>
-{% endif %}
-{% endblock %}
+<script src="{{ url_for('static', filename='js/admin/otc.js') }}"></script>
+{% endif %} {% endblock %}

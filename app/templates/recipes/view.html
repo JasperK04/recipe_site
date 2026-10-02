@@ -1,36 +1,42 @@
-{% extends "components/base.html" %}
-{% block extra_meta %}
+{% extends "components/base.html" %} {% block extra_meta %}
 <link rel="canonical" href="{{ recipe_url(recipe, external=True) }}" />
-<script type="application/ld+json">{{ recipe_schema|tojson }}</script>
-{% endblock %}
-
-{% block title %}{{ recipe.title }} - Recepten{% endblock %}
-
-{% block meta %}
-    {# Recipe-specific OpenGraph / Twitter metadata #}
-    <meta property="og:title" content="{{ recipe.title }}" />
-    {% if recipe.description %}
-    <meta property="og:description" content="{{ recipe.description }}" />
-    <meta name="twitter:description" content="{{ recipe.description }}" />
-    {% endif %}
-    <meta property="og:type" content="article" />
-    <meta property="og:url" content="{{ recipe_url(recipe, external=True) }}" />
-    {% if recipe.has_image %}
-    <meta property="og:image" content="{{ url_for('recipes.recipe_image', recipe_id=recipe.id, _external=True) }}" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="{{ url_for('recipes.recipe_image', recipe_id=recipe.id, _external=True) }}" />
-    {% else %}
-    <meta name="twitter:card" content="summary" />
-    {% endif %}
-    <meta property="og:locale" content="nl_NL" />
-{% endblock %}
-
-{% block content %}
-
-{% endblock %}
-
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/wake-lock.js') }}" defer></script>
-<script src="{{ url_for('static', filename='js/validation.js') }}" defer></script>
-<script src="{{ url_for('static', filename='js/recipe-view.js') }}" defer></script>
+<script type="application/ld+json">
+	{{ recipe_schema|tojson }}
+</script>
+{% endblock %} {% block title %}{{ recipe.title }} - Recepten{% endblock %} {%
+block meta %} {# Recipe-specific OpenGraph / Twitter metadata #}
+<meta property="og:title" content="{{ recipe.title }}" />
+{% if recipe.description %}
+<meta property="og:description" content="{{ recipe.description }}" />
+<meta name="twitter:description" content="{{ recipe.description }}" />
+{% endif %}
+<meta property="og:type" content="article" />
+<meta property="og:url" content="{{ recipe_url(recipe, external=True) }}" />
+{% if recipe.has_image %}
+<meta
+	property="og:image"
+	content="{{ url_for('recipes.recipe_image', recipe_id=recipe.id, _external=True) }}"
+/>
+<meta name="twitter:card" content="summary_large_image" />
+<meta
+	name="twitter:image"
+	content="{{ url_for('recipes.recipe_image', recipe_id=recipe.id, _external=True) }}"
+/>
+{% else %}
+<meta name="twitter:card" content="summary" />
+{% endif %}
+<meta property="og:locale" content="nl_NL" />
+{% endblock %} {% block content %} {% endblock %} {% block extra_js %}
+<script
+	src="{{ url_for('static', filename='js/wake-lock.js') }}"
+	defer
+></script>
+<script
+	src="{{ url_for('static', filename='js/validation.js') }}"
+	defer
+></script>
+<script
+	src="{{ url_for('static', filename='js/recipe-view.js') }}"
+	defer
+></script>
 {% endblock %}

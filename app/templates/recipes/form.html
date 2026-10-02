@@ -1,21 +1,23 @@
-{% extends "components/base.html" %}
-
-{% block title %}{{ title }} - Recepten{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe_image_cropper.css') }}">
-{% endblock %}
-
-{% block content %}
-
-{% include "recipes/_image_crop_modal.html" %}
-
-{% endblock %}
-
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/validation.js') }}" defer></script>
+{% extends "components/base.html" %} {% block title %}{{ title }} - Recepten{%
+endblock %} {% block extra_css %}
+<link
+	rel="stylesheet"
+	href="{{ url_for('static', filename='css/recipe_image_cropper.css') }}"
+/>
+{% endblock %} {% block content %} {% include "recipes/_image_crop_modal.html"
+%} {% endblock %} {% block extra_js %}
+<script
+	src="{{ url_for('static', filename='js/validation.js') }}"
+	defer
+></script>
 <!-- Sortable for drag-and-drop -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-<script src="{{ url_for('static', filename='js/recipe_image_cropper.js') }}" defer></script>
-<script src="{{ url_for('static', filename='js/recipe-form.js') }}" defer></script>
+<script
+	src="{{ url_for('static', filename='js/recipe_image_cropper.js') }}"
+	defer
+></script>
+<script
+	src="{{ url_for('static', filename='js/recipe-form.js') }}"
+	defer
+></script>
 {% endblock %}

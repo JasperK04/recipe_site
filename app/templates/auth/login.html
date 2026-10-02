@@ -1,22 +1,25 @@
-{% extends "components/base.html" %}
-{% block extra_meta %}
+{% extends "components/base.html" %} {% block extra_meta %}
 <link rel="canonical" href="{{ url_for('auth.login', _external=True) }}" />
-<meta name="description" content="Log in op het Recepten Register om je recepten en favorieten te beheren." />
+<meta
+	name="description"
+	content="Log in op het Recepten Register om je recepten en favorieten te beheren."
+/>
 <meta name="robots" content="index,follow" />
-{% endblock %}
-
-{% block title %}Inloggen - Recepten{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block title %}Inloggen - Recepten{% endblock %} {% block
+extra_css %}
+<link
+	rel="stylesheet"
+	href="{{ url_for('static', filename='css/auth.css') }}"
+/>
+{% endblock %} {% block content %}
 <section class="auth-page" aria-labelledby="login-title">
 	<div class="auth-layout">
 		<aside class="auth-aside" aria-label="Over Recepten Register">
 			<strong>Bewaar wat je graag nog eens maakt.</strong>
-			<p>Van een doordeweekse favoriet tot dat ene recept voor een lange tafel.</p>
+			<p>
+				Van een doordeweekse favoriet tot dat ene recept voor een lange
+				tafel.
+			</p>
 		</aside>
 
 		<div class="auth-intro">
@@ -26,20 +29,39 @@
 		</div>
 
 		<div class="auth-panel">
-			<form class="auth-form" method="post" action="{{ url_for('auth.login', next=next_page) if next_page else url_for('auth.login') }}" data-client-validation="login" novalidate>
-				{{ form.hidden_tag() }}
-				{% if next_page %}<input type="hidden" name="next" value="{{ next_page }}">{% endif %}
+			<form
+				class="auth-form"
+				method="post"
+				action="{{ url_for('auth.login', next=next_page) if next_page else url_for('auth.login') }}"
+				data-client-validation="login"
+				novalidate
+			>
+				{{ form.hidden_tag() }} {% if next_page %}<input
+					type="hidden"
+					name="next"
+					value="{{ next_page }}"
+				/>{% endif %}
 
 				<div class="auth-field">
-					{{ form.username.label }}
-					{{ form.username(class_="form-control" + (" is-invalid" if form.username.errors else ""), autocomplete="username", placeholder="Bijv. anna of anna@example.com", aria_invalid="true" if form.username.errors else none) }}
-					{% for error in form.username.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+					{{ form.username.label }} {{
+					form.username(class_="form-control" + (" is-invalid" if
+					form.username.errors else ""), autocomplete="username",
+					placeholder="Bijv. anna of anna@example.com",
+					aria_invalid="true" if form.username.errors else none) }} {%
+					for error in form.username.errors %}
+					<div class="invalid-feedback">{{ error }}</div>
+					{% endfor %}
 				</div>
 
 				<div class="auth-field">
-					{{ form.password.label }}
-					{{ form.password(class_="form-control" + (" is-invalid" if form.password.errors else ""), autocomplete="current-password", placeholder="Je wachtwoord", aria_invalid="true" if form.password.errors else none) }}
-					{% for error in form.password.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+					{{ form.password.label }} {{
+					form.password(class_="form-control" + (" is-invalid" if
+					form.password.errors else ""),
+					autocomplete="current-password", placeholder="Je
+					wachtwoord", aria_invalid="true" if form.password.errors
+					else none) }} {% for error in form.password.errors %}
+					<div class="invalid-feedback">{{ error }}</div>
+					{% endfor %}
 				</div>
 
 				<div class="d-grid">
@@ -48,15 +70,23 @@
 			</form>
 
 			<div class="auth-links">
-				<a href="{{ url_for('auth.request_password_reset') }}">Wachtwoord vergeten?</a>
-				<span>Nog geen account? <a href="{{ url_for('auth.register') }}">Registreren</a></span>
+				<a href="{{ url_for('auth.request_password_reset') }}"
+					>Wachtwoord vergeten?</a
+				>
+				<span
+					>Nog geen account?
+					<a href="{{ url_for('auth.register') }}"
+						>Registreren</a
+					></span
+				>
 			</div>
 		</div>
 	</div>
 </section>
 
-{% endblock %}
-
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/validation.js') }}" defer></script>
+{% endblock %} {% block extra_js %}
+<script
+	src="{{ url_for('static', filename='js/validation.js') }}"
+	defer
+></script>
 {% endblock %}
