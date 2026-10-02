@@ -1,0 +1,37 @@
+{% set has_total_time = recipe.prep_time is not none or recipe.cook_time is not none %}
+{% set total_time = (recipe.prep_time or 0) + (recipe.cook_time or 0) %}
+{% set is_favorited = current_user.is_authenticated and current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
+<article class="recipe-card">
+	<a class="recipe-card__link" href="{{ recipe_url(recipe) }}" aria-label="Bekijk {{ recipe.title }}">
+		<div class="recipe-card__media">
+			{% if recipe.has_image %}
+			<img src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="{{ recipe.title }}" loading="lazy">
+			{% else %}
+			<div class="recipe-card__placeholder" role="img" aria-label="Nog geen foto beschikbaar">Recepten Register</div>
+			{% endif %}
+			{% if recipe.category %}<span class="recipe-card__category">{{ recipe.category }}</span>{% endif %}
+		</div>
+		<div class="recipe-card__body">
+			<h2 class="recipe-card__title">{{ recipe.title }}</h2>
+			<div class="recipe-card__meta" aria-label="Receptinformatie">
+				{% if recipe.score_average is not none %}
+				<span title="{{ "%.1f"|format(recipe.score_average)|replace('.', ',') }} van 5 uit {{ recipe.score_count }} stemmen"><i class="bi bi-star-fill" aria-hidden="true"></i>{{ "%.1f"|format(recipe.score_average)|replace('.', ',') }}/5 ({{ recipe.score_count }})</span>
+				{% else %}
+				<span title="Nog geen stemmen"><i class="bi bi-star" aria-hidden="true"></i>-/5 (0)</span>
+				{% endif %}
+				{% if recipe.servings is not none %}<span title="{{ recipe.servings }} personen"><i class="bi bi-people" aria-hidden="true"></i>{{ recipe.servings }}</span>{% endif %}
+				{% if has_total_time %}<span title="Totale bereidingstijd"><i class="bi bi-clock" aria-hidden="true"></i>{{ total_time }} min</span>{% endif %}
+			</div>
+			{% if recipe.description %}<p class="recipe-card__description">{{ recipe.description }}</p>{% endif %}
+			<p class="recipe-card__author">Door <strong>{{ recipe.author.username }}</strong></p>
+		</div>
+	</a>
+	{% if current_user.is_authenticated %}
+	<form class="recipe-card__favorite-form" action="{{ url_for('recipes.unfavorite_recipe' if is_favorited else 'recipes.favorite_recipe', recipe_id=recipe.id) }}" method="post">
+		<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+		<button class="recipe-card__favorite" type="submit" title="{{ 'Verwijderen uit favorieten' if is_favorited else 'Toevoegen aan favorieten' }}" aria-label="{{ 'Verwijder' if is_favorited else 'Bewaar' }} {{ recipe.title }}{% if is_favorited %} uit favorieten{% endif %}">
+			<i class="bi {{ 'bi-heart-fill' if is_favorited else 'bi-heart' }}" aria-hidden="true"></i>
+		</button>
+	</form>
+	{% endif %}
+</article>

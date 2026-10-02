@@ -1,0 +1,20 @@
+{% if recipes.items %}
+<section
+	class="recipe-grid recipe-grid-discovery"
+	aria-label="{{ overview_title }}"
+>
+	{% for recipe in recipes.items %} {% include "components/recipe_card.html"
+	with context %} {% endfor %}
+</section>
+{% else %}
+<section class="empty-state" aria-live="polite">
+	<i class="bi bi-journal-x" aria-hidden="true"></i>
+	<h2>Geen recepten gevonden</h2>
+	<p>Probeer een andere zoekopdracht of kies een andere verzameling.</p>
+	<a
+		class="button button-primary"
+		href="{{ url_for('recipe_overview.list_recipes') }}"
+		>Alle recepten bekijken</a
+	>
+</section>
+{% endif %}

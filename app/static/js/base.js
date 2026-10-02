@@ -110,9 +110,55 @@
         });
     }
 
+    function initializeRecipeFavorites() {
+        document.querySelectorAll('.recipe-card__favorite-form').forEach(form => {
+            form.addEventListener('submit', async event => {
+                event.preventDefault();
+                const button = form.querySelector('button');
+                if (!button) return;
+                button.disabled = true;
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: new FormData(form),
+                    });
+                    const data = await response.json();
+                    if (!response.ok || data.status !== 'ok') throw new Error(data.message || 'Actie mislukt.');
+                    const favorited = data.favorited;
+                    const icon = button.querySelector('i.bi');
+                    icon?.classList.toggle('bi-heart-fill', favorited);
+                    icon?.classList.toggle('bi-heart', !favorited);
+                    button.title = favorited ? 'Verwijderen uit favorieten' : 'Toevoegen aan favorieten';
+                    const title = form.closest('.recipe-card')?.querySelector('.recipe-card__title')?.textContent.trim() || 'recept';
+                    button.setAttribute('aria-label', `${favorited ? 'Verwijder' : 'Bewaar'} ${title}${favorited ? ' uit favorieten' : ''}`);
+                    form.action = form.action.replace(/\/favoriet(?:-verwijderen)?$/, favorited ? '/favoriet-verwijderen' : '/favoriet');
+                } catch (error) {
+                    console.error(error);
+                } finally {
+                    button.disabled = false;
+                }
+            });
+        });
+    }
+
+    function initializePagination() {
+        document.querySelectorAll('.pagination-page-input').forEach(input => {
+            input.addEventListener('focus', () => {
+                input.dataset.previousValue = input.value;
+                input.value = '';
+            });
+            input.addEventListener('blur', () => {
+                if (!input.value) input.value = input.dataset.previousValue || '';
+            });
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.navbar-search').forEach(initializeSearch);
         initializeTheme();
+        initializeRecipeFavorites();
+        initializePagination();
     });
 })();
 // Small native replacements for the navigation and modal interactions previously
