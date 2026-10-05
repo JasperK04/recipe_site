@@ -2,10 +2,400 @@
 endblock %} {% block extra_css %}
 <link
 	rel="stylesheet"
+	href="{{ url_for('static', filename='css/recipe_form.css') }}"
+/>
+<link
+	rel="stylesheet"
 	href="{{ url_for('static', filename='css/recipe_image_cropper.css') }}"
 />
 {% endblock %} {% block content %} {% include "recipes/_image_crop_modal.html"
-%} {% endblock %} {% block extra_js %}
+%}
+<div class="recipe-editor">
+	<div class="recipe-editor-intro">
+		<p class="recipe-editor-eyebrow">Recept editor</p>
+		<h1>{{ title }}</h1>
+		<p>
+			Bouw het recept op in de volgorde waarin het wordt gemaakt. Voeg een
+			duidelijke afbeelding toe, orden de ingrediënten en maak van elke
+			instructie een rustige, leesbare stap.
+		</p>
+	</div>
+	<form
+		id="recipe-form"
+		class="recipe-editor-grid"
+		action="{{ url_for('api.update_recipe_endpoint', recipe_id=recipe.id) if recipe else url_for('api.create_recipe_endpoint') }}"
+		method="post"
+		enctype="multipart/form-data"
+		data-api-form="1"
+		data-client-validation="recipe"
+		data-client-validation-on-load="{{ '1' if validate_on_load else '0' }}"
+		data-recipe-status="{{ recipe.status if recipe else 'public' }}"
+		data-image-crop-enabled="1"
+		{%
+		if
+		imported_image_url
+		%}data-imported-image-url="{{ imported_image_url }}"
+		{%
+		endif
+		%}
+	>
+		{{ form.hidden_tag() }}
+		<input type="hidden" id="remove_image" name="remove_image" value="0" />
+		<div>
+			<section class="recipe-editor-panel">
+				<div class="recipe-editor-panel-header">
+					<div>
+						<h2>Receptdetails</h2>
+						<p class="recipe-editor-note">
+							De basis die lezers als eerste zien.
+						</p>
+					</div>
+				</div>
+				<div class="recipe-editor-panel-body">
+					<div class="form-grid">
+						<div class="form-field-full">
+							{{ form.title.label(class="form-label") }} {{
+							form.title(class="form-control", placeholder="Bijv.
+							Geroosterde tomaten met basilicum") }} {% for error
+							in form.title.errors %}
+							<div class="invalid-feedback d-block">
+								{{ error }}
+							</div>
+							{% endfor %}
+						</div>
+						<div class="form-field-full">
+							{{ form.description.label(class="form-label") }} {{
+							form.description(class="form-control form-textarea",
+							rows="3", placeholder="Beschrijf kort wat dit recept
+							bijzonder maakt") }} {% for error in
+							form.description.errors %}
+							<div class="invalid-feedback d-block">
+								{{ error }}
+							</div>
+							{% endfor %}
+						</div>
+						<div>
+							{{ form.category.label(class="form-label") }}
+							<div class="form-select-wrap" data-custom-select>
+								{{ form.category(class="form-select
+								form-select-native",
+								data_custom_select_native="") }}
+								<button
+									class="form-select-trigger"
+									type="button"
+									aria-haspopup="listbox"
+									aria-expanded="false"
+								></button>
+								<div
+									class="form-select-menu"
+									role="listbox"
+									tabindex="-1"
+								>
+									{% for value, label in form.category.choices
+									%}
+									<button
+										class="form-select-option"
+										type="button"
+										role="option"
+										data-value="{{ value }}"
+									>
+										{{ label }}
+									</button>
+									{% endfor %}
+								</div>
+							</div>
+						</div>
+						<div>
+							{{ form.servings.label(class="form-label") }} {{
+							form.servings(class="form-control", min="1",
+							placeholder="0") }}
+						</div>
+						<div>
+							{{ form.prep_time.label(class="form-label") }} {{
+							form.prep_time(class="form-control", min="1",
+							placeholder="0") }}
+						</div>
+						<div>
+							{{ form.cook_time.label(class="form-label") }} {{
+							form.cook_time(class="form-control", min="1",
+							placeholder="0") }}
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="recipe-editor-panel">
+				<div class="recipe-editor-panel-header">
+					<div>
+						<h2>Receptafbeelding</h2>
+						<p class="recipe-editor-note">
+							De afbeelding wordt bijgesneden naar 4:3.
+						</p>
+					</div>
+				</div>
+				<div class="recipe-editor-panel-body">
+					<div
+						class="recipe-image-frame image-frame"
+						id="image-preview-wrap"
+					>
+						{% set image_src = imported_image_url or
+						(url_for('recipes.recipe_image', recipe_id=recipe.id) if
+						recipe and recipe.has_image else '') %}
+						<div
+							id="image-placeholder"
+							class="recipe-card__placeholder recipe-image-placeholder"
+							role="button"
+							tabindex="0"
+							aria-label="Kies een afbeelding voor dit recept"
+							{%
+							if
+							image_src
+							%}hidden{%
+							endif
+							%}
+						>
+							<i
+								class="bi bi-cloud-arrow-up recipe-image-placeholder__icon"
+								aria-hidden="true"
+							></i>
+							<strong>Afbeelding toevoegen</strong>
+							<span>Klik om een afbeelding te importeren</span>
+						</div>
+						{% if image_src %}
+						<img
+							id="image-preview"
+							src="{{ image_src }}"
+							data-original-src="{{ image_src }}"
+							alt="Voorbeeld van de receptafbeelding"
+						/>
+						{% else %}
+						<img
+							id="image-preview"
+							alt="Voorbeeld van de receptafbeelding"
+							hidden
+						/>
+						{% endif %}
+						<div
+							class="recipe-image-overlay"
+							id="image-actions"
+							{%
+							if
+							not
+							image_src
+							%}style="display: none"
+							{%
+							endif
+							%}
+						>
+							<button
+								id="image-change-btn"
+								class="button button-secondary button-small"
+								type="button"
+								data-modal-target="recipe-image-crop-modal"
+							>
+								Aanpassen
+							</button>
+							<button
+								id="image-clear-btn"
+								class="button button-secondary button-small"
+								type="button"
+							>
+								Verwijderen
+							</button>
+						</div>
+					</div>
+					{{ form.image(class="visually-hidden",
+					accept=".jpg,.jpeg,.png,.gif,.webp") }}
+					<p class="recipe-editor-help">
+						JPG, PNG, GIF of WebP. De uitsnede wordt lokaal
+						toegepast voor het uploaden.
+					</p>
+					{% for error in form.image.errors %}
+					<div class="invalid-feedback d-block">{{ error }}</div>
+					{% endfor %}
+				</div>
+			</section>
+
+			<section class="recipe-editor-panel">
+				<div class="recipe-editor-panel-header">
+					<div>
+						<h2>Ingrediënten</h2>
+						<p class="recipe-editor-note">
+							Sleep de handgreep om de volgorde aan te passen.
+						</p>
+					</div>
+					<button
+						class="button button-secondary button-small nested-recipe-trigger"
+						type="button"
+						data-modal-target="nestedRecipeModal"
+					>
+						<i class="bi bi-journal-plus" aria-hidden="true"></i>
+						Recept toevoegen
+					</button>
+				</div>
+				<div class="recipe-editor-panel-body">
+					<div
+						id="ingredients-list"
+						class="recipe-sortable-list"
+						aria-label="Sorteerbare ingrediënten"
+					>
+						{% for ingredient in form.ingredients %}
+						<div
+							class="recipe-sortable-item ingredient-item"
+							data-index="{{ loop.index0 }}"
+						>
+							<button
+								class="recipe-drag-handle drag-handle"
+								type="button"
+								aria-label="Ingrediënt verplaatsen"
+							>
+								<i
+									class="bi bi-grip-vertical"
+									aria-hidden="true"
+								></i>
+							</button>
+							{{ ingredient(class="form-control",
+							data_raw_ingredient_json="", placeholder="2
+							eetlepels olijfolie") }}
+							<span
+								class="recipe-imported-indicator imported-indicator"
+								><i
+									class="bi bi-link-45deg"
+									aria-hidden="true"
+								></i>
+								Gekoppeld recept</span
+							>
+						</div>
+						{% endfor %}
+					</div>
+					{% for error in form.ingredients.errors %}
+					<div class="invalid-feedback d-block">{{ error }}</div>
+					{% endfor %}
+				</div>
+			</section>
+
+			<section class="recipe-editor-panel">
+				<div class="recipe-editor-panel-header">
+					<div>
+						<h2>Instructies</h2>
+						<p class="recipe-editor-note">
+							Houd één handeling per stap aan en sleep om te
+							ordenen.
+						</p>
+					</div>
+				</div>
+				<div class="recipe-editor-panel-body">
+					<div
+						id="instructions-list"
+						class="recipe-sortable-list"
+						aria-label="Sorteerbare instructies"
+					>
+						{% for instruction in form.instructions %}
+						<div
+							class="recipe-sortable-item instruction-item"
+							data-index="{{ loop.index0 }}"
+						>
+							<button
+								class="recipe-drag-handle drag-handle"
+								type="button"
+								aria-label="Instructie verplaatsen"
+							>
+								<i
+									class="bi bi-grip-vertical"
+									aria-hidden="true"
+								></i>
+							</button>
+							{{ instruction(class="form-control",
+							placeholder="Beschrijf deze bereidingsstap") }}
+						</div>
+						{% endfor %}
+					</div>
+					{% for error in form.instructions.errors %}
+					<div class="invalid-feedback d-block">{{ error }}</div>
+					{% endfor %}
+				</div>
+			</section>
+		</div>
+
+		<aside class="recipe-editor-panel recipe-editor-sidebar">
+			<div class="recipe-editor-status">
+				<div
+					id="recipe-editor-status-line"
+					class="recipe-editor-status-line"
+					aria-live="polite"
+				>
+					<span class="recipe-editor-status-dot"></span
+					><span id="recipe-editor-status-text"
+						>Nog niet klaar om op te slaan</span
+					>
+				</div>
+				<p class="recipe-editor-note">
+					Controleer de inhoud en publiceer wanneer alles klopt.
+				</p>
+			</div>
+			<div class="recipe-editor-summary">
+				<h3>Samenvatting</h3>
+				<div class="recipe-editor-summary-row">
+					<span>Categorie</span
+					><strong id="recipe-summary-category"
+						>{{ form.category.data or 'Nog niet gekozen' }}</strong
+					>
+				</div>
+				<div class="recipe-editor-summary-row">
+					<span>Porties</span
+					><strong id="recipe-summary-servings"
+						>{{ form.servings.data or 'Niet ingevuld' }}</strong
+					>
+				</div>
+				<div class="recipe-editor-summary-row">
+					<span>Totale tijd</span
+					><strong id="recipe-summary-total-time"
+						>{{ (form.prep_time.data or 0) + (form.cook_time.data or
+						0) }} minuten</strong
+					>
+				</div>
+				<div class="recipe-editor-summary-row">
+					<span>Ingrediënten</span
+					><strong id="recipe-summary-ingredients"
+						>{{ form.ingredients|length }} regels</strong
+					>
+				</div>
+				<div class="recipe-editor-summary-row">
+					<span>Instructies</span
+					><strong id="recipe-summary-instructions"
+						>{{ form.instructions|length }} stappen</strong
+					>
+				</div>
+			</div>
+			<div class="recipe-editor-actions">
+				{% set selected_status = form.status.data or 'public' %} {% if
+				form.status %}{{ form.status(class="visually-hidden",
+				id="status-field") }}{% endif %}
+				<button
+					class="button button-primary status-submit {% if selected_status == 'public' %}is-selected{% endif %}"
+					type="submit"
+					data-status-value="public"
+				>
+					<i class="bi bi-globe2" aria-hidden="true"></i> Openbaar
+					opslaan
+				</button>
+				<button
+					class="button button-secondary status-submit {% if selected_status == 'private' %}is-selected{% endif %}"
+					type="submit"
+					data-status-value="private"
+				>
+					<i class="bi bi-lock" aria-hidden="true"></i> Privé opslaan
+				</button>
+			</div>
+		</aside>
+	</form>
+</div>
+{% include "recipes/_nested_recipe_modal.html" %} {% endblock %} {% block
+extra_js %}
+<script
+	src="{{ url_for('static', filename='js/recipe_modal.js') }}"
+	defer
+></script>
 <script
 	src="{{ url_for('static', filename='js/validation.js') }}"
 	defer

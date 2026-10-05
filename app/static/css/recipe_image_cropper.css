@@ -1,0 +1,106 @@
+.form-modal#recipe-image-crop-modal .form-modal-dialog {
+	height: min(calc(100vh - 40px), 100%);
+	height: min(calc(100dvh - 40px), 100%);
+	overflow: hidden;
+}
+.form-modal#recipe-image-crop-modal .form-modal-content {
+	display: flex;
+	height: 100%;
+	min-height: 0;
+	flex-direction: column;
+}
+.form-modal#recipe-image-crop-modal .form-modal-header,
+.form-modal#recipe-image-crop-modal .form-modal-footer {
+	flex-shrink: 0;
+}
+.form-modal#recipe-image-crop-modal .form-modal-body {
+	display: flex;
+	min-height: 0;
+	flex: 1;
+	flex-direction: column;
+	overflow: hidden;
+}
+.recipe-image-crop-stage {
+	position: relative;
+	width: 100%;
+	height: 0;
+	min-height: 0;
+	flex: 1 1 0;
+	place-items: center;
+	overflow: hidden;
+	background: #392c25;
+}
+.recipe-image-crop-stage img {
+	width: auto;
+	height: auto;
+	max-width: 100%;
+	max-height: 100%;
+	display: block;
+	object-fit: contain;
+}
+.recipe-image-crop-selection {
+	box-sizing: border-box;
+	display: none;
+	position: absolute;
+	border: 2px solid #fff9f2;
+	box-shadow: 0 0 0 999px rgb(20 14 11 / 55%);
+	cursor: move;
+	touch-action: none;
+}
+.recipe-image-crop-selection::after {
+	content: "4:3";
+	position: absolute;
+	right: 8px;
+	bottom: 7px;
+	color: #fff9f2;
+	font-size: 11px;
+	font-weight: 700;
+	text-shadow: 0 1px 3px #000;
+}
+.recipe-image-crop-handle {
+	position: absolute;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	border: 2px solid #392c25;
+	border-radius: 50%;
+	background: #fff9f2;
+	box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
+	cursor: nwse-resize;
+	touch-action: none;
+	transform: translate(-50%, -50%);
+}
+.recipe-image-crop-handle[data-crop-handle="ne"],
+.recipe-image-crop-handle[data-crop-handle="sw"] {
+	cursor: nesw-resize;
+}
+.recipe-image-crop-handle[data-crop-handle="nw"] {
+	top: 0;
+	left: 0;
+}
+.recipe-image-crop-handle[data-crop-handle="ne"] {
+	top: 0;
+	left: 100%;
+}
+.recipe-image-crop-handle[data-crop-handle="sw"] {
+	top: 100%;
+	left: 0;
+}
+.recipe-image-crop-handle[data-crop-handle="se"] {
+	top: 100%;
+	left: 100%;
+}
+.recipe-image-crop-size-control {
+	display: none;
+}
+@media (max-width: 600px) {
+	.recipe-image-crop-size-control {
+		display: block;
+		margin-top: 16px;
+	}
+}
+@media (max-width: 767.98px) {
+	.recipe-image-crop-stage {
+		max-height: none;
+	}
+}

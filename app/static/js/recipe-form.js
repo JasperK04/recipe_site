@@ -1,6 +1,8 @@
 (function () {
+    let summaryTimer = null;
+
     function reindexList(container) {
-        const items = Array.from(container.children).filter(item => item.classList?.contains('list-group-item'));
+        const items = Array.from(container.children).filter(item => item.classList?.contains('ingredient-item') || item.classList?.contains('instruction-item'));
         items.forEach((item, index) => {
             item.dataset.index = index;
             item.querySelectorAll('input, select, textarea').forEach(input => {
@@ -26,7 +28,7 @@
 
     function ensureOneEmptyAtEnd(list) {
         if (!list) return;
-        const items = Array.from(list.querySelectorAll('.list-group-item'));
+        const items = Array.from(list.children).filter(item => item.classList?.contains('ingredient-item') || item.classList?.contains('instruction-item'));
         const emptyItems = [];
         items.forEach(item => {
             const input = item.querySelector('input, textarea');
@@ -51,7 +53,7 @@
         let dragState = null;
         const moveItem = (item, reference) => {
             const positions = new Map(Array.from(list.children)
-                .filter(child => child.classList?.contains('list-group-item'))
+                .filter(child => child.classList?.contains('ingredient-item') || child.classList?.contains('instruction-item'))
                 .map(child => [child, child.getBoundingClientRect()]));
             list.insertBefore(item, reference);
             positions.forEach((before, child) => {
@@ -72,7 +74,7 @@
         list.addEventListener('pointerdown', event => {
             const target = event.target instanceof Element ? event.target : null;
             const handle = target?.closest('.drag-handle');
-            const item = handle?.closest('.list-group-item');
+            const item = handle?.closest('.ingredient-item, .instruction-item');
             if (!handle || !item || item.classList.contains('sortable-disabled')) return;
             dragState = { handle, item, pointerId: event.pointerId, startY: event.clientY, isDragging: false };
             handle.setPointerCapture(event.pointerId);
@@ -85,7 +87,7 @@
                 dragState.isDragging = true;
                 dragState.item.classList.add('touch-reordering');
             }
-            const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.list-group-item');
+            const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.ingredient-item, .instruction-item');
             if (!target || target.parentElement !== list || target === dragState.item) return;
             const bounds = target.getBoundingClientRect();
             moveItem(dragState.item, event.clientY < bounds.top + bounds.height / 2 ? target : target.nextElementSibling);
@@ -107,7 +109,7 @@
             onEnd(event) {
                 window.requestAnimationFrame(() => {
                     if (Number.isInteger(event.newIndex) && event.item.parentElement === list) {
-                        const items = Array.from(list.children).filter(item => item.classList?.contains('list-group-item') && item !== event.item);
+                        const items = Array.from(list.children).filter(item => (item.classList?.contains('ingredient-item') || item.classList?.contains('instruction-item')) && item !== event.item);
                         list.insertBefore(event.item, items[event.newIndex] || null);
                     }
                     ensureOneEmptyAtEnd(list);
@@ -119,6 +121,13 @@
             const target = event.target;
             const items = Array.from(list.querySelectorAll(itemSelector));
             const last = items[items.length - 1];
+            const currentItem = target.closest(itemSelector);
+            if (currentItem && !target.value.trim() && currentItem !== last) {
+                currentItem.remove();
+                ensureOneEmptyAtEnd(list);
+                scheduleRecipeSummary();
+                return;
+            }
             if (last && target.closest(itemSelector) === last && target.value.trim()) {
                 const clone = last.cloneNode(true);
                 clone.querySelectorAll('input, textarea, select').forEach(input => { input.value = ''; });
@@ -127,10 +136,99 @@
                 ensureOneEmptyAtEnd(list);
             }
             if (isIngredient && target.matches('input, textarea, select') && !target.value.trim()) resetIngredientItem(target.closest('.ingredient-item'));
+            scheduleRecipeSummary();
         });
         list.addEventListener('focusout', event => {
-            if (event.target.matches('input, textarea, select') && !event.target.value.trim()) window.setTimeout(() => ensureOneEmptyAtEnd(list), 50);
+            if (event.target.matches('input, textarea, select') && !event.target.value.trim()) {
+                const item = event.target.closest(itemSelector);
+                const items = Array.from(list.querySelectorAll(itemSelector));
+                if (item && item !== items[items.length - 1]) item.remove();
+                window.setTimeout(() => {
+                    ensureOneEmptyAtEnd(list);
+                    scheduleRecipeSummary();
+                }, 50);
+            }
         });
+    }
+
+    function recipeFieldIsValid(field, required = false) {
+        const value = String(field?.value || '').trim();
+        if (!value) return !required;
+        if (field.id === 'title') return value.length <= 200;
+        if (field.id === 'description') return value.length <= 500;
+        if (['servings', 'prep_time', 'cook_time'].includes(field.id)) {
+            return /^\d+$/.test(value) && Number(value) > 0;
+        }
+        return true;
+    }
+
+    function isRecipeReady(form) {
+        const ingredientValues = Array.from(form.querySelectorAll('#ingredients-list input, #ingredients-list textarea')).filter(field => field.value.trim());
+        const instructionValues = Array.from(form.querySelectorAll('#instructions-list input, #instructions-list textarea')).filter(field => field.value.trim());
+        const image = form.querySelector('#image');
+        const imageValid = !image?.files?.length || /\.(jpg|jpeg|png|gif|webp)$/i.test(image.files[0].name);
+        return recipeFieldIsValid(form.querySelector('#title'), true)
+            && recipeFieldIsValid(form.querySelector('#description'))
+            && recipeFieldIsValid(form.querySelector('#servings'))
+            && recipeFieldIsValid(form.querySelector('#prep_time'))
+            && recipeFieldIsValid(form.querySelector('#cook_time'))
+            && ingredientValues.length > 0
+            && instructionValues.length > 0
+            && imageValid;
+    }
+
+    function updateRecipeReadiness(form) {
+        const statusLine = form.querySelector('#recipe-editor-status-line');
+        const statusText = form.querySelector('#recipe-editor-status-text');
+        if (!statusLine || !statusText) return;
+        const ready = isRecipeReady(form);
+        statusLine.classList.toggle('is-ready', ready);
+        statusText.textContent = ready ? 'Klaar om op te slaan' : 'Nog niet klaar om op te slaan';
+    }
+
+    function updateRecipeSummary() {
+        const form = document.getElementById('recipe-form');
+        if (!form) return;
+        const countValues = selector => Array.from(document.querySelectorAll(`${selector} input, ${selector} textarea`)).filter(field => field.value.trim()).length;
+        const ingredients = document.getElementById('recipe-summary-ingredients');
+        const instructions = document.getElementById('recipe-summary-instructions');
+        const totalTime = document.getElementById('recipe-summary-total-time');
+        const category = document.getElementById('recipe-summary-category');
+        const servings = document.getElementById('recipe-summary-servings');
+        if (ingredients) ingredients.textContent = `${countValues('#ingredients-list')} regels`;
+        if (instructions) instructions.textContent = `${countValues('#instructions-list')} stappen`;
+        if (totalTime) totalTime.textContent = `${(Number(form.querySelector('#prep_time')?.value) || 0) + (Number(form.querySelector('#cook_time')?.value) || 0)} minuten`;
+        if (category) category.textContent = form.querySelector('#category')?.value || 'Nog niet gekozen';
+        if (servings) servings.textContent = form.querySelector('#servings')?.value || 'Niet ingevuld';
+        updateRecipeReadiness(form);
+    }
+
+    function scheduleRecipeSummary() {
+        if (summaryTimer) window.clearTimeout(summaryTimer);
+        summaryTimer = window.setTimeout(() => {
+            summaryTimer = null;
+            updateRecipeSummary();
+        }, 320);
+    }
+
+    function clearItem(item) {
+        item.querySelectorAll('input, textarea, select').forEach(input => { input.value = ''; });
+        resetIngredientItem(item);
+    }
+
+    function addInstruction(list) {
+        if (!list) return;
+        const emptyItem = list.querySelector('.instruction-item.sortable-disabled, .instruction-item:last-child');
+        if (emptyItem && !emptyItem.querySelector('input, textarea')?.value.trim()) {
+            emptyItem.querySelector('input, textarea')?.focus();
+            return;
+        }
+        const item = list.querySelector('.instruction-item')?.cloneNode(true);
+        if (!item) return;
+        clearItem(item);
+        list.appendChild(item);
+        ensureOneEmptyAtEnd(list);
+        item.querySelector('input, textarea')?.focus();
     }
 
     function ingredientToDisplayString(value) {
@@ -150,6 +248,25 @@
         attachListHandlers('#instructions-list', '.instruction-item', false);
         ensureOneEmptyAtEnd(ingredientsList);
         ensureOneEmptyAtEnd(instructionsList);
+        scheduleRecipeSummary();
+
+        document.querySelectorAll('#recipe-form input, #recipe-form textarea, #recipe-form select').forEach(field => {
+            field.addEventListener('input', scheduleRecipeSummary);
+            field.addEventListener('change', scheduleRecipeSummary);
+        });
+
+        document.getElementById('recipe-form')?.addEventListener('submit', event => {
+            const status = event.submitter?.dataset.statusValue;
+            const statusField = document.getElementById('status-field');
+            if (status && statusField) statusField.value = status;
+        }, true);
+        document.querySelectorAll('.status-submit').forEach(button => button.addEventListener('click', () => {
+            document.querySelectorAll('.status-submit').forEach(item => item.classList.toggle('is-selected', item === button));
+        }));
+
+        document.getElementById('add-instruction')?.addEventListener('click', () => {
+            addInstruction(instructionsList);
+        });
 
         ingredientsList?.querySelectorAll('input, textarea, select').forEach(input => {
             const raw = input.value.trim();
@@ -181,7 +298,7 @@
         function renderResults(items, hasMore) {
             results.replaceChildren();
             if (!items.length) {
-                results.innerHTML = '<div class="list-group-item text-muted">Geen resultaten gevonden.</div>';
+                results.innerHTML = '<div class="recipe-search-empty">Geen resultaten gevonden.</div>';
                 confirmButton.disabled = true;
                 selectedRecipe = null;
                 return;
@@ -189,7 +306,7 @@
             items.forEach(item => {
                 const row = document.createElement('button');
                 row.type = 'button';
-                row.className = 'list-group-item list-group-item-action nested-recipe-result';
+                row.className = 'recipe-search-result nested-recipe-result';
                 row.innerHTML = `<span>${item.title}</span><span class="text-muted">#${item.id}</span>`;
                 row.addEventListener('click', () => {
                     selectedRecipe = item;
@@ -202,7 +319,7 @@
             });
             if (hasMore) {
                 const more = document.createElement('div');
-                more.className = 'list-group-item nested-recipe-more text-muted';
+                more.className = 'recipe-search-empty nested-recipe-more';
                 more.textContent = '+ meer';
                 results.appendChild(more);
             }
@@ -239,7 +356,8 @@
             importedItem.querySelector('.imported-indicator')?.classList.add('is-visible');
             ingredientsList.insertBefore(importedItem, emptyItem);
             reindexList(ingredientsList);
-            bootstrap.Modal.getInstance(modal)?.hide();
+            scheduleRecipeSummary();
+            window.RecipeModals?.hide(modal);
         });
     });
 })();

@@ -303,7 +303,7 @@ class RecipeForm(FlaskForm):
     category = SelectField(
         "Categorie",
         choices=[
-            ("", "Selecteer een categorie"),
+            ("", "Selecteer categorie"),
             ("Ontbijt", "Ontbijt"),
             ("Lunch", "Lunch"),
             ("Voorgerecht", "Voorgerecht"),
