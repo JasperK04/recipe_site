@@ -1,2 +1,387 @@
-{% extends "components/base.html" %} {% block title %}Profiel - Recepten{%
-endblock %} {% block content %} {% endblock %}
+{% extends "components/base.html" %} {% block title %}Mijn profiel - Recepten{%
+endblock %} {% block extra_css %}
+<link
+	rel="stylesheet"
+	href="{{ url_for('static', filename='css/profile.css') }}"
+/>
+<link
+	rel="stylesheet"
+	href="{{ url_for('static', filename='css/cards.css') }}"
+/>
+{% endblock %} {% block content %}
+<section class="profile-page" aria-labelledby="profile-title">
+	<header class="profile-heading">
+		<p class="auth-eyebrow">Jouw account</p>
+		<h1 id="profile-title">Mijn profiel</h1>
+		<p>
+			Beheer je accountgegevens en bekijk je status binnen Recepten
+			Register.
+		</p>
+	</header>
+
+	<div class="profile-layout">
+		<section
+			class="card profile-summary"
+			aria-labelledby="profile-summary-title"
+		>
+			<div class="profile-card-heading">
+				<span class="profile-avatar" aria-hidden="true"
+					>{{ current_user.username[:1]|upper }}</span
+				>
+				<div>
+					<h2 id="profile-summary-title">
+						{{ current_user.username }}
+					</h2>
+					<p>{{ current_user.get_role_label() }}</p>
+				</div>
+				<span
+					class="badge {{ 'text-bg-success' if current_user.is_active else 'text-bg-secondary' }}"
+				>
+					{{ 'Actief' if current_user.is_active else 'Gedeactiveerd'
+					}}
+				</span>
+			</div>
+			<dl class="profile-details">
+				<div>
+					<dt>Gebruiker</dt>
+					<dd>{{ current_user.username }}</dd>
+				</div>
+				<div>
+					<dt>E-mailadres</dt>
+					<dd>{{ current_user.email }}</dd>
+				</div>
+				<div>
+					<dt>Accountrol</dt>
+					<dd>{{ current_user.get_role_label() }}</dd>
+				</div>
+			</dl>
+			<div class="profile-actions">
+				<a
+					class="button button-secondary"
+					href="{{ url_for('auth.edit_profile') }}"
+				>
+					<i class="bi bi-pencil" aria-hidden="true"></i> Profiel
+					bewerken
+				</a>
+				<a
+					class="button button-secondary"
+					href="{{ url_for('recipe_overview.list_recipes', filter='favorieten') }}"
+				>
+					<i class="bi bi-bookmark" aria-hidden="true"></i> Opgeslagen
+					recepten
+				</a>
+			</div>
+		</section>
+
+		<aside
+			class="card profile-role-card"
+			aria-labelledby="profile-role-title"
+		>
+			<div class="profile-card-icon" aria-hidden="true">
+				<i class="bi bi-award"></i>
+			</div>
+			<h2 id="profile-role-title">Jouw rol</h2>
+			{% if current_user.can_create_recipes %}
+			<p>Je kunt recepten toevoegen en beheren.</p>
+			<a
+				class="button button-primary"
+				href="{{ url_for('recipes.add_recipe') }}"
+			>
+				<i class="bi bi-plus-lg" aria-hidden="true"></i> Recept
+				toevoegen
+			</a>
+			<a
+				class="button button-secondary"
+				href="{{ url_for('recipe_overview.list_recipes', filter='mijn') }}"
+			>
+				<i class="bi bi-journal-text" aria-hidden="true"></i> Mijn
+				recepten
+			</a>
+			{% if current_user.is_admin %}
+			<a
+				class="button button-secondary"
+				href="{{ url_for('admin.panel') }}"
+			>
+				<i class="bi bi-speedometer2" aria-hidden="true"></i> Admin
+				beheer
+			</a>
+			{% endif %} {% elif current_user.creator_request_pending %}
+			<p>
+				Je aanvraag om creator te worden staat open. We laten je weten
+				zodra deze is beoordeeld.
+			</p>
+			<span class="badge text-bg-warning">Aanvraag in behandeling</span>
+			{% elif current_user.is_active and not current_user.is_admin %}
+			<p>Wil je zelf recepten delen? Vraag aan om creator te worden.</p>
+			<form method="post" action="{{ url_for('auth.request_creator') }}">
+				<input
+					type="hidden"
+					name="csrf_token"
+					value="{{ csrf_token() }}"
+				/>
+				<button class="button button-primary" type="submit">
+					<i class="bi bi-send" aria-hidden="true"></i> Creator
+					aanvragen
+				</button>
+			</form>
+			{% else %}
+			<p>
+				Je account is gedeactiveerd. Neem contact op met een beheerder
+				voor hulp.
+			</p>
+			{% endif %}
+		</aside>
+	</div>
+
+	<section class="profile-recipes" aria-labelledby="profile-recipes-title">
+		<div class="profile-recipes-heading">
+			<div>
+				<p class="auth-eyebrow">Jouw collectie</p>
+				<h2 id="profile-recipes-title">Mijn recepten</h2>
+			</div>
+			{% if current_user.can_create_recipes %}
+			<a
+				class="button button-secondary"
+				href="{{ url_for('recipe_overview.list_recipes', filter='mijn') }}"
+				>Al mijn recepten</a
+			>
+			{% endif %}
+		</div>
+		{% include "components/grid.html" %}
+	</section>
+
+	<section class="danger-zone" aria-labelledby="danger-zone-title">
+		<header class="danger-zone-heading">
+			<p class="auth-eyebrow">Accountbeheer</p>
+			<h2 id="danger-zone-title">Gevarenzone</h2>
+			<p>Deze acties kunnen gegevens definitief verwijderen.</p>
+		</header>
+		<div class="danger-zone-actions">
+			<div class="danger-zone-action">
+				<div>
+					<h3>Al mijn recepten verwijderen</h3>
+					<p>
+						Verwijder alle recepten die aan jouw account zijn
+						gekoppeld.
+					</p>
+				</div>
+				<button
+					class="button button-danger"
+					type="button"
+					data-modal-target="deleteAllRecipesModal"
+				>
+					Recepten verwijderen
+				</button>
+			</div>
+			<div class="danger-zone-action">
+				<div>
+					<h3>Mijn account verwijderen</h3>
+					<p>
+						Verwijder je account en kies wat er met je recepten
+						gebeurt.
+					</p>
+				</div>
+				<button
+					class="button button-danger"
+					type="button"
+					data-modal-target="deleteAccountModal"
+				>
+					Account verwijderen
+				</button>
+			</div>
+		</div>
+		<p class="danger-zone-note" role="status">
+			Account- en receptverwijdering is nog niet beschikbaar.
+		</p>
+	</section>
+</section>
+
+<div
+	class="form-modal"
+	id="deleteAllRecipesModal"
+	hidden
+	aria-hidden="true"
+	aria-labelledby="deleteAllRecipesModalLabel"
+>
+	<div class="form-modal-dialog">
+		<div class="form-modal-content">
+			<div class="form-modal-header">
+				<div>
+					<p class="form-modal-eyebrow">Recepten verwijderen</p>
+					<h2 id="deleteAllRecipesModalLabel">
+						Al je recepten verwijderen?
+					</h2>
+				</div>
+				<button
+					class="form-modal-close"
+					type="button"
+					data-modal-close="deleteAllRecipesModal"
+					aria-label="Venster sluiten"
+				>
+					<i class="bi bi-x-lg" aria-hidden="true"></i>
+				</button>
+			</div>
+			<div class="form-modal-body">
+				<p>
+					Deze actie verwijdert alle recepten van je account,
+					inclusief privé recepten. Dit kan later niet ongedaan worden
+					gemaakt.
+				</p>
+				<label
+					class="danger-zone-confirm-label"
+					for="delete-recipes-confirmation"
+					>Typ <strong>I AM SURE</strong> om te bevestigen.</label
+				>
+				<input
+					id="delete-recipes-confirmation"
+					class="form-control"
+					type="text"
+					required
+					pattern="I AM SURE"
+					autocomplete="off"
+					aria-describedby="delete-recipes-note"
+				/>
+				<p
+					class="danger-zone-note"
+					id="delete-recipes-note"
+					role="status"
+					aria-live="polite"
+				>
+					Verwijderen is nog niet beschikbaar.
+				</p>
+			</div>
+			<div class="form-modal-footer">
+				<button
+					class="button button-secondary"
+					type="button"
+					data-modal-close="deleteAllRecipesModal"
+				>
+					Annuleren
+				</button>
+				<button
+					class="button button-danger"
+					type="button"
+					data-danger-confirm="delete-recipes-confirmation"
+					data-danger-note="delete-recipes-note"
+					disabled
+				>
+					Recepten definitief verwijderen
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div
+	class="form-modal"
+	id="deleteAccountModal"
+	hidden
+	aria-hidden="true"
+	aria-labelledby="deleteAccountModalLabel"
+>
+	<div class="form-modal-dialog">
+		<div class="form-modal-content">
+			<div class="form-modal-header">
+				<div>
+					<p class="form-modal-eyebrow">Account verwijderen</p>
+					<h2 id="deleteAccountModalLabel">
+						Wat gebeurt er met je recepten?
+					</h2>
+				</div>
+				<button
+					class="form-modal-close"
+					type="button"
+					data-modal-close="deleteAccountModal"
+					aria-label="Venster sluiten"
+				>
+					<i class="bi bi-x-lg" aria-hidden="true"></i>
+				</button>
+			</div>
+			<div class="form-modal-body">
+				<p>
+					Als je je account verwijdert, kies dan of je recepten ook
+					worden verwijderd of behouden blijven onder een andere
+					eigenaar.
+				</p>
+				<label
+					class="danger-zone-confirm-label"
+					for="delete-account-password"
+					>Voer je huidige wachtwoord in om door te gaan.</label
+				>
+				<input
+					id="delete-account-password"
+					class="form-control"
+					type="password"
+					required
+					autocomplete="current-password"
+					aria-describedby="delete-account-note"
+				/>
+				<fieldset class="danger-zone-choices">
+					<legend>Recepten na accountverwijdering</legend>
+					<label
+						><input
+							type="radio"
+							name="account-recipe-disposition"
+							value="delete"
+							checked
+						/>
+						Recepten ook verwijderen</label
+					>
+					<label
+						><input
+							type="radio"
+							name="account-recipe-disposition"
+							value="admin"
+						/>
+						Recepten overdragen aan een beheerder</label
+					>
+					<label
+						><input
+							type="radio"
+							name="account-recipe-disposition"
+							value="system"
+						/>
+						Recepten overdragen aan een systeemaccount</label
+					>
+				</fieldset>
+				<p
+					class="danger-zone-note"
+					id="delete-account-note"
+					role="status"
+					aria-live="polite"
+				>
+					Accountverwijdering en het overdragen van recepten zijn nog
+					niet beschikbaar.
+				</p>
+			</div>
+			<div class="form-modal-footer">
+				<button
+					class="button button-secondary"
+					type="button"
+					data-modal-close="deleteAccountModal"
+				>
+					Annuleren
+				</button>
+				<button
+					class="button button-danger"
+					type="button"
+					data-danger-confirm="delete-account-password"
+					data-danger-note="delete-account-note"
+					disabled
+				>
+					Account definitief verwijderen
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %} {% block extra_js %}
+<script
+	src="{{ url_for('static', filename='js/recipe_modal.js') }}"
+	defer
+></script>
+<script
+	src="{{ url_for('static', filename='js/profile_danger_zone.js') }}"
+	defer
+></script>
+{% endblock %}

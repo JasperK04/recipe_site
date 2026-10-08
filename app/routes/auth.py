@@ -35,7 +35,7 @@ from app.forms import (
     ProfileEditForm,
     RegistrationForm,
 )
-from app.models import User
+from app.models import Recipe, User
 from app.navigation import safe_redirect_target
 
 auth_bp = Blueprint("auth", __name__)
@@ -197,7 +197,14 @@ def logout():
 @login_required
 def profile():
     """Read-only profile view."""
-    return render_template("auth/profile.html")
+    recipes = (
+        Recipe.query.filter_by(user_id=current_user.id)
+        .order_by(Recipe.created_at.desc(), Recipe.id.desc())
+        .paginate(page=1, per_page=12, error_out=False)
+    )
+    return render_template(
+        "auth/profile.html", recipes=recipes, overview_title="Mijn recepten"
+    )
 
 
 @auth_bp.route("/profiel/bewerken", methods=["GET", "POST"])

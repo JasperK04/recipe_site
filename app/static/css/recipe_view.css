@@ -45,8 +45,8 @@
 	box-shadow: var(--shadow-soft);
 }
 .recipe-view-panel {
-    position: sticky;
-    top: var(--recipe-gap);
+	position: sticky;
+	top: var(--recipe-gap);
 }
 .recipe-view-article {
 	display: grid;
@@ -70,14 +70,21 @@
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
-    border-radius: inherit;
+	border-radius: inherit;
 }
 .recipe-view-image-placeholder {
 	display: grid;
 	place-items: center;
-	background: linear-gradient(135deg, var(--surface-secondary), var(--primary-soft));
+	background: linear-gradient(
+		135deg,
+		var(--surface-secondary),
+		var(--primary-soft)
+	);
 	color: var(--primary-strong);
-	font: 500 25px "Fraunces", Georgia, serif;
+	font:
+		500 25px "Fraunces",
+		Georgia,
+		serif;
 }
 .recipe-view-category {
 	position: absolute;
@@ -129,7 +136,10 @@
 .recipe-view-body > h1 {
 	max-width: 720px;
 	margin: 8px 0 0;
-	font: 600 clamp(24px, 3.4vw, 36px) / 1.08 "Fraunces", Georgia, serif;
+	font:
+		600 clamp(24px, 3.4vw, 36px) / 1.08 "Fraunces",
+		Georgia,
+		serif;
 }
 .recipe-view-eyebrow {
 	margin: 0;
@@ -159,7 +169,7 @@
 	border-top: 1px solid var(--border);
 	color: var(--text);
 	font-size: 12px;
-    text-wrap: nowrap;
+	text-wrap: nowrap;
 }
 .recipe-view-meta > span {
 	display: inline-flex;
@@ -169,7 +179,8 @@
 .recipe-view-meta i {
 	color: var(--primary);
 	font-size: 18px;
-}.recipe-view-description {
+}
+.recipe-view-description {
 	max-width: 72ch;
 	margin: 8px 0 0;
 	color: var(--text-muted);
@@ -186,7 +197,10 @@
 .recipe-view-compact-copy h1 {
 	max-width: 720px;
 	margin: 0;
-	font: 600 clamp(24px, 3.4vw, 36px) / 1.08 "Fraunces", Georgia, serif;
+	font:
+		600 clamp(24px, 3.4vw, 36px) / 1.08 "Fraunces",
+		Georgia,
+		serif;
 }
 .recipe-view-actions {
 	display: flex;
@@ -226,7 +240,10 @@
 .recipe-view-panel-heading h2,
 .recipe-score-panel h2 {
 	margin: 0;
-	font: 600 28px / 1.1 "Fraunces", Georgia, serif;
+	font:
+		600 28px / 1.1 "Fraunces",
+		Georgia,
+		serif;
 }
 .servings-control {
 	display: flex;
@@ -286,7 +303,8 @@
 	padding-top: 10px;
 }
 .ingredient-row--recipe:last-child {
-	border-bottom: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+	border-bottom: 1px solid
+		color-mix(in srgb, var(--primary) 28%, var(--border));
 }
 .ingredient-check {
 	display: grid;
@@ -349,7 +367,10 @@ a.ingredient-name:hover {
 .instruction-row::before {
 	content: counter(instruction, decimal-leading-zero);
 	color: var(--primary);
-	font: 600 20px / 1 "Fraunces", Georgia, serif;
+	font:
+		600 20px / 1 "Fraunces",
+		Georgia,
+		serif;
 }
 .instruction-row p {
 	margin: 0;
@@ -367,7 +388,9 @@ a.ingredient-name:hover {
 	cursor: pointer;
 	font-size: 12px;
 	white-space: nowrap;
-	transition: border-color 160ms ease, background-color 160ms ease,
+	transition:
+		border-color 160ms ease,
+		background-color 160ms ease,
 		box-shadow 160ms ease;
 }
 .wake-lock-control input {
@@ -433,7 +456,7 @@ a.ingredient-name:hover {
 	width: 42px;
 	height: 42px;
 	border-color: transparent;
-    color: var(--text);
+	color: var(--text);
 }
 .recipe-action-rail .icon-button:hover {
 	background: var(--primary-soft);
@@ -512,7 +535,7 @@ a.ingredient-name:hover {
 	flex: 1;
 }
 @media (max-width: 900px) {
-    .recipe-view {
+	.recipe-view {
 		--recipe-gap: 12px;
 	}
 	.recipe-view-article {
@@ -553,18 +576,21 @@ a.ingredient-name:hover {
 	}
 	.recipe-view-article--compact {
 		display: grid;
-		grid-template-columns: minmax(432px, min(600px, calc(100% - 136px))) minmax(0, 1fr);
+		grid-template-columns: minmax(
+				432px,
+				min(600px, calc(100% - 136px))
+			) minmax(0, 1fr);
 	}
 	.recipe-view-article--compact .recipe-view-image-wrapper {
 		width: calc(100% - 32px);
 		max-width: 600px;
 		min-width: 0;
-		margin: 16px; ;
-        border-radius: var(--radius-small);
+		margin: 16px;
+		border-radius: var(--radius-small);
 	}
 	.recipe-view-article--compact .recipe-view-body {
 		padding: 16px;
-        padding-left: 0;
+		padding-left: 0;
 	}
 	.recipe-view-article--compact .recipe-view-heading {
 		display: grid;
@@ -620,17 +646,17 @@ a.ingredient-name:hover {
 		align-items: flex-start;
 		flex-wrap: wrap;
 	}
-    .recipe-view-meta {
-        gap: 8px 16px;
-    }
+	.recipe-view-meta {
+		gap: 8px 16px;
+	}
 }
 @media (max-width: 400px) {
-    .recipe-serving-label {
+	.recipe-serving-label {
 		display: none;
 	}
-    .recipe-view-meta {
-        gap: 8px 24px;
-    }
+	.recipe-view-meta {
+		gap: 8px 24px;
+	}
 	.recipe-view-panel {
 		padding: 16px 14px;
 	}
