@@ -31,9 +31,9 @@ block meta %} {# Recipe-specific OpenGraph / Twitter metadata #}
 	href="{{ url_for('static', filename='css/recipe_view.css') }}"
 	rel="stylesheet"
 />
-{% endblock %} {% block content %} {% set is_favorited =
+{% endblock %} {% block content %} {% set is_bookmarkd =
 current_user.is_authenticated and
-current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
+current_user.bookmarks.filter_by(id=recipe.id).count() > 0 %}
 <div class="recipe-view">
 	<nav class="recipe-view-breadcrumb" aria-label="Broodkruimelpad">
 		<a href="{{ url_for('recipe_overview.list_recipes') }}">Recepten</a>
@@ -314,8 +314,8 @@ current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
 		<aside class="recipe-action-rail" aria-label="Receptacties">
 			{% if current_user.is_authenticated %}
 			<form
-				class="fav-form"
-				action="{{ url_for('api.unfavorite_recipe_endpoint' if is_favorited else 'api.favorite_recipe_endpoint', recipe_id=recipe.id) }}"
+				class="bkm-form"
+				action="{{ url_for('api.unbookmark_recipe_endpoint' if is_bookmarkd else 'api.bookmark_recipe_endpoint', recipe_id=recipe.id) }}"
 				method="post"
 			>
 				<input
@@ -326,11 +326,11 @@ current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
 				<button
 					class="icon-button"
 					type="submit"
-					title="{{ 'Verwijderen uit opgeslagen recepten' if is_favorited else 'Opslaan' }}"
-					aria-label="{{ 'Verwijder' if is_favorited else 'Sla op' }} {{ recipe.title }}{% if is_favorited %} uit opgeslagen recepten{% endif %}"
+					title="{{ 'Verwijderen uit opgeslagen recepten' if is_bookmarkd else 'Opslaan' }}"
+					aria-label="{{ 'Verwijder' if is_bookmarkd else 'Sla op' }} {{ recipe.title }}{% if is_bookmarkd %} uit opgeslagen recepten{% endif %}"
 				>
 					<i
-						class="bi {{ 'bi-bookmark-fill' if is_favorited else 'bi-bookmark' }}"
+						class="bi {{ 'bi-bookmark-fill' if is_bookmarkd else 'bi-bookmark' }}"
 						aria-hidden="true"
 					></i>
 				</button>

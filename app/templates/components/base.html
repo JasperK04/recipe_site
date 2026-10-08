@@ -226,14 +226,14 @@
 						{% endif %}
 						<a
 							class="icon-button"
-							id="favorite-button"
-							href="{{ url_for('recipe_overview.list_recipes', filter='favorieten') if current_user.is_authenticated else url_for('auth.login', next=request.full_path) }}"
+							id="bookmark-button"
+							href="{{ url_for('recipe_overview.list_recipes', filter='opgeslagen') if current_user.is_authenticated else url_for('auth.login', next=request.full_path) }}"
 							title="Mijn opgeslagen recepten"
 							aria-label="Mijn opgeslagen recepten"
 						>
 							<i
 								class="bi bi-bookmark"
-								id="favorite-icon"
+								id="bookmark-icon"
 								aria-hidden="true"
 							></i>
 						</a>

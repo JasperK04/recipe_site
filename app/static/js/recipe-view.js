@@ -33,21 +33,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const favoriteForm = document.querySelector('.fav-form');
-    favoriteForm?.addEventListener('submit', async event => {
+    const bookmarkForm = document.querySelector('.bkm-form');
+    bookmarkForm?.addEventListener('submit', async event => {
         event.preventDefault();
-        const button = favoriteForm.querySelector('button');
+        const button = bookmarkForm.querySelector('button');
         if (!button) return;
         button.disabled = true;
         try {
-            const response = await fetch(favoriteForm.action, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: new FormData(favoriteForm) });
+            const response = await fetch(bookmarkForm.action, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: new FormData(bookmarkForm) });
             const data = await response.json();
             if (!response.ok || data.status !== 'ok') throw new Error(data.message || 'Actie mislukt.');
             const icon = button.querySelector('i.bi');
-            icon?.classList.toggle('bi-bookmark-fill', data.favorited);
-            icon?.classList.toggle('bi-bookmark', !data.favorited);
-            button.title = data.favorited ? 'Verwijderen uit opgeslagen recepten' : 'Opslaan';
-            favoriteForm.action = favoriteForm.action.replace(data.favorited ? '/favorite' : '/unfavorite', data.favorited ? '/unfavorite' : '/favorite');
+            icon?.classList.toggle('bi-bookmark-fill', data.bookmarkd);
+            icon?.classList.toggle('bi-bookmark', !data.bookmarkd);
+            button.title = data.bookmarkd ? 'Verwijderen uit opgeslagen recepten' : 'Opslaan';
+            bookmarkForm.action = bookmarkForm.action.replace(data.bookmarkd ? '/bookmark' : '/unbookmark', data.bookmarkd ? '/unbookmark' : '/bookmark');
         } catch (error) {
             console.error(error);
         } finally {
@@ -55,20 +55,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    const favoriteButton = favoriteForm?.querySelector('button');
-    favoriteButton?.addEventListener('mouseenter', () => {
-        const icon = favoriteButton.querySelector('i.bi');
+    const bookmarkButton = bookmarkForm?.querySelector('button');
+    bookmarkButton?.addEventListener('mouseenter', () => {
+        const icon = bookmarkButton.querySelector('i.bi');
         if (!icon || icon.classList.contains('bi-bookmark-fill')) {
-            favoriteButton?.classList.add('faded');
+            bookmarkButton?.classList.add('faded');
             return;
         }
         icon.classList.add('hover-fill', 'bi-bookmark-fill');
         icon.classList.remove('bi-bookmark');
-        favoriteButton.classList.add('faded');
+        bookmarkButton.classList.add('faded');
     });
-    favoriteButton?.addEventListener('mouseleave', () => {
-        const icon = favoriteButton.querySelector('i.bi');
-        favoriteButton.classList.remove('faded');
+    bookmarkButton?.addEventListener('mouseleave', () => {
+        const icon = bookmarkButton.querySelector('i.bi');
+        bookmarkButton.classList.remove('faded');
         if (icon?.classList.contains('hover-fill')) {
             icon.classList.remove('hover-fill', 'bi-bookmark-fill');
             icon.classList.add('bi-bookmark');

@@ -333,18 +333,18 @@ def register_commands(app: Flask):
 
         db.session.commit()
 
-        # Add favorites for created users
+        # Add bookmarks for created users
         try:
             all_recipes = Recipe.query.all()
             if all_recipes:
                 for user in created_users:
-                    fav_count = random.randint(0, min(6, len(all_recipes)))
-                    if fav_count == 0:
+                    bkm_count = random.randint(0, min(6, len(all_recipes)))
+                    if bkm_count == 0:
                         continue
-                    favorites = random.sample(all_recipes, k=fav_count)
-                    for r in favorites:
-                        if not user.favorites.filter_by(id=r.id).first():
-                            user.favorites.append(r)
+                    bookmarks = random.sample(all_recipes, k=bkm_count)
+                    for r in bookmarks:
+                        if not user.bookmarks.filter_by(id=r.id).first():
+                            user.bookmarks.append(r)
                 db.session.commit()
         except SQLAlchemyError:
             db.session.rollback()

@@ -22,6 +22,11 @@ block extra_css %}
 	{% endif %}
 </header>
 
+<div class="discovery-controls">
+	{% set sort_hidden_params = {'filter': filter_name, 'category': category, 'search': search} %}
+	{% include "components/recipe_sort_controls.html" %}
+</div>
+
 {% include "components/grid.html" with context %} {% if recipes.has_prev or
 recipes.has_next %} {% include "components/pagination.html" with context %} {%
 endif %} {% endblock %}

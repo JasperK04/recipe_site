@@ -1,3 +1,5 @@
+from random import randint
+
 from flask import Blueprint, Response, render_template, request, url_for
 from sqlalchemy import func
 
@@ -50,11 +52,13 @@ def index():
 
     query = Recipe.query.filter_by(status=Recipe.STATUS_PUBLIC)
     recent_recipes = _apply_home_sort(query, sort).limit(12).all()
+    random_index = randint(0, len(recent_recipes) - 1) if recent_recipes else 0
     return render_template(
         "index.html",
         recipes=recent_recipes,
         sort=sort,
         sort_options=HOME_SORT_OPTIONS,
+        featured=recent_recipes[random_index] if recent_recipes else None,
     )
 
 

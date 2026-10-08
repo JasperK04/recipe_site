@@ -4,7 +4,7 @@ from app.models.analytics import (
     AnalyticsErrorGroup,
     AnalyticsEvent,
 )
-from app.models.common import PaginationMixin, users_favorites
+from app.models.common import PaginationMixin, users_bookmarks
 from app.models.otc import Credential
 from app.models.recipe import Recipe, RecipeDependency, RecipeScore
 from app.models.user import User
@@ -20,5 +20,5 @@ __all__ = [
     "RecipeDependency",
     "RecipeScore",
     "User",
-    "users_favorites",
+    "users_bookmarks",
 ]

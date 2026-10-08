@@ -3,6 +3,30 @@
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
 	gap: 16px;
 }
+.recipe-sort-controls {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.recipe-sort-controls label {
+	margin: 0;
+	font-size: 13px;
+	font-weight: 700;
+	white-space: nowrap;
+}
+.recipe-sort-controls .form-select-wrap {
+	flex: 0 0 220px;
+	width: 220px;
+}
+.recipe-sort-controls .form-select-trigger {
+	min-height: 44px;
+	height: 44px;
+}
+.discovery-controls {
+	display: flex;
+	justify-content: flex-end;
+	margin: -12px 0 24px;
+}
 .discovery-header {
 	display: flex;
 	align-items: end;
@@ -302,6 +326,18 @@
 }
 
 @media (max-width: 600px) {
+	.recipe-sort-controls {
+		justify-content: space-between;
+		width: 100%;
+	}
+	.recipe-sort-controls .form-select-wrap {
+		flex: 0 1 220px;
+		max-width: calc(100vw - 140px);
+	}
+	.discovery-controls {
+		justify-content: stretch;
+		margin-top: -12px;
+	}
 	.pagination-controls {
 		gap: 6px;
 	}

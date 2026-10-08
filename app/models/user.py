@@ -8,7 +8,7 @@ from sqlalchemy import text
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
-from app.models.common import users_favorites
+from app.models.common import users_bookmarks
 
 
 class User(UserMixin, db.Model):
@@ -50,11 +50,11 @@ class User(UserMixin, db.Model):
     recipes = db.relationship(
         "Recipe", backref="author", lazy="dynamic", cascade="all, delete-orphan"
     )
-    favorites = db.relationship(
+    bookmarks = db.relationship(
         "Recipe",
-        secondary=users_favorites,
+        secondary=users_bookmarks,
         lazy="dynamic",
-        backref=db.backref("favorited_by", lazy="dynamic"),
+        backref=db.backref("bookmarkd_by", lazy="dynamic"),
     )
     scores = db.relationship(
         "RecipeScore", back_populates="user", cascade="all, delete-orphan"

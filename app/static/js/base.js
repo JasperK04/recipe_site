@@ -110,7 +110,7 @@
         });
     }
 
-    function initializeRecipeFavorites() {
+    function initializeRecipeBookmarks() {
         document.querySelectorAll('.recipe-card__bookmark-form').forEach(form => {
             form.addEventListener('submit', async event => {
                 event.preventDefault();
@@ -125,14 +125,14 @@
                     });
                     const data = await response.json();
                     if (!response.ok || data.status !== 'ok') throw new Error(data.message || 'Actie mislukt.');
-                    const favorited = data.favorited;
+                    const bookmarkd = data.bookmarkd;
                     const icon = button.querySelector('i.bi');
-                    icon?.classList.toggle('bi-bookmark-fill', favorited);
-                    icon?.classList.toggle('bi-bookmark', !favorited);
-                    button.title = favorited ? 'Verwijderen uit opgeslagen recepten' : 'Opslaan';
+                    icon?.classList.toggle('bi-bookmark-fill', bookmarkd);
+                    icon?.classList.toggle('bi-bookmark', !bookmarkd);
+                    button.title = bookmarkd ? 'Verwijderen uit opgeslagen recepten' : 'Opslaan';
                     const title = form.closest('.recipe-card')?.querySelector('.recipe-card__title')?.textContent.trim() || 'recept';
-                    button.setAttribute('aria-label', `${favorited ? 'Verwijder' : 'Sla op'} ${title}${favorited ? ' uit opgeslagen recepten' : ''}`);
-                    form.action = form.action.replace(/\/favoriet(?:-verwijderen)?$/, favorited ? '/favoriet-verwijderen' : '/favoriet');
+                    button.setAttribute('aria-label', `${bookmarkd ? 'Verwijder' : 'Sla op'} ${title}${bookmarkd ? ' uit opgeslagen recepten' : ''}`);
+                    form.action = form.action.replace(/\/bookmark(?:-verwijderen)?$/, bookmarkd ? '/bookmark-verwijderen' : '/bookmark');
                 } catch (error) {
                     console.error(error);
                 } finally {
@@ -157,7 +157,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.navbar-search').forEach(initializeSearch);
         initializeTheme();
-        initializeRecipeFavorites();
+        initializeRecipeBookmarks();
         initializePagination();
     });
 })();

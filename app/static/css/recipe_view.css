@@ -97,12 +97,12 @@
 	font-size: 12px;
 	font-weight: 700;
 }
-.fav-form {
+.bkm-form {
 	top: 14px;
 	right: 14px;
 	z-index: 2;
 }
-.fav-btn-overlay {
+.bkm-btn-overlay {
 	display: grid;
 	width: 42px;
 	height: 42px;
@@ -113,11 +113,11 @@
 	color: #fff9f2;
 	cursor: pointer;
 }
-.fav-btn-overlay:hover {
+.bkm-btn-overlay:hover {
 	border-color: var(--primary);
 	background: var(--primary);
 }
-.fav-btn-overlay i {
+.bkm-btn-overlay i {
 	font-size: 19px;
 }
 .recipe-view-body {

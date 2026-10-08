@@ -576,19 +576,19 @@ def allow_recipe_moderation_endpoint(recipe_id):
     )
 
 
-def toggle_recipe_favorite(*, user: User, recipe: Recipe, favorite: bool) -> bool:
-    """Add or remove a recipe from the user's favorites."""
+def toggle_recipe_bookmark(*, user: User, recipe: Recipe, bookmark: bool) -> bool:
+    """Add or remove a recipe from the user's bookmarks."""
     if recipe.status != Recipe.STATUS_PUBLIC:
         raise ApiError("Alleen openbare recepten kunnen worden opgeslagen.", 403)
 
-    existing = user.favorites.filter_by(id=recipe.id).first()
+    existing = user.bookmarks.filter_by(id=recipe.id).first()
     changed = False
 
-    if favorite and not existing:
-        user.favorites.append(recipe)
+    if bookmark and not existing:
+        user.bookmarks.append(recipe)
         changed = True
-    elif not favorite and existing:
-        user.favorites.remove(recipe)
+    elif not bookmark and existing:
+        user.bookmarks.remove(recipe)
         changed = True
 
     if changed:
@@ -597,28 +597,28 @@ def toggle_recipe_favorite(*, user: User, recipe: Recipe, favorite: bool) -> boo
     return changed
 
 
-@api_bp.route("/recipes/<int:recipe_id>/favorite", methods=["POST"])
+@api_bp.route("/recipes/<int:recipe_id>/bookmark", methods=["POST"])
 @login_required
-def favorite_recipe_endpoint(recipe_id):
+def bookmark_recipe_endpoint(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     user = cast(User, current_user)
     try:
-        created = toggle_recipe_favorite(user=user, recipe=recipe, favorite=True)
+        created = toggle_recipe_bookmark(user=user, recipe=recipe, bookmark=True)
     except ApiError as error:
         return jsonify({"status": "error", "message": error.message}), error.status_code
-    return jsonify({"status": "ok", "favorited": created})
+    return jsonify({"status": "ok", "bookmarkd": created})
 
 
-@api_bp.route("/recipes/<int:recipe_id>/unfavorite", methods=["POST"])
+@api_bp.route("/recipes/<int:recipe_id>/unbookmark", methods=["POST"])
 @login_required
-def unfavorite_recipe_endpoint(recipe_id):
+def unbookmark_recipe_endpoint(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     user = cast(User, current_user)
     try:
-        removed = toggle_recipe_favorite(user=user, recipe=recipe, favorite=False)
+        removed = toggle_recipe_bookmark(user=user, recipe=recipe, bookmark=False)
     except ApiError as error:
         return jsonify({"status": "error", "message": error.message}), error.status_code
-    return jsonify({"status": "ok", "favorited": not removed})
+    return jsonify({"status": "ok", "bookmarkd": not removed})
 
 
 def record_recipe_score(
