@@ -208,7 +208,7 @@
 	margin: 0;
 	color: var(--text);
 	font:
-		600 clamp(18px, 7cqi, 22px) / 1.1 "Fraunces",
+		600 clamp(18px, 7cqi, 22px) / 1.2 "Fraunces",
 		Georgia,
 		serif;
 	-webkit-box-orient: vertical;

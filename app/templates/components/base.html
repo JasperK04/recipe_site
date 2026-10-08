@@ -212,19 +212,6 @@
 								>
 							</div>
 						</div>
-						<button
-							class="icon-button"
-							id="favorite-button"
-							type="button"
-							title="mijn Favorieten"
-							aria-label="mijn Favorieten"
-						>
-							<i
-								class="bi bi-heart"
-								id="favorite-icon"
-								aria-hidden="true"
-							></i>
-						</button>
 						{% else %}
 						<a
 							class="button button-secondary button-small"
@@ -237,6 +224,19 @@
 							>Registreren</a
 						>
 						{% endif %}
+						<a
+							class="icon-button"
+							id="favorite-button"
+							href="{{ url_for('recipe_overview.list_recipes', filter='favorieten') if current_user.is_authenticated else url_for('auth.login', next=request.full_path) }}"
+							title="Mijn favorieten"
+							aria-label="Mijn favorieten"
+						>
+							<i
+								class="bi bi-heart"
+								id="favorite-icon"
+								aria-hidden="true"
+							></i>
+						</a>
 						<button
 							class="icon-button"
 							id="theme-toggle"
@@ -291,8 +291,8 @@
 					<a class="brand" href="{{ url_for('main.index') }}"
 						><span class="brand-mark" aria-hidden="true"
 							><i class="bi bi-flower1"></i></span
-						><span>Recepten<em>Register</em></span></a
-					>
+						><span>Recepten<em>Register</em></span>
+					</a>
 					<p>
 						Een fijne plek voor recepten die je wilt bewaren, delen
 						en maken.
@@ -300,14 +300,16 @@
 				</div>
 				<div class="footer-links">
 					<a href="{{ url_for('recipe_overview.list_recipes') }}"
-						>Recepten ontdekken</a
-					>
+						>Recepten ontdekken
+					</a>
 					<a href="{{ url_for('main.about') }}">Over het register</a>
 					{% if current_user.is_authenticated %}<a
 						href="{{ url_for('auth.profile') }}"
-						>Mijn profiel</a
-					>{% else %}<a href="{{ url_for('auth.login') }}">Inloggen</a
-					>{% endif %}
+						>Mijn profiel
+					</a>
+					{% else %}
+					<a href="{{ url_for('auth.login') }}"> Inloggen </a>
+					{% endif %}
 				</div>
 				<div class="footer-legal" aria-label="Juridische informatie">
 					<span data-legal-document="privacy">Privacy statement</span>

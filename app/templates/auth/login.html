@@ -45,10 +45,10 @@ extra_css %}
 				<div class="auth-field">
 					{{ form.username.label }} {{
 					form.username(class_="form-control" + (" is-invalid" if
-					form.username.errors else ""), autocomplete="username",
-					placeholder="Bijv. anna of anna@example.com",
-					aria_invalid="true" if form.username.errors else none) }} {%
-					for error in form.username.errors %}
+					form.username.errors else ""), autocomplete="email",
+					placeholder="john.doe@example.com", aria_invalid="true" if
+					form.username.errors else none) }} {% for error in
+					form.username.errors %}
 					<div class="invalid-feedback">{{ error }}</div>
 					{% endfor %}
 				</div>
@@ -57,8 +57,10 @@ extra_css %}
 					{{ form.password.label }} {{
 					form.password(class_="form-control" + (" is-invalid" if
 					form.password.errors else ""),
-					autocomplete="current-password", placeholder="Je
-					wachtwoord", aria_invalid="true" if form.password.errors
+					autocomplete="current-password",
+					<!-- prettier-ignore -->
+					placeholder="Je wachtwoord",
+					aria_invalid="true" if form.password.errors
 					else none) }} {% for error in form.password.errors %}
 					<div class="invalid-feedback">{{ error }}</div>
 					{% endfor %}

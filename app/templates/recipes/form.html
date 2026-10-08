@@ -54,9 +54,10 @@ endblock %} {% block extra_css %}
 				<div class="recipe-editor-panel-body">
 					<div class="form-grid">
 						<div class="form-field-full">
-							{{ form.title.label(class="form-label") }} {{
-							form.title(class="form-control", placeholder="Bijv.
-							Geroosterde tomaten met basilicum") }} {% for error
+							{{ form.title.label(class="form-label") }}
+							<!-- prettier-ignore -->
+							{{form.title(class="form-control", placeholder="Geroosterde tomaten met basilicum") }} 
+							{% for error
 							in form.title.errors %}
 							<div class="invalid-feedback d-block">
 								{{ error }}
@@ -64,10 +65,11 @@ endblock %} {% block extra_css %}
 							{% endfor %}
 						</div>
 						<div class="form-field-full">
-							{{ form.description.label(class="form-label") }} {{
-							form.description(class="form-control form-textarea",
-							rows="3", placeholder="Beschrijf kort wat dit recept
-							bijzonder maakt") }} {% for error in
+							{{ form.description.label(class="form-label") }}
+							<!-- prettier-ignore -->
+							{{form.description(class="form-control form-textarea", rows="3",
+							placeholder="Beschrijf kort wat dit recept bijzonder maakt") }} 
+							{% for error in
 							form.description.errors %}
 							<div class="invalid-feedback d-block">
 								{{ error }}
@@ -254,9 +256,11 @@ endblock %} {% block extra_css %}
 									aria-hidden="true"
 								></i>
 							</button>
+							<!-- prettier-ignore -->
 							{{ ingredient(class="form-control",
-							data_raw_ingredient_json="", placeholder="2
-							eetlepels olijfolie") }}
+							data_raw_ingredient_json="",
+							placeholder="2 eetlepels olijfolie") 
+							}}
 							<span
 								class="recipe-imported-indicator imported-indicator"
 								><i
@@ -306,7 +310,7 @@ endblock %} {% block extra_css %}
 								></i>
 							</button>
 							{{ instruction(class="form-control",
-							placeholder="Beschrijf deze bereidingsstap") }}
+							placeholder="Beschrijf deze bereidingstap") }}
 						</div>
 						{% endfor %}
 					</div>
