@@ -62,19 +62,19 @@ current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
 	</a>
 	{% if current_user.is_authenticated %}
 	<form
-		class="recipe-card__favorite-form"
+		class="recipe-card__bookmark-form"
 		action="{{ url_for('recipes.unfavorite_recipe' if is_favorited else 'recipes.favorite_recipe', recipe_id=recipe.id) }}"
 		method="post"
 	>
 		<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 		<button
-			class="recipe-card__favorite"
+			class="recipe-card__bookmark"
 			type="submit"
-			title="{{ 'Verwijderen uit favorieten' if is_favorited else 'Toevoegen aan favorieten' }}"
-			aria-label="{{ 'Verwijder' if is_favorited else 'Bewaar' }} {{ recipe.title }}{% if is_favorited %} uit favorieten{% endif %}"
+			title="{{ 'Verwijderen uit opgeslagen recepten' if is_favorited else 'Opslaan' }}"
+			aria-label="{{ 'Verwijder' if is_favorited else 'Sla op' }} {{ recipe.title }}{% if is_favorited %} uit opgeslagen recepten{% endif %}"
 		>
 			<i
-				class="bi {{ 'bi-heart-fill' if is_favorited else 'bi-heart' }}"
+				class="bi {{ 'bi-bookmark-fill' if is_favorited else 'bi-bookmark' }}"
 				aria-hidden="true"
 			></i>
 		</button>

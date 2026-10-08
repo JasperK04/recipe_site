@@ -579,7 +579,7 @@ def allow_recipe_moderation_endpoint(recipe_id):
 def toggle_recipe_favorite(*, user: User, recipe: Recipe, favorite: bool) -> bool:
     """Add or remove a recipe from the user's favorites."""
     if recipe.status != Recipe.STATUS_PUBLIC:
-        raise ApiError("Alleen openbare recepten kunnen favoriet worden gemaakt.", 403)
+        raise ApiError("Alleen openbare recepten kunnen worden opgeslagen.", 403)
 
     existing = user.favorites.filter_by(id=recipe.id).first()
     changed = False

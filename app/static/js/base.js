@@ -111,7 +111,7 @@
     }
 
     function initializeRecipeFavorites() {
-        document.querySelectorAll('.recipe-card__favorite-form').forEach(form => {
+        document.querySelectorAll('.recipe-card__bookmark-form').forEach(form => {
             form.addEventListener('submit', async event => {
                 event.preventDefault();
                 const button = form.querySelector('button');
@@ -127,11 +127,11 @@
                     if (!response.ok || data.status !== 'ok') throw new Error(data.message || 'Actie mislukt.');
                     const favorited = data.favorited;
                     const icon = button.querySelector('i.bi');
-                    icon?.classList.toggle('bi-heart-fill', favorited);
-                    icon?.classList.toggle('bi-heart', !favorited);
-                    button.title = favorited ? 'Verwijderen uit favorieten' : 'Toevoegen aan favorieten';
+                    icon?.classList.toggle('bi-bookmark-fill', favorited);
+                    icon?.classList.toggle('bi-bookmark', !favorited);
+                    button.title = favorited ? 'Verwijderen uit opgeslagen recepten' : 'Opslaan';
                     const title = form.closest('.recipe-card')?.querySelector('.recipe-card__title')?.textContent.trim() || 'recept';
-                    button.setAttribute('aria-label', `${favorited ? 'Verwijder' : 'Bewaar'} ${title}${favorited ? ' uit favorieten' : ''}`);
+                    button.setAttribute('aria-label', `${favorited ? 'Verwijder' : 'Sla op'} ${title}${favorited ? ' uit opgeslagen recepten' : ''}`);
                     form.action = form.action.replace(/\/favoriet(?:-verwijderen)?$/, favorited ? '/favoriet-verwijderen' : '/favoriet');
                 } catch (error) {
                     console.error(error);

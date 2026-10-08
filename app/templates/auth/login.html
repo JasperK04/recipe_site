@@ -2,7 +2,7 @@
 <link rel="canonical" href="{{ url_for('auth.login', _external=True) }}" />
 <meta
 	name="description"
-	content="Log in op het Recepten Register om je recepten en favorieten te beheren."
+	content="Log in op het Recepten Register om je recepten en opgeslagen recepten te beheren."
 />
 <meta name="robots" content="index,follow" />
 {% endblock %} {% block title %}Inloggen - Recepten{% endblock %} {% block
@@ -17,15 +17,18 @@ extra_css %}
 		<aside class="auth-aside" aria-label="Over Recepten Register">
 			<strong>Bewaar wat je graag nog eens maakt.</strong>
 			<p>
-				Van een doordeweekse favoriet tot dat ene recept voor een lange
-				tafel.
+				Van een doordeweeks opgeslagen recept tot dat ene recept voor
+				een lange tafel.
 			</p>
 		</aside>
 
 		<div class="auth-intro">
 			<p class="auth-eyebrow">Jouw receptenplank</p>
 			<h1 id="login-title">Welkom terug</h1>
-			<p>Log in om je recepten en favorieten bij de hand te houden.</p>
+			<p>
+				Log in om je recepten en opgeslagen recepten bij de hand te
+				houden.
+			</p>
 		</div>
 
 		<div class="auth-panel">
@@ -54,11 +57,10 @@ extra_css %}
 				</div>
 
 				<div class="auth-field">
-					{{ form.password.label }} {{
-					form.password(class_="form-control" + (" is-invalid" if
-					form.password.errors else ""),
-					autocomplete="current-password",
+					{{ form.password.label }}
 					<!-- prettier-ignore -->
+					{{ form.password(class_="form-control" + (" is-invalid" if form.password.errors else ""),
+					autocomplete="current-password",
 					placeholder="Je wachtwoord",
 					aria_invalid="true" if form.password.errors
 					else none) }} {% for error in form.password.errors %}

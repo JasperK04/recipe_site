@@ -64,7 +64,7 @@ OVERVIEW_FILTER_RATED = "beoordeeld"
 OVERVIEW_FILTERS = {
     OVERVIEW_FILTER_ALL: "Alle recepten",
     OVERVIEW_FILTER_MINE: "Mijn recepten",
-    OVERVIEW_FILTER_FAVORITES: "Mijn favorieten",
+    OVERVIEW_FILTER_FAVORITES: "Mijn opgeslagen recepten",
     OVERVIEW_FILTER_RATED: "Mijn beoordelingen",
 }
 
@@ -344,6 +344,7 @@ def view_recipe(recipe_id, title=None):
         current_user.is_authenticated
         and current_user.can_score_recipes
         and recipe.status == Recipe.STATUS_PUBLIC
+        and recipe.user_id != current_user.id
     )
     can_adapt_recipe = (
         current_user.is_authenticated

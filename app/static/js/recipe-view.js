@@ -44,9 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             if (!response.ok || data.status !== 'ok') throw new Error(data.message || 'Actie mislukt.');
             const icon = button.querySelector('i.bi');
-            icon?.classList.toggle('bi-heart-fill', data.favorited);
-            icon?.classList.toggle('bi-heart', !data.favorited);
-            button.title = data.favorited ? 'Verwijderen uit favorieten' : 'Toevoegen aan favorieten';
+            icon?.classList.toggle('bi-bookmark-fill', data.favorited);
+            icon?.classList.toggle('bi-bookmark', !data.favorited);
+            button.title = data.favorited ? 'Verwijderen uit opgeslagen recepten' : 'Opslaan';
             favoriteForm.action = favoriteForm.action.replace(data.favorited ? '/favorite' : '/unfavorite', data.favorited ? '/unfavorite' : '/favorite');
         } catch (error) {
             console.error(error);
@@ -58,20 +58,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const favoriteButton = favoriteForm?.querySelector('button');
     favoriteButton?.addEventListener('mouseenter', () => {
         const icon = favoriteButton.querySelector('i.bi');
-        if (!icon || icon.classList.contains('bi-heart-fill')) {
+        if (!icon || icon.classList.contains('bi-bookmark-fill')) {
             favoriteButton?.classList.add('faded');
             return;
         }
-        icon.classList.add('hover-fill', 'bi-heart-fill');
-        icon.classList.remove('bi-heart');
+        icon.classList.add('hover-fill', 'bi-bookmark-fill');
+        icon.classList.remove('bi-bookmark');
         favoriteButton.classList.add('faded');
     });
     favoriteButton?.addEventListener('mouseleave', () => {
         const icon = favoriteButton.querySelector('i.bi');
         favoriteButton.classList.remove('faded');
         if (icon?.classList.contains('hover-fill')) {
-            icon.classList.remove('hover-fill', 'bi-heart-fill');
-            icon.classList.add('bi-heart');
+            icon.classList.remove('hover-fill', 'bi-bookmark-fill');
+            icon.classList.add('bi-bookmark');
         }
     });
 
@@ -108,8 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (scoreForm) {
         const stars = [...scoreForm.querySelectorAll('.score-star')];
         const input = scoreForm.querySelector('#score-input');
-        const badge = document.getElementById('recipe-score-badge');
-        const count = document.getElementById('recipe-score-count');
+        const badges = [...document.querySelectorAll('.recipe-score-badge')];
+        const counts = [...document.querySelectorAll('.recipe-score-count')];
         const setStars = value => stars.forEach((button, index) => {
             const icon = button.querySelector('i.bi');
             icon?.classList.toggle('bi-star-fill', index < value);
@@ -129,8 +129,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const data = await response.json();
                     if (!response.ok || data.status !== 'ok') throw new Error(data.message || 'Actie mislukt.');
                     setStars(data.score);
-                    if (badge) badge.textContent = `Score ${Number(data.score_average).toFixed(1)}/5`;
-                    if (count) count.textContent = `(${data.score_count})`;
+                    badges.forEach(badge => { badge.textContent = `Score ${Number(data.score_average).toFixed(1)}/5`; });
+                    counts.forEach(count => { count.textContent = `(${data.score_count})`; });
                 } catch (error) { console.error(error); }
                 stars.forEach(item => { item.disabled = false; });
             });
@@ -154,4 +154,17 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('servings-increase')?.addEventListener('click', () => update(Number(servingDisplay.textContent) + 1));
         update(servingDisplay.textContent);
     }
+
+    document.querySelectorAll('[data-ingredient-toggle]').forEach(button => {
+        button.addEventListener('click', () => {
+            const row = button.closest('.ingredient-row');
+            if (!row) return;
+            const completed = row.classList.toggle('is-completed');
+            button.setAttribute('aria-pressed', String(completed));
+            const icon = button.querySelector('i.bi');
+            icon?.classList.toggle('bi-check-circle', completed);
+            icon?.classList.toggle('bi-circle', !completed);
+            button.setAttribute('aria-label', completed ? 'Ingrediënt weer actief maken' : 'Ingrediënt afvinken');
+        });
+    });
 });

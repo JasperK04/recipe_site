@@ -26,13 +26,574 @@ block meta %} {# Recipe-specific OpenGraph / Twitter metadata #}
 <meta name="twitter:card" content="summary" />
 {% endif %}
 <meta property="og:locale" content="nl_NL" />
-{% endblock %} {% block content %} {% endblock %} {% block extra_js %}
+{% endblock %} {% block extra_css %}
+<link
+	href="{{ url_for('static', filename='css/recipe_view.css') }}"
+	rel="stylesheet"
+/>
+{% endblock %} {% block content %} {% set is_favorited =
+current_user.is_authenticated and
+current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
+<div class="recipe-view">
+	<nav class="recipe-view-breadcrumb" aria-label="Broodkruimelpad">
+		<a href="{{ url_for('recipe_overview.list_recipes') }}">Recepten</a>
+		<span aria-hidden="true">/</span>
+		{% if recipe.category %}<a
+			href="{{ url_for('recipe_overview.list_recipes', category=recipe.category) }}"
+			>{{ recipe.category }}</a
+		><span aria-hidden="true">/</span>{% endif %}
+		<span>{{ recipe.title }}</span>
+	</nav>
+
+	{% if recipe.moderation_status == 'flagged' %}
+	<div
+		class="recipe-view-alert"
+		data-recipe-moderation-alert="1"
+		role="alert"
+	>
+		<i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+		<div>
+			<strong>Dit recept wacht op moderatie.</strong>
+			{% if recipe.moderation_issue_messages %}<span
+				>{{ recipe.moderation_issue_messages|join(' ') }}</span
+			>{% endif %}
+		</div>
+		{% if can_moderate_recipe %}
+		<form
+			class="moderate-allow-form"
+			action="{{ url_for('api.allow_recipe_moderation_endpoint', recipe_id=recipe.id) }}"
+			method="post"
+		>
+			<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+			<button class="button button-secondary button-small" type="submit">
+				Goedkeuren
+			</button>
+		</form>
+		{% endif %}
+	</div>
+	{% endif %}
+
+	<article class="recipe-view-article recipe-view-article--wide">
+		<div class="recipe-view-hero">
+			<div class="recipe-view-image-wrapper">
+				{% if recipe.has_image %}
+				<img
+					src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}"
+					alt="{{ recipe.title }}"
+				/>
+				{% else %}
+				<div
+					class="recipe-view-image-placeholder"
+					role="img"
+					aria-label="Nog geen foto beschikbaar"
+				>
+					Recepten Register
+				</div>
+				{% endif %} {% if recipe.category %}<span
+					class="recipe-view-category"
+					>{{ recipe.category }}</span
+				>{% endif %}
+			</div>
+		</div>
+		<div class="recipe-view-body">
+			<div class="recipe-view-heading">
+				<p class="recipe-view-eyebrow">{{ status_label }}</p>
+				{% if recipe.author %}
+				<p class="recipe-view-author">
+					Door <strong>{{ recipe.author.username }}</strong>
+				</p>
+				{% endif %}
+			</div>
+			<h1>{{ recipe.title }}</h1>
+			<div class="recipe-view-meta" aria-label="Receptinformatie">
+				{% if recipe.score_average is not none %}
+				<span
+					><i class="bi bi-star-fill" aria-hidden="true"></i
+					><span class="recipe-score-badge" id="recipe-score-badge"
+						>{{ '%.1f'|format(recipe.score_average)|replace('.',
+						',') }}/5</span
+					>
+					<span class="recipe-score-count" id="recipe-score-count"
+						>({{ recipe.score_count }})</span
+					></span
+				>
+				{% else %}
+				<span
+					><i class="bi bi-star" aria-hidden="true"></i
+					><span class="recipe-score-badge" id="recipe-score-badge"
+						>-/5</span
+					>
+					<span class="recipe-score-count" id="recipe-score-count"
+						>(0)</span
+					></span
+				>
+				{% endif %} {% if recipe.servings is not none %}<span
+					><i class="bi bi-people" aria-hidden="true"></i>{{
+					recipe.servings }}
+					<span class="recipe-serving-label">personen</span></span
+				>{% endif %} {% if recipe.prep_time is not none or
+				recipe.cook_time is not none %}<span
+					><i class="bi bi-clock" aria-hidden="true"></i>{{
+					(recipe.prep_time or 0) + (recipe.cook_time or 0) }}
+					min</span
+				>{% endif %}
+			</div>
+			{% if recipe.description %}
+			<p class="recipe-view-description">{{ recipe.description }}</p>
+			{% endif %}
+		</div>
+	</article>
+
+	<article class="recipe-view-article recipe-view-article--compact">
+		<div class="recipe-view-hero">
+			<div class="recipe-view-image-wrapper">
+				{% if recipe.has_image %}<img
+					src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}"
+					alt="{{ recipe.title }}"
+				/>{% else %}
+				<div
+					class="recipe-view-image-placeholder"
+					role="img"
+					aria-label="Nog geen foto beschikbaar"
+				>
+					Recepten Register
+				</div>
+				{% endif %} {% if recipe.category %}<span
+					class="recipe-view-category"
+					>{{ recipe.category }}</span
+				>{% endif %}
+			</div>
+		</div>
+		<div class="recipe-view-body recipe-view-compact-meta">
+			<div class="recipe-view-heading">
+				<p class="recipe-view-eyebrow">{{ status_label }}</p>
+				{% if recipe.author %}
+				<p class="recipe-view-author">
+					Door <strong>{{ recipe.author.username }}</strong>
+				</p>
+				{% endif %}
+			</div>
+			<div class="recipe-view-meta" aria-label="Receptinformatie">
+				{% if recipe.score_average is not none %}<span
+					><i class="bi bi-star-fill" aria-hidden="true"></i
+					><span class="recipe-score-badge"
+						>{{ '%.1f'|format(recipe.score_average)|replace('.',
+						',') }}/5</span
+					>
+					<span class="recipe-score-count"
+						>({{ recipe.score_count }})</span
+					></span
+				>{% else %}<span
+					><i class="bi bi-star" aria-hidden="true"></i
+					><span class="recipe-score-badge">-/5</span>
+					<span class="recipe-score-count">(0)</span></span
+				>{% endif %} {% if recipe.servings is not none %}<span
+					><i class="bi bi-people" aria-hidden="true"></i>{{
+					recipe.servings }}
+					<span class="recipe-serving-label">personen</span></span
+				>{% endif %} {% if recipe.prep_time is not none or
+				recipe.cook_time is not none %}<span
+					><i class="bi bi-clock" aria-hidden="true"></i>{{
+					(recipe.prep_time or 0) + (recipe.cook_time or 0) }}
+					min</span
+				>{% endif %}
+			</div>
+		</div>
+		<div class="recipe-view-compact-copy">
+			<h1>{{ recipe.title }}</h1>
+			{% if recipe.description %}
+			<p class="recipe-view-description">{{ recipe.description }}</p>
+			{% endif %}
+		</div>
+	</article>
+
+	<div class="recipe-view-grid">
+		<section
+			class="recipe-view-panel recipe-ingredients"
+			aria-labelledby="ingredients-title"
+		>
+			<div class="recipe-view-panel-heading">
+				<div>
+					<p class="recipe-view-eyebrow">Alles bij de hand</p>
+					<h2 id="ingredients-title">Ingrediënten</h2>
+				</div>
+				{% if recipe.servings is not none %}
+				<div class="servings-control" aria-label="Aantal porties">
+					<button
+						type="button"
+						id="servings-decrease"
+						aria-label="Minder porties"
+					>
+						−</button
+					><span
+						id="current-serving-count"
+						data-base-servings="{{ recipe.servings }}"
+						>{{ recipe.servings }}</span
+					><button
+						type="button"
+						id="servings-increase"
+						aria-label="Meer porties"
+					>
+						+
+					</button>
+				</div>
+				{% endif %}
+			</div>
+			<ul class="ingredient-list">
+				{% for ingredient in recipe.ingredients %} {% set
+				ingredient_name = ingredient.get('display_name') or
+				ingredient.get('name_') or ingredient.get('name') %}
+				<li
+					class="ingredient-row{% if ingredient.get('type') == 'recipe' and ingredient.get('recipe_id') %} ingredient-row--recipe{% endif %}"
+				>
+					<button
+						class="ingredient-check"
+						type="button"
+						data-ingredient-toggle
+						aria-label="Ingrediënt afvinken"
+						aria-pressed="false"
+					>
+						<i class="bi bi-circle" aria-hidden="true"></i>
+					</button>
+					<span class="ingredient-amount"
+						>{% if ingredient.get('quantity') is not none %}<span
+							class="ingredient-quantity"
+							data-original-quantity="{{ ingredient.get('quantity') }}"
+							>{{ ingredient.get('quantity') }}</span
+						>{% endif %}{% if ingredient.get('unit') %}
+						<span class="ingredient-unit"
+							>{{ ingredient.get('unit') }}</span
+						>{% endif %}</span
+					>
+					{% if ingredient.get('type') == 'recipe' and
+					ingredient.get('recipe_id') %}<a
+						class="ingredient-name ingredient-name--recipe"
+						href="{{ url_for('recipes.view_recipe', recipe_id=ingredient.get('recipe_id')) }}"
+						><i
+							class="bi bi-journal-bookmark"
+							aria-hidden="true"
+						></i
+						><span
+							>{{ ingredient_name or
+							ingredient.get('recipe_title') or 'Recept' }}</span
+						></a
+					>
+					{% else %}<span class="ingredient-name"
+						>{{ ingredient_name or 'Ingrediënt' }}</span
+					>{% endif %}
+				</li>
+				{% endfor %}
+			</ul>
+		</section>
+
+		<section
+			class="recipe-view-panel recipe-instructions"
+			aria-labelledby="instructions-title"
+		>
+			<div class="recipe-view-panel-heading">
+				<div>
+					<p class="recipe-view-eyebrow">
+						Van voorbereiding tot tafel
+					</p>
+					<h2 id="instructions-title">Bereiding</h2>
+				</div>
+				<label class="wake-lock-control" for="wake-lock-toggle"
+					><input id="wake-lock-toggle" type="checkbox" /><span
+						><i class="bi bi-moon-stars" aria-hidden="true"></i>
+						Scherm actief houden</span
+					></label
+				>
+			</div>
+			<ol class="instruction-list">
+				{% for instruction in recipe.instructions %}
+				<li class="instruction-row"><p>{{ instruction }}</p></li>
+				{% endfor %}
+			</ol>
+		</section>
+
+		<aside class="recipe-action-rail" aria-label="Receptacties">
+			{% if current_user.is_authenticated %}
+			<form
+				class="fav-form"
+				action="{{ url_for('api.unfavorite_recipe_endpoint' if is_favorited else 'api.favorite_recipe_endpoint', recipe_id=recipe.id) }}"
+				method="post"
+			>
+				<input
+					type="hidden"
+					name="csrf_token"
+					value="{{ csrf_token() }}"
+				/>
+				<button
+					class="icon-button"
+					type="submit"
+					title="{{ 'Verwijderen uit opgeslagen recepten' if is_favorited else 'Opslaan' }}"
+					aria-label="{{ 'Verwijder' if is_favorited else 'Sla op' }} {{ recipe.title }}{% if is_favorited %} uit opgeslagen recepten{% endif %}"
+				>
+					<i
+						class="bi {{ 'bi-bookmark-fill' if is_favorited else 'bi-bookmark' }}"
+						aria-hidden="true"
+					></i>
+				</button>
+			</form>
+			{% endif %}
+			<button
+				class="icon-button"
+				type="button"
+				data-modal-target="shareModal"
+				aria-label="Recept delen"
+				title="Recept delen"
+			>
+				<i class="bi bi-share" aria-hidden="true"></i>
+			</button>
+			{% if can_adapt_recipe %}<span
+				class="action-divider"
+				aria-hidden="true"
+			></span
+			>{% endif %} {% if can_adapt_recipe %}
+			<form
+				action="{{ url_for('recipes.adapt_recipe', recipe_id=recipe.id) }}"
+				method="post"
+			>
+				<input
+					type="hidden"
+					name="csrf_token"
+					value="{{ csrf_token() }}"
+				/><button
+					class="icon-button"
+					type="submit"
+					aria-label="Recept aanpassen"
+					title="Recept aanpassen"
+				>
+					<i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+				</button>
+			</form>
+			{% endif %} {% if can_edit_recipe or can_delete_recipe or
+			can_moderate_recipe %}<span
+				class="action-divider"
+				aria-hidden="true"
+			></span
+			>{% endif %} {% if can_edit_recipe %}<a
+				class="icon-button"
+				href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}"
+				aria-label="Recept bewerken"
+				title="Recept bewerken"
+				><i class="bi bi-pencil" aria-hidden="true"></i></a
+			>{% endif %} {% if can_delete_recipe %}<button
+				class="icon-button"
+				type="button"
+				data-modal-target="deleteModal"
+				aria-label="Recept verwijderen"
+				title="Recept verwijderen"
+			>
+				<i class="bi bi-trash3" aria-hidden="true"></i></button
+			>{% endif %} {% if can_moderate_recipe %}
+			<form
+				class="moderate-form"
+				action="{{ url_for('api.reactivate_recipe_endpoint' if recipe.status == 'deactivated' else 'api.deactivate_recipe_endpoint', recipe_id=recipe.id) }}"
+				method="post"
+			>
+				<input
+					type="hidden"
+					name="csrf_token"
+					value="{{ csrf_token() }}"
+				/><button
+					class="icon-button"
+					type="submit"
+					aria-label="{{ 'Recept reactiveren' if recipe.status == 'deactivated' else 'Recept deactiveren' }}"
+					title="{{ 'Recept reactiveren' if recipe.status == 'deactivated' else 'Recept deactiveren' }}"
+				>
+					<i
+						class="bi {{ 'bi-eye' if recipe.status == 'deactivated' else 'bi-eye-slash' }}"
+						aria-hidden="true"
+					></i>
+				</button>
+			</form>
+			{% endif %}
+		</aside>
+	</div>
+
+	{% if can_score_recipe %}
+	<section class="recipe-score-panel" aria-labelledby="score-title">
+		<div>
+			<p class="recipe-view-eyebrow">Jouw oordeel</p>
+			<h2 id="score-title">Hoe vond je dit recept?</h2>
+		</div>
+		<form
+			class="score-form"
+			id="score-form"
+			action="{{ url_for('api.score_recipe_endpoint', recipe_id=recipe.id) }}"
+			method="post"
+			data-owner-disabled="0"
+		>
+			<input
+				type="hidden"
+				name="csrf_token"
+				value="{{ csrf_token() }}"
+			/><input
+				type="hidden"
+				name="score"
+				id="score-input"
+				value="{{ my_score.score if my_score else 0 }}"
+			/>
+			<div class="score-stars" aria-label="Geef een score van 1 tot 5">
+				{% for value in range(1, 6) %}<button
+					class="score-star"
+					type="button"
+					aria-label="{{ value }} sterren"
+				>
+					<i
+						class="bi {{ 'bi-star-fill' if my_score and my_score.score >= value else 'bi-star' }}"
+						aria-hidden="true"
+					></i></button
+				>{% endfor %}
+			</div>
+		</form>
+	</section>
+	{% endif %}
+</div>
+
+<div
+	class="form-modal"
+	id="shareModal"
+	hidden
+	data-share-title="{{ recipe.title }}"
+	data-share-text="{{ recipe.description or '' }}"
+	data-share-url="{{ recipe_url(recipe, external=True) }}"
+	aria-hidden="true"
+	aria-labelledby="shareModalLabel"
+	role="dialog"
+>
+	<div class="form-modal-dialog">
+		<div class="form-modal-content">
+			<div class="form-modal-header">
+				<div>
+					<p class="form-modal-eyebrow">Recept delen</p>
+					<h2 id="shareModalLabel">{{ recipe.title }}</h2>
+				</div>
+				<button
+					class="form-modal-close"
+					type="button"
+					data-modal-close="shareModal"
+					aria-label="Venster sluiten"
+				>
+					<i class="bi bi-x-lg" aria-hidden="true"></i>
+				</button>
+			</div>
+			<div class="form-modal-body share-options">
+				<label for="shareLinkInput">Link naar dit recept</label>
+				<div class="share-link-row">
+					<input
+						id="shareLinkInput"
+						type="text"
+						readonly
+						value="{{ recipe_url(recipe, external=True) }}"
+					/><button
+						class="button button-secondary button-small"
+						id="copyShareLinkBtn"
+						type="button"
+						data-copy-value="{{ recipe_url(recipe, external=True) }}"
+					>
+						<i class="bi bi-copy" aria-hidden="true"></i
+						><span>Kopiëren</span>
+					</button>
+				</div>
+				<div class="share-buttons">
+					<a
+						class="button button-secondary button-small"
+						id="whatsappShareBtn"
+						href="#"
+						target="_blank"
+						rel="noopener"
+						><i class="bi bi-whatsapp" aria-hidden="true"></i
+						>WhatsApp</a
+					><a
+						class="button button-secondary button-small"
+						id="facebookShareBtn"
+						href="#"
+						target="_blank"
+						rel="noopener"
+						><i class="bi bi-facebook" aria-hidden="true"></i
+						>Facebook</a
+					><a
+						class="button button-secondary button-small"
+						id="xShareBtn"
+						href="#"
+						target="_blank"
+						rel="noopener"
+						><i class="bi bi-twitter-x" aria-hidden="true"></i>X</a
+					>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% if can_delete_recipe %}
+<div
+	class="form-modal"
+	id="deleteModal"
+	hidden
+	aria-hidden="true"
+	aria-labelledby="deleteModalLabel"
+	role="dialog"
+>
+	<div class="form-modal-dialog">
+		<div class="form-modal-content">
+			<div class="form-modal-header">
+				<div>
+					<p class="form-modal-eyebrow">Recept verwijderen</p>
+					<h2 id="deleteModalLabel">Weet je het zeker?</h2>
+				</div>
+				<button
+					class="form-modal-close"
+					type="button"
+					data-modal-close="deleteModal"
+					aria-label="Venster sluiten"
+				>
+					<i class="bi bi-x-lg" aria-hidden="true"></i>
+				</button>
+			</div>
+			<div class="form-modal-body">
+				<p>
+					Dit recept en de bijbehorende gegevens worden definitief
+					verwijderd.
+				</p>
+			</div>
+			<div class="form-modal-footer">
+				<button
+					class="button button-secondary"
+					type="button"
+					data-modal-close="deleteModal"
+				>
+					Annuleren
+				</button>
+				<form
+					action="{{ url_for('api.delete_recipe_endpoint', recipe_id=recipe.id) }}"
+					method="post"
+					data-api-form="1"
+				>
+					<input
+						type="hidden"
+						name="csrf_token"
+						value="{{ csrf_token() }}"
+					/><button class="button button-primary" type="submit">
+						Definitief verwijderen
+					</button>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+{% endif %} {% endblock %} {% block extra_js %}
 <script
 	src="{{ url_for('static', filename='js/wake-lock.js') }}"
 	defer
 ></script>
 <script
 	src="{{ url_for('static', filename='js/validation.js') }}"
+	defer
+></script>
+<script
+	src="{{ url_for('static', filename='js/recipe_modal.js') }}"
 	defer
 ></script>
 <script
