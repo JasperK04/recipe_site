@@ -200,6 +200,7 @@
 .dropdown-menu a {
 	display: flex;
 	align-items: center;
+	justify-content: start;
 	gap: 10px;
 	padding: 8px 10px;
 	border-radius: var(--radius-small);

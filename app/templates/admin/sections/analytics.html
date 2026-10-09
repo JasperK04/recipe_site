@@ -1,65 +1,310 @@
+{% set period_is_1 = period == 1 %} {% set period_is_7 = period == 7 %} {% set
+period_is_30 = period == 30 %} {% set period_is_90 = period == 90 %}
+
 <header class="section-heading analytics-heading">
-  <div>
-    <p class="eyebrow">Gebruik en bereik</p>
-    <h2>Inzichten</h2>
-    <p>Bekijk hoe mensen ontdekken en gebruiken je recepten.</p>
-  </div>
-  <form method="get" action="{{ url_for('admin.analytics') }}">
-    <label class="admin-filter-col">
-      <span>Periode</span>
-      <select id="analytics-period" name="period" data-submit-on-change>
-        <option value="1" {{ 'selected' if period == 1 }}>24 uur</option>
-        <option value="7" {{ 'selected' if period == 7 }}>7 dagen</option>
-        <option value="30" {{ 'selected' if period == 30 }}>30 dagen</option>
-        <option value="90" {{ 'selected' if period == 90 }}>90 dagen</option>
-      </select>
-    </label>
-  </form>
+	<div>
+		<p class="eyebrow">Gebruik en bereik</p>
+		<h2>Inzichten</h2>
+		<p>Bekijk hoe mensen ontdekken en gebruiken je recepten.</p>
+	</div>
+	<form method="get" action="{{ url_for('admin.analytics') }}">
+		<label class="admin-filter-col">
+			<span>Periode</span>
+			<select id="analytics-period" name="period" data-submit-on-change>
+				<option value="1" {% if period_is_1 %}selected{% endif %}>
+					24 uur
+				</option>
+				<option value="7" {% if period_is_7 %}selected{% endif %}>
+					7 dagen
+				</option>
+				<option value="30" {% if period_is_30 %}selected{% endif %}>
+					30 dagen
+				</option>
+				<option value="90" {% if period_is_90 %}selected{% endif %}>
+					90 dagen
+				</option>
+			</select>
+		</label>
+	</form>
 </header>
 
 <div class="admin-stat-grid analytics-stats">
-  <article class="admin-stat"><span class="stat-icon"><i class="bi bi-person-walking" aria-hidden="true"></i></span><span class="stat-label">Unieke bezoekers</span><strong>{{ analytics_summary.unique_visitors }}</strong><span class="stat-foot">In de gekozen periode</span></article>
-  <article class="admin-stat"><span class="stat-icon is-warm"><i class="bi bi-eye" aria-hidden="true"></i></span><span class="stat-label">Pagina weergaven</span><strong>{{ analytics_summary.page_views }}</strong><span class="stat-foot">{{ analytics_views_per_visitor }} per bezoeker gemiddeld</span></article>
-  <article class="admin-stat"><span class="stat-icon is-neutral"><i class="bi bi-journal-bookmark" aria-hidden="true"></i></span><span class="stat-label">Recept weergaven</span><strong>{{ analytics_trend|sum(attribute='recipe_views') }}</strong><span class="stat-foot">Vanuit openbare recepten</span></article>
-  <article class="admin-stat"><span class="stat-icon is-alert"><i class="bi bi-exclamation-circle" aria-hidden="true"></i></span><span class="stat-label">Pagina fouten</span><strong>{{ analytics_summary.errors }}</strong><span class="stat-foot">Tijdens de gekozen periode</span></article>
+	<article class="admin-stat">
+		<span class="stat-icon"
+			><i class="bi bi-person-walking" aria-hidden="true"></i></span
+		><span class="stat-label">Unieke bezoekers</span
+		><strong>{{ analytics_summary.unique_visitors }}</strong
+		><span class="stat-foot">In de gekozen periode</span>
+	</article>
+	<article class="admin-stat">
+		<span class="stat-icon is-warm"
+			><i class="bi bi-eye" aria-hidden="true"></i></span
+		><span class="stat-label">Pagina weergaven</span
+		><strong>{{ analytics_summary.page_views }}</strong
+		><span class="stat-foot"
+			>{{ analytics_views_per_visitor }} per bezoeker gemiddeld</span
+		>
+	</article>
+	<article class="admin-stat">
+		<span class="stat-icon is-neutral"
+			><i class="bi bi-journal-bookmark" aria-hidden="true"></i></span
+		><span class="stat-label">Recept weergaven</span
+		><strong>{{ analytics_trend|sum(attribute='recipe_views') }}</strong
+		><span class="stat-foot">Vanuit openbare recepten</span>
+	</article>
+	<article class="admin-stat">
+		<span class="stat-icon is-alert"
+			><i class="bi bi-exclamation-circle" aria-hidden="true"></i></span
+		><span class="stat-label">Pagina fouten</span
+		><strong>{{ analytics_summary.errors }}</strong
+		><span class="stat-foot">Tijdens de gekozen periode</span>
+	</article>
 </div>
 
 <div class="analytics-overview-grid">
-  <section class="admin-section analytics-panel analytics-trend-panel" aria-labelledby="traffic-title">
-    <div class="section-heading compact"><div><h3 id="traffic-title">Verkeer door de tijd</h3><p>{% if period == 1 %}Per uur in de afgelopen 24 uur{% else %}Dagelijks verkeer in de gekozen periode{% endif %}</p></div></div>
-    <div class="analytics-chart-legend"><span><i class="legend-key views" aria-hidden="true"></i>Paginaweergaven</span><span><i class="legend-key visitors" aria-hidden="true"></i>Unieke bezoekers</span></div>
-    <div class="analytics-line-chart" role="img" aria-label="Lijngrafiek met paginaweergaven en unieke bezoekers {% if period == 1 %}per uur{% else %}per dag{% endif %}">
-      <svg viewBox="0 0 {{ analytics_chart.width }} {{ analytics_chart.height }}" preserveAspectRatio="none" aria-hidden="true">
-        {% for fraction in [0, 0.5, 1] %}{% set y = analytics_chart.top + analytics_chart.plot_height * fraction %}<line class="chart-grid-line" x1="{{ analytics_chart.left }}" y1="{{ y }}" x2="{{ analytics_chart.right }}" y2="{{ y }}" />{% endfor %}
-        <polyline class="chart-line chart-line-visitors" points="{{ analytics_chart.points.visitors }}" />
-        <polyline class="chart-line chart-line-views" points="{{ analytics_chart.points.page_views }}" />
-      </svg>
-      <div class="chart-y-labels"><span>{{ analytics_chart.max }}</span><span>{{ (analytics_chart.max / 2)|round|int }}</span><span>0</span></div>
-      <div class="chart-x-labels">{% for label in analytics_chart.labels %}<span style="left:{{ (label.x / analytics_chart.width * 100)|round(2) }}%">{{ label.text }}</span>{% endfor %}</div>
-    </div>
-    {% if analytics_summary.page_views == 0 %}<p class="chart-note">Er zijn nog geen bezoeken in deze periode. Zodra bezoekers de site gebruiken, verschijnt de trend hier.</p>{% endif %}
-  </section>
+	<section
+		class="admin-section analytics-panel analytics-trend-panel"
+		aria-labelledby="traffic-title"
+	>
+		<div class="section-heading compact">
+			<div>
+				<h3 id="traffic-title">Verkeer door de tijd</h3>
+				<p>
+					{% if period == 1 %}Per uur in de afgelopen 24 uur{% else
+					%}Dagelijks verkeer in de gekozen periode{% endif %}
+				</p>
+			</div>
+		</div>
+		<div class="analytics-chart-legend">
+			<span
+				><i class="legend-key views" aria-hidden="true"></i
+				>Paginaweergaven</span
+			><span
+				><i class="legend-key visitors" aria-hidden="true"></i>Unieke
+				bezoekers</span
+			>
+		</div>
+		<div
+			class="analytics-line-chart"
+			role="img"
+			aria-label="Lijngrafiek met paginaweergaven en unieke bezoekers {% if period == 1 %}per uur{% else %}per dag{% endif %}"
+		>
+			<svg
+				viewBox="0 0 {{ analytics_chart.width }} {{ analytics_chart.height }}"
+				preserveAspectRatio="none"
+				aria-hidden="true"
+			>
+				{% for fraction in [0, 0.5, 1] %}{% set y = analytics_chart.top
+				+ analytics_chart.plot_height * fraction %}
+				<line
+					class="chart-grid-line"
+					x1="{{ analytics_chart.left }}"
+					y1="{{ y }}"
+					x2="{{ analytics_chart.right }}"
+					y2="{{ y }}"
+				/>
+				{% endfor %}
+				<polyline
+					class="chart-line chart-line-visitors"
+					points="{{ analytics_chart.points.visitors }}"
+				/>
+				<polyline
+					class="chart-line chart-line-views"
+					points="{{ analytics_chart.points.page_views }}"
+				/>
+			</svg>
+			<div class="chart-y-labels">
+				<span>{{ analytics_chart.max }}</span
+				><span>{{ (analytics_chart.max / 2)|round|int }}</span
+				><span>0</span>
+			</div>
+			<div class="chart-x-labels">
+				{% for label in analytics_chart.labels %}<span
+					style="left:{{ (label.x / analytics_chart.width * 100)|round(2) }}%"
+					>{{ label.text }}</span
+				>{% endfor %}
+			</div>
+		</div>
+		{% if analytics_summary.page_views == 0 %}
+		<p class="chart-note">
+			Er zijn nog geen bezoeken in deze periode. Zodra bezoekers de site
+			gebruiken, verschijnt de trend hier.
+		</p>
+		{% endif %}
+	</section>
 
-  <section class="admin-section analytics-panel analytics-audience-panel" aria-labelledby="audience-title">
-    <div class="section-heading compact"><div><h3 id="audience-title">Wie bezoekt de site?</h3><p>Een cookie telt als ingelogd wanneer er minstens één ingelogde weergave is.</p></div></div>
-    <div class="audience-chart-layout">
-      <div class="audience-donut" role="img" aria-label="{{ analytics_member_percent }} procent van de herkende bezoekers is ingelogd" style="--member-share:{{ analytics_member_percent }}%"><div><strong>{{ analytics_audience_total }}</strong><span>bezoekers</span></div></div>
-      <div class="audience-legend"><div><i class="legend-key members" aria-hidden="true"></i><span><strong>{{ analytics_audience.members }}</strong><small>Ingelogd gezien</small></span><b>{{ analytics_member_percent }}%</b></div><div><i class="legend-key guests" aria-hidden="true"></i><span><strong>{{ analytics_audience.guests }}</strong><small>Niet ingelogd</small></span><b>{{ 100 - analytics_member_percent }}%</b></div></div>
-    </div>
-    <p class="chart-note">Dit zijn bezoekerscookies, geen personen. Iemand met meerdere apparaten kan meerdere keren meetellen.</p>
-  </section>
+	<section
+		class="admin-section analytics-panel analytics-audience-panel"
+		aria-labelledby="audience-title"
+	>
+		<div class="section-heading compact">
+			<div>
+				<h3 id="audience-title">Wie bezoekt de site?</h3>
+				<p>
+					Een cookie telt als ingelogd wanneer er minstens één
+					ingelogde weergave is.
+				</p>
+			</div>
+		</div>
+		<div class="audience-chart-layout">
+			<div
+				class="audience-donut"
+				role="img"
+				aria-label="{{ analytics_member_percent }} procent van de herkende bezoekers is ingelogd"
+				style="--member-share:{{ analytics_member_percent }}%"
+			>
+				<div>
+					<strong>{{ analytics_audience_total }}</strong
+					><span>bezoekers</span>
+				</div>
+			</div>
+			<div class="audience-legend">
+				<div>
+					<i class="legend-key members" aria-hidden="true"></i
+					><span
+						><strong>{{ analytics_audience.members }}</strong
+						><small>Ingelogd gezien</small></span
+					><b>{{ analytics_member_percent }}%</b>
+				</div>
+				<div>
+					<i class="legend-key guests" aria-hidden="true"></i
+					><span
+						><strong>{{ analytics_audience.guests }}</strong
+						><small>Niet ingelogd</small></span
+					><b>{{ 100 - analytics_member_percent }}%</b>
+				</div>
+			</div>
+		</div>
+		<p class="chart-note">
+			Dit zijn bezoekerscookies, geen personen. Iemand met meerdere
+			apparaten kan meerdere keren meetellen.
+		</p>
+	</section>
 </div>
 
-<section class="admin-section analytics-panel analytics-recipes-panel" aria-labelledby="popular-title">
-  <div class="section-heading compact"><div><h3 id="popular-title">Populairste recepten</h3><p>Recepten met de meeste detailweergaven in deze periode.</p></div><span class="section-count">{{ top_recipe_chart|length }} recepten</span></div>
-  {% if top_recipe_chart %}<div class="popular-recipe-chart">{% for item in top_recipe_chart %}<div class="popular-recipe-row"><div class="popular-recipe-title"><a class="admin-record-link" href="{{ recipe_url(item.recipe) }}">{{ item.recipe.title }}</a><span>{{ item.recipe.author.username }}</span></div><div class="popular-bar-track" role="img" aria-label="{{ item.views }} receptweergaven"><span style="width:{{ item.width }}%"></span></div><strong>{{ item.views }}</strong></div>{% endfor %}</div>{% else %}<div class="admin-empty"><i class="bi bi-journal" aria-hidden="true"></i><strong>Nog geen receptweergaven</strong><span>Wanneer bezoekers recepten openen, verschijnen de populairste hier.</span></div>{% endif %}
+<section
+	class="admin-section analytics-panel analytics-recipes-panel"
+	aria-labelledby="popular-title"
+>
+	<div class="section-heading compact">
+		<div>
+			<h3 id="popular-title">Populairste recepten</h3>
+			<p>Recepten met de meeste detailweergaven in deze periode.</p>
+		</div>
+		<span class="section-count"
+			>{{ top_recipe_chart|length }} recepten</span
+		>
+	</div>
+	{% if top_recipe_chart %}
+	<div class="popular-recipe-chart">
+		{% for item in top_recipe_chart %}
+		<div class="popular-recipe-row">
+			<div class="popular-recipe-title">
+				<a
+					class="admin-record-link"
+					href="{{ recipe_url(item.recipe) }}"
+					>{{ item.recipe.title }}</a
+				><span>{{ item.recipe.author.username }}</span>
+			</div>
+			<div
+				class="popular-bar-track"
+				role="img"
+				aria-label="{{ item.views }} receptweergaven"
+			>
+				<span style="width:{{ item.width }}%"></span>
+			</div>
+			<strong>{{ item.views }}</strong>
+		</div>
+		{% endfor %}
+	</div>
+	{% else %}
+	<div class="admin-empty">
+		<i class="bi bi-journal" aria-hidden="true"></i
+		><strong>Nog geen receptweergaven</strong
+		><span
+			>Wanneer bezoekers recepten openen, verschijnen de populairste
+			hier.</span
+		>
+	</div>
+	{% endif %}
 </section>
 
 <div class="analytics-lower">
-  <section class="admin-section analytics-panel" aria-labelledby="performance-title"><div class="section-heading compact"><div><h3 id="performance-title">Responstijd per route</h3><p>Gemiddelde serverreactie, met het aantal verzoeken ter context.</p></div></div>
-    {% if slow_routes %}<div class="route-performance-list">{% for row in slow_routes %}<article class="route-performance"><div class="route-performance-heading"><code class="analytics-url">{{ row.path }}</code><strong>{{ row.average_ms|round|int }} ms</strong></div><div class="route-time-track"><span style="width:{{ (row.average_ms / (slow_routes[0].average_ms or 1) * 100)|round|int }}%"></span></div><div class="route-performance-meta"><span>{{ row.requests }} verzoeken</span><span>Piek {{ row.max_ms|round|int }} ms</span></div></article>{% endfor %}</div>{% else %}<div class="admin-empty"><i class="bi bi-speedometer2" aria-hidden="true"></i><strong>Geen routegegevens</strong><span>Er zijn nog geen responstijden verzameld.</span></div>{% endif %}
-  </section>
-  <section class="admin-section analytics-panel" aria-labelledby="errors-title"><div class="section-heading compact"><div><h3 id="errors-title">Fouten om op te letten</h3><p>Recente foutgroepen, nieuwste eerst.</p></div></div>
-    {% if recent_errors %}<div class="analytics-errors">{% for row in recent_errors %}<article class="error-entry"><span class="error-code">{{ row.status_code or 'ERR' }}</span><div class="error-entry-body"><code>{{ row.path }}</code><span>{{ row.error_type or 'Onbekende fout' }} · {{ row.occurrence_count }}× gemeld</span></div><time datetime="{{ row.last_occurred_at.isoformat() }}">{{ row.last_occurred_at.strftime('%-d %b, %H:%M') }}</time></article>{% endfor %}</div>{% else %}<div class="admin-empty"><i class="bi bi-check-circle" aria-hidden="true"></i><strong>Geen fouten geregistreerd</strong><span>Er zijn geen foutgroepen in deze periode.</span></div>{% endif %}
-  </section>
+	<section
+		class="admin-section analytics-panel"
+		aria-labelledby="performance-title"
+	>
+		<div class="section-heading compact">
+			<div>
+				<h3 id="performance-title">Responstijd per route</h3>
+				<p>
+					Gemiddelde serverreactie, met het aantal verzoeken ter
+					context.
+				</p>
+			</div>
+		</div>
+		{% if slow_routes %}
+		<div class="route-performance-list">
+			{% for row in slow_routes %}
+			<article class="route-performance">
+				<div class="route-performance-heading">
+					<code class="analytics-url">{{ row.path }}</code
+					><strong>{{ row.average_ms|round|int }} ms</strong>
+				</div>
+				<div class="route-time-track">
+					<span
+						style="width:{{ (row.average_ms / (slow_routes[0].average_ms or 1) * 100)|round|int }}%"
+					></span>
+				</div>
+				<div class="route-performance-meta">
+					<span>{{ row.requests }} verzoeken</span
+					><span>Piek {{ row.max_ms|round|int }} ms</span>
+				</div>
+			</article>
+			{% endfor %}
+		</div>
+		{% else %}
+		<div class="admin-empty">
+			<i class="bi bi-speedometer2" aria-hidden="true"></i
+			><strong>Geen routegegevens</strong
+			><span>Er zijn nog geen responstijden verzameld.</span>
+		</div>
+		{% endif %}
+	</section>
+	<section
+		class="admin-section analytics-panel"
+		aria-labelledby="errors-title"
+	>
+		<div class="section-heading compact">
+			<div>
+				<h3 id="errors-title">Fouten om op te letten</h3>
+				<p>Recente foutgroepen, nieuwste eerst.</p>
+			</div>
+		</div>
+		{% if recent_errors %}
+		<div class="analytics-errors">
+			{% for row in recent_errors %}
+			<article class="error-entry">
+				<span class="error-code">{{ row.status_code or 'ERR' }}</span>
+				<div class="error-entry-body">
+					<code>{{ row.path }}</code
+					><span
+						>{{ row.error_type or 'Onbekende fout' }} · {{
+						row.occurrence_count }}× gemeld</span
+					>
+				</div>
+				<time datetime="{{ row.last_occurred_at.isoformat() }}"
+					>{{ row.last_occurred_at.strftime('%-d %b, %H:%M') }}</time
+				>
+			</article>
+			{% endfor %}
+		</div>
+		{% else %}
+		<div class="admin-empty">
+			<i class="bi bi-check-circle" aria-hidden="true"></i
+			><strong>Geen fouten geregistreerd</strong
+			><span>Er zijn geen foutgroepen in deze periode.</span>
+		</div>
+		{% endif %}
+	</section>
 </div>

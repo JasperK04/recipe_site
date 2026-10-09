@@ -155,6 +155,15 @@
 									></i
 									><span>Recept toevoegen</span></a
 								>
+								<a
+									class="button button-primary button-small"
+									href="{{ url_for('recipes.upload_recipe') }}"
+									><i
+										class="bi bi-cloud-arrow-up"
+										aria-hidden="true"
+									></i>
+									Recept importeren</a
+								>
 								{% endif %}
 								<a href="{{ url_for('auth.profile') }}"
 									><i

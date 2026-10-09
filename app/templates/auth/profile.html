@@ -92,6 +92,13 @@ endblock %} {% block extra_css %}
 			</a>
 			<a
 				class="button button-secondary"
+				href="{{ url_for('recipes.upload_recipe') }}"
+			>
+				<i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Recept
+				importeren
+			</a>
+			<a
+				class="button button-secondary"
 				href="{{ url_for('recipe_overview.list_recipes', filter='mijn') }}"
 			>
 				<i class="bi bi-journal-text" aria-hidden="true"></i> Mijn

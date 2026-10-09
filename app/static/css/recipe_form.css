@@ -57,6 +57,49 @@
 .recipe-editor-panel-body {
 	padding: 0 28px 28px;
 }
+.recipe-editor-panel input[type="file"] {
+	width: 100%;
+	min-height: 46px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-small);
+	background: var(--surface);
+	color: var(--text);
+	padding: 6px;
+	font: 14px/1.5 Inter, system-ui, sans-serif;
+}
+.recipe-editor-panel input[type="file"]::file-selector-button {
+	margin-right: 12px;
+	border: 0;
+	border-radius: var(--radius-small);
+	background: var(--surface-secondary);
+	color: var(--text);
+	padding: 8px 12px;
+	font: 600 13px/1.2 Inter, system-ui, sans-serif;
+	cursor: pointer;
+}
+.recipe-editor-panel input[type="file"]::file-selector-button:hover {
+	background: var(--primary-soft);
+	color: var(--primary-strong);
+}
+.recipe-editor-panel input[type="file"]:focus-visible {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px var(--primary-soft);
+	outline: none;
+}
+.recipe-editor-code {
+	overflow-x: auto;
+	margin: 10px 0 0;
+	padding: 14px 16px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-small);
+	background: var(--background);
+	color: var(--text-muted);
+	font: 13px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+.recipe-editor-code code {
+	font: inherit;
+	white-space: pre;
+}
 .recipe-editor-note,
 .recipe-editor-help {
 	margin: 7px 0 0;
