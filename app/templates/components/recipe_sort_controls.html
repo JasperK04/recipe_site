@@ -1,18 +1,53 @@
-<form class="recipe-sort-controls" action="{{ url_for(request.endpoint) }}" method="get">
+<form
+	class="recipe-sort-controls"
+	action="{{ url_for(request.endpoint) }}"
+	method="get"
+>
 	{% for key, value in (sort_hidden_params or {}).items() %}
 	<input type="hidden" name="{{ key }}" value="{{ value }}" />
 	{% endfor %}
 	<label id="recipe-sort-label" for="recipe-sort-select">Sorteer op</label>
 	<div class="form-select-wrap" data-custom-select>
-		<select id="recipe-sort-select" class="form-select form-select-native" name="sort" data-custom-select-native data-submit-on-change>
+		<select
+			id="recipe-sort-select"
+			class="form-select form-select-native"
+			name="sort"
+			data-custom-select-native
+			data-submit-on-change
+		>
 			{% for value, label in sort_options.items() %}
-			<option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>
+			<!-- prettier-ignore -->
+			<option
+				value="{{ value }}"
+				{% if sort==value %}selected{% endif %}
+			>
+				{{ label }}
+			</option>
 			{% endfor %}
 		</select>
-		<button class="form-select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="recipe-sort-menu" aria-labelledby="recipe-sort-label recipe-sort-select"></button>
-		<div class="form-select-menu" id="recipe-sort-menu" role="listbox" tabindex="-1">
+		<button
+			class="form-select-trigger"
+			type="button"
+			aria-haspopup="listbox"
+			aria-expanded="false"
+			aria-controls="recipe-sort-menu"
+			aria-labelledby="recipe-sort-label recipe-sort-select"
+		></button>
+		<div
+			class="form-select-menu"
+			id="recipe-sort-menu"
+			role="listbox"
+			tabindex="-1"
+		>
 			{% for value, label in sort_options.items() %}
-			<button class="form-select-option" type="button" role="option" data-value="{{ value }}">{{ label }}</button>
+			<button
+				class="form-select-option"
+				type="button"
+				role="option"
+				data-value="{{ value }}"
+			>
+				{{ label }}
+			</button>
 			{% endfor %}
 		</div>
 	</div>

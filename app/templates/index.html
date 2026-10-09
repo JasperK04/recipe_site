@@ -1,86 +1,149 @@
-{% extends "components/base.html" %}
-{% block extra_meta %}
+{% extends "components/base.html" %} {% block extra_meta %}
 <link rel="canonical" href="{{ url_for('main.index', _external=True) }}" />
-{% endblock %}
-{% block title %}Start - Recepten{% endblock %}
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
-<link rel="stylesheet" href="{{ url_for('static', filename='css/cards.css') }}" />
-{% endblock %}
-{% block content %}
-{% set featured_recipe = featured if featured else recipes[0] if recipes else none %}
+{% endblock %} {% block title %}Start - Recepten{% endblock %} {% block
+extra_css %}
+<link
+	rel="stylesheet"
+	href="{{ url_for('static', filename='css/home.css') }}"
+/>
+<link
+	rel="stylesheet"
+	href="{{ url_for('static', filename='css/cards.css') }}"
+/>
+{% endblock %} {% block content %} {% set featured_recipe = featured if featured
+else recipes[0] if recipes else none %}
 <section class="home-hero" aria-labelledby="home-title">
 	<div class="home-hero-copy">
 		<p class="eyebrow">Jouw digitale kookboek</p>
 		<h1 id="home-title">Bewaar wat je graag nog eens maakt.</h1>
-		<p class="home-hero-intro">Ontdek recepten, bewaar je favorieten en deel gerechten met anderen.</p>
-		<form class="home-search" action="{{ url_for('recipe_overview.list_recipes') }}" method="get" role="search">
+		<p class="home-hero-intro">
+			Ontdek recepten, bewaar je favorieten en deel gerechten met anderen.
+		</p>
+		<form
+			class="home-search"
+			action="{{ url_for('recipe_overview.list_recipes') }}"
+			method="get"
+			role="search"
+		>
 			<label for="home-recipe-search">Waar heb je zin in?</label>
 			<div class="home-search-controls">
-				<input id="home-recipe-search" type="search" name="search" placeholder="Zoek op gerecht of ingrediënt" />
-				<button class="button button-primary" type="submit"><i class="bi bi-search" aria-hidden="true"></i><span>Zoeken</span></button>
+				<input
+					id="home-recipe-search"
+					type="search"
+					name="search"
+					placeholder="Zoek op gerecht of ingrediënt"
+				/>
+				<button class="button button-primary" type="submit">
+					<i class="bi bi-search" aria-hidden="true"></i
+					><span>Zoeken</span>
+				</button>
 			</div>
 		</form>
 		<div class="action-row">
-			<a class="button button-secondary" href="{{ url_for('recipe_overview.list_recipes') }}">Alle recepten bekijken</a>
-			{% if current_user.is_authenticated and current_user.can_create_recipes %}
-			<a class="text-link" href="{{ url_for('recipes.add_recipe') }}"><i class="bi bi-plus-lg" aria-hidden="true"></i> Recept toevoegen</a>
+			<a
+				class="button button-secondary"
+				href="{{ url_for('recipe_overview.list_recipes') }}"
+				>Alle recepten bekijken</a
+			>
+			{% if current_user.is_authenticated and
+			current_user.can_create_recipes %}
+			<a class="text-link" href="{{ url_for('recipes.add_recipe') }}"
+				><i class="bi bi-plus-lg" aria-hidden="true"></i> Recept
+				toevoegen</a
+			>
 			{% endif %}
 		</div>
 	</div>
 
 	<div class="home-hero-art" aria-label="Uitgelicht recept">
 		{% if featured_recipe %}
-		<a class="home-featured" href="{{ recipe_url(featured_recipe) }}" aria-label="Bekijk uitgelicht recept: {{ featured_recipe.title }}">
+		<a
+			class="home-featured"
+			href="{{ recipe_url(featured_recipe) }}"
+			aria-label="Bekijk uitgelicht recept: {{ featured_recipe.title }}"
+		>
 			{% if featured_recipe.has_image %}
-			<img src="{{ url_for('recipes.recipe_image', recipe_id=featured_recipe.id) }}" alt="{{ featured_recipe.title }}" fetchpriority="high" />
+			<img
+				src="{{ url_for('recipes.recipe_image', recipe_id=featured_recipe.id) }}"
+				alt="{{ featured_recipe.title }}"
+				fetchpriority="high"
+			/>
 			{% else %}
-			<div class="home-featured-placeholder" role="img" aria-label="Nog geen foto beschikbaar"><i class="bi bi-journal-bookmark" aria-hidden="true"></i></div>
+			<div
+				class="home-featured-placeholder"
+				role="img"
+				aria-label="Nog geen foto beschikbaar"
+			>
+				<i class="bi bi-journal-bookmark" aria-hidden="true"></i>
+			</div>
 			{% endif %}
 			<div class="home-featured-caption">
 				<span class="eyebrow">Nieuw op tafel</span>
 				<h2>{{ featured_recipe.title }}</h2>
-				{% if featured_recipe.category %}<span>{{ featured_recipe.category }}</span>{% endif %}
+				{% if featured_recipe.category %}<span
+					>{{ featured_recipe.category }}</span
+				>{% endif %}
 			</div>
 		</a>
 		{% else %}
-		<div class="home-featured-placeholder" aria-hidden="true"><i class="bi bi-journal-bookmark"></i></div>
+		<div class="home-featured-placeholder" aria-hidden="true">
+			<i class="bi bi-journal-bookmark"></i>
+		</div>
 		{% endif %}
 	</div>
 </section>
 
-<section class="content-section home-categories" aria-labelledby="categories-title">
+<section
+	class="content-section home-categories"
+	aria-labelledby="categories-title"
+>
 	<div class="section-heading">
-		<div><p class="eyebrow">Kies een richting</p><h2 id="categories-title">Ontdek per categorie</h2></div>
+		<div>
+			<p class="eyebrow">Kies een richting</p>
+			<h2 id="categories-title">Ontdek per categorie</h2>
+		</div>
 	</div>
 	<nav class="filter-chips" aria-label="Receptcategorieën">
 		{% for category in recipe_categories %}
-		<a class="filter-chip" href="{{ url_for('recipe_overview.list_recipes', category=category) }}">{{ category }}</a>
+		<a
+			class="filter-chip"
+			href="{{ url_for('recipe_overview.list_recipes', category=category) }}"
+			>{{ category }}</a
+		>
 		{% endfor %}
 	</nav>
 </section>
 
-<section class="content-section recent-recipes" aria-labelledby="recent-recipes-title">
+<section
+	class="content-section recent-recipes"
+	aria-labelledby="recent-recipes-title"
+>
 	<div class="section-heading">
-		<div><p class="eyebrow">Uit de receptenplank</p><h2 id="recent-recipes-title">Recepten om te proberen</h2></div>
+		<div>
+			<p class="eyebrow">Uit de receptenplank</p>
+			<h2 id="recent-recipes-title">Recepten om te proberen</h2>
+		</div>
 		<div class="section-heading-actions">
-			{% set sort_hidden_params = {} %}
-			{% include "components/recipe_sort_controls.html" %}
+			{% set sort_hidden_params = {} %} {% include
+			"components/recipe_sort_controls.html" %}
 		</div>
 	</div>
-	{% if recipes %}
-	{% set home_recipe_list = recipes if recipes|length > 0 else [] %}
+	{% if recipes %} {% set home_recipe_list = recipes if recipes|length > 0
+	else [] %}
 	<div class="recipe-grid">
-		{% for recipe in home_recipe_list %}
-			{% include "components/recipe_card.html" %}
-		{% endfor %}
+		{% for recipe in home_recipe_list %} {% include
+		"components/recipe_card.html" %} {% endfor %}
 	</div>
 	{% else %}
 	<div class="empty-state" aria-live="polite">
 		<i class="bi bi-journal-x" aria-hidden="true"></i>
 		<h2>Er staan nog geen recepten klaar</h2>
 		<p>Kom later terug om nieuwe recepten te ontdekken.</p>
-		<a class="button button-primary" href="{{ url_for('recipe_overview.list_recipes') }}">Recepten ontdekken</a>
+		<a
+			class="button button-primary"
+			href="{{ url_for('recipe_overview.list_recipes') }}"
+			>Recepten ontdekken</a
+		>
 	</div>
 	{% endif %}
 </section>

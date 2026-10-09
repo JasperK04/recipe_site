@@ -1,0 +1,149 @@
+<header class="section-heading">
+	<div>
+		<p class="eyebrow">Nieuwe makers uitnodigen</p>
+		<h2>Uitnodigingen</h2>
+		<p>
+			Maak een eenmalige registratiecode en volg de codes die nog geldig
+			zijn.
+		</p>
+	</div>
+</header>
+{% if created_otc %}
+<section class="otc-created admin-callout" aria-labelledby="created-otc-title">
+	<div class="callout-icon">
+		<i class="bi bi-check2-circle" aria-hidden="true"></i>
+	</div>
+	<div class="callout-copy">
+		<p class="eyebrow">Code aangemaakt</p>
+		<h3 id="created-otc-title">De uitnodiging is klaar om te delen</h3>
+		<p>
+			Geldig tot {{ created_otc.expires_at.strftime('%-d %b %Y, %H:%M')
+			}}{% if created_otc.purpose %} · {{ created_otc.purpose }}{% endif
+			%}
+		</p>
+		<code class="otc-code">{{ created_otc.code }}</code>{% if
+		registration_link %}
+		<div class="otc-link-row">
+			<input
+				id="otc-link"
+				type="text"
+				readonly
+				value="{{ registration_link }}"
+				aria-label="Registratielink"
+			/><button
+				class="button button-secondary"
+				type="button"
+				data-copy-link
+				data-copy-value="{{ registration_link }}"
+			>
+				Link kopiëren
+			</button>
+		</div>
+		{% endif %}
+	</div>
+</section>
+{% endif %}
+<div class="otc-dashboard">
+	<section class="otc-panel">
+		<div class="panel-heading">
+			<span class="panel-icon"
+				><i class="bi bi-ticket-perforated" aria-hidden="true"></i
+			></span>
+			<div>
+				<h3>Code aanmaken</h3>
+				<p>De code kan één keer worden gebruikt.</p>
+			</div>
+		</div>
+		<form
+			method="post"
+			action="{{ url_for('admin.manage_otc') }}"
+			class="admin-form"
+		>
+			{{ form.hidden_tag() }}
+			<div class="field-wrap">
+				<label for="{{ form.purpose.id }}"
+					>{{ form.purpose.label.text }}</label
+				>{{ form.purpose(class_='form-control', autocomplete='off') }}{%
+				for error in form.purpose.errors %}<span class="field-error"
+					>{{ error }}</span
+				>{% endfor %}<small
+					>Optioneel, bijvoorbeeld de naam van de ontvanger.</small
+				>
+			</div>
+			<div class="field-wrap">
+				<label for="{{ form.expires_in_hours.id }}"
+					>{{ form.expires_in_hours.label.text }}</label
+				>{{ form.expires_in_hours(class_='form-control', min='1') }}{%
+				for error in form.expires_in_hours.errors %}<span
+					class="field-error"
+					>{{ error }}</span
+				>{% endfor %}
+			</div>
+			<button class="button button-primary" type="submit">
+				<i class="bi bi-plus-lg" aria-hidden="true"></i> Uitnodiging
+				aanmaken
+			</button>
+		</form>
+	</section>
+	<section class="otc-panel">
+		<div class="panel-heading">
+			<span class="panel-icon is-muted"
+				><i class="bi bi-hourglass-split" aria-hidden="true"></i
+			></span>
+			<div>
+				<h3>
+					Actieve codes
+					<span class="inline-count">{{ active_otcs|length }}</span>
+				</h3>
+				<p>Ongebruikte registratie-uitnodigingen.</p>
+			</div>
+		</div>
+		{% if active_otcs %}
+		<ul class="otc-list">
+			{% for otc in active_otcs %}{% set otc_meta = otc.metadata_json or
+			{} %}
+			<li class="otc-item">
+				<div class="otc-item-body">
+					<code class="otc-code">{{ otc.code }}</code
+					><span class="otc-label"
+						>{{ otc_meta.get('purpose') or 'Registratie-uitnodiging'
+						}}</span
+					><span class="otc-date"
+						>Verloopt {{ otc.expires_at.strftime('%-d %b %Y, %H:%M')
+						}}</span
+					>
+				</div>
+				<form
+					class="otc-item-actions"
+					method="post"
+					action="{{ url_for('admin.delete_otc', credential_id=otc.id) }}"
+					data-confirm-message="Deze uitnodiging verwijderen?"
+				>
+					<input
+						type="hidden"
+						name="csrf_token"
+						value="{{ csrf_token() }}"
+					/><button
+						class="icon-button is-danger"
+						type="submit"
+						aria-label="Verwijder uitnodiging"
+						title="Verwijderen"
+					>
+						<i class="bi bi-trash3" aria-hidden="true"></i>
+					</button>
+				</form>
+			</li>
+			{% endfor %}
+		</ul>
+		{% else %}
+		<div class="otc-empty admin-empty">
+			<i class="bi bi-ticket" aria-hidden="true"></i
+			><strong>Geen actieve codes</strong
+			><span
+				>Maak hierboven een uitnodiging aan om iemand te laten
+				registreren.</span
+			>
+		</div>
+		{% endif %}
+	</section>
+</div>

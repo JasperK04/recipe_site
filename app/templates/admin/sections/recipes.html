@@ -1,0 +1,76 @@
+<header class="section-heading">
+	<div>
+		<p class="eyebrow">Bibliotheekbeheer</p>
+		<h2>Recepten</h2>
+		<p>Zoek, controleer en beheer de publicatiestatus.</p>
+	</div>
+	<span class="section-count">{{ recipes.total }} recepten</span>
+</header>
+
+<form class="admin-search-form" method="get" action="{{ url_for('admin.recipes') }}" role="search">
+	<label class="admin-search-box">
+		<i class="bi bi-search" aria-hidden="true"></i>
+		<span class="visually-hidden">Zoek recepten</span>
+		<input type="search" name="search" value="{{ search }}" placeholder="Zoek op titel of beschrijving">
+	</label>
+	<label class="admin-filter-col">
+		<span>Status</span>
+		<select name="status" data-submit-on-change>
+			<option value="all" {{ 'selected' if status == 'all' }}>Alle statussen</option>
+			<option value="public" {{ 'selected' if status == 'public' }}>Openbaar</option>
+			<option value="private" {{ 'selected' if status == 'private' }}>Privé</option>
+			<option value="deactivated" {{ 'selected' if status == 'deactivated' }}>Gedeactiveerd</option>
+		</select>
+	</label>
+	<label class="admin-filter-col">
+		<span>Moderatie</span>
+		<select name="moderation" data-submit-on-change>
+			<option value="all" {{ 'selected' if moderation == 'all' }}>Alle beoordelingen</option>
+			<option value="flagged" {{ 'selected' if moderation == 'flagged' }}>Gevlagd</option>
+			<option value="allowed" {{ 'selected' if moderation == 'allowed' }}>Toegestaan</option>
+		</select>
+	</label>
+	<button class="button button-primary" type="submit">Zoeken</button>
+</form>
+
+<div class="admin-table-responsive">
+	<table class="admin-table admin-table-stack admin-table-recipes">
+		<thead>
+			<tr>
+				<th scope="col">Recept</th>
+				<th scope="col">Maker</th>
+				<th scope="col">Status</th>
+				<th scope="col">Moderatie</th>
+				<th scope="col">Datum</th>
+				<th scope="col" class="text-end">Acties</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for recipe in recipes.items %}
+				{% include 'admin/sections/recipe_table_row.html' %}
+			{% else %}
+				<tr>
+					<td colspan="6">
+						<div class="admin-empty">
+							<i class="bi bi-journal" aria-hidden="true"></i>
+							<strong>Geen recepten gevonden</strong>
+							<span>Pas je zoekopdracht of filters aan.</span>
+						</div>
+					</td>
+				</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+</div>
+
+{% if recipes.pages > 1 %}
+<nav class="admin-pagination" aria-label="Receptpagina's">
+	{% if recipes.has_prev %}
+		<a class="button button-secondary" href="{{ url_for('admin.recipes', page=recipes.prev_num, search=search, status=status, moderation=moderation) }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Vorige</a>
+	{% endif %}
+	<span>Pagina {{ recipes.page }} van {{ recipes.pages }}</span>
+	{% if recipes.has_next %}
+		<a class="button button-secondary" href="{{ url_for('admin.recipes', page=recipes.next_num, search=search, status=status, moderation=moderation) }}">Volgende <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+	{% endif %}
+</nav>
+{% endif %}

@@ -1,6 +1,93 @@
-{% extends "components/base.html" %} {% block title %}Adminpanel - Recepten{%
-endblock %} {% block content %} {% endblock %} {% block extra_js %} {% if
-section == 'users' %}
+{% extends "components/base.html" %} {% block title %}Beheer · Recepten
+Register{% endblock %} {% block extra_css %}<link
+	rel="stylesheet"
+	href="{{ url_for('static', filename='css/admin.css') }}"
+/>{% endblock %} {% block content %}
+<div class="admin-page">
+	<div class="admin-heading">
+		<div>
+			<p class="eyebrow">Recepten Register</p>
+			<h1>Beheer</h1>
+			<p>Beheer leden, recepten en uitnodigingen op één plek.</p>
+		</div>
+		<a class="button button-secondary" href="{{ url_for('main.index') }}"
+			><i class="bi bi-arrow-left" aria-hidden="true"></i> Terug naar de
+			site</a
+		>
+	</div>
+	<div class="admin-shell">
+		<aside class="admin-sidebar" aria-label="Beheernavigatie">
+			<p class="admin-nav-label">Werkruimte</p>
+			<nav class="admin-nav">
+				<!-- prettier-ignore -->
+				<a href="{{ url_for('admin.panel') }}"
+					class="{{ 'is-current' if section == 'dashboard' else '' }}"
+					{% if section=="dashboard" %}
+						aria-current="page"
+					{% endif %}
+					><i class="bi bi-grid" aria-hidden="true"></i> Overzicht
+				</a>
+				<!-- prettier-ignore -->
+				<a
+					href="{{ url_for('admin.users') }}"
+					class="{{ 'is-current' if section == 'users' else '' }}"
+					{% if section=="users" %}
+						aria-current="page"
+					{% endif %}
+					><i class="bi bi-people" aria-hidden="true"></i> Leden 
+					{% if stats.pending_creator_requests %}
+					<span class="nav-badge" data-creator-request-badge`>
+						{{ stats.pending_creator_requests }}
+					</span>
+					{% endif %}
+				</a>
+				<!-- prettier-ignore -->
+				<a
+					href="{{ url_for('admin.recipes') }}"
+					class="{{ 'is-current' if section == 'recipes' else '' }}"
+					{% if section=="recipes" %}
+						aria-current="page"
+					{% endif %}
+					><i class="bi bi-journal-text" aria-hidden="true"></i>
+					Recepten {% if stats.pending_recipe_moderation %}
+					<span class="nav-badge" data-recipe-moderation-badge>
+						{{ stats.pending_recipe_moderation }}
+					</span>
+					{% endif %}
+				</a>
+				<!-- prettier-ignore -->
+				<a
+					href="{{ url_for('admin.manage_otc') }}"
+					class="{{ 'is-current' if section == 'otc' else '' }}"
+					{% if section=="otc" %}
+						aria-current="page"
+					{% endif %}
+					><i class="bi bi-ticket-perforated" aria-hidden="true"></i>
+					OTC
+					<span class="nav-count">{{ stats.active_otcs }}</span>
+				</a>
+				<!-- prettier-ignore -->
+				<a
+					href="{{ url_for('admin.analytics') }}"
+					class="{{ 'is-current' if section == 'analytics' else '' }}"
+					{% if section=="analytics" %}
+						aria-current="page"
+					{% endif %}
+					><i class="bi bi-graph-up" aria-hidden="true"></i>
+					Inzichten
+				</a>
+			</nav>
+			<div class="admin-sidebar-note">
+				<i class="bi bi-shield-check" aria-hidden="true"></i
+				><span>Alleen beheerders kunnen deze ruimte openen.</span>
+			</div>
+		</aside>
+		<section class="admin-content" aria-live="polite">
+			{% include 'admin/sections/' ~ section ~ '.html' %}
+		</section>
+	</div>
+</div>
+{% endblock %} {% block extra_js %}{% if section == 'users' %}
 <script src="{{ url_for('static', filename='js/admin/users.js') }}"></script>
 {% elif section == 'recipes' %}
 <script
@@ -10,4 +97,4 @@ section == 'users' %}
 <script src="{{ url_for('static', filename='js/admin/recipes.js') }}"></script>
 {% elif section == 'otc' %}
 <script src="{{ url_for('static', filename='js/admin/otc.js') }}"></script>
-{% endif %} {% endblock %}
+{% endif %}{% endblock %}

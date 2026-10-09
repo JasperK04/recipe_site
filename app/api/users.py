@@ -335,7 +335,7 @@ def _user_row_response(user: User):
             "status": "ok",
             "pending_creator_requests": pending_creator_request_count(),
             "html": render_template(
-                "components/user_table_row.html",
+                "admin/sections/user_table_row.html",
                 user=user,
                 current_user=current_user,
             ),

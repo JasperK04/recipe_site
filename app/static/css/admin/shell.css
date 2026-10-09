@@ -1,0 +1,478 @@
+.admin-page {
+	container-name: admin-page;
+	container-type: inline-size;
+}
+
+.admin-page {
+	width: min(1440px, calc(100% - 32px));
+	margin: 32px auto 72px;
+	color: var(--text);
+}
+
+.admin-heading {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 24px;
+	margin: 0 auto 24px;
+	max-width: 1200px;
+}
+
+.admin-heading h1 {
+	font-size: clamp(32px, 4vw, 42px);
+	line-height: 1.1;
+}
+
+.admin-heading p:not(.eyebrow) {
+	color: var(--text-muted);
+	margin: 8px 0 0;
+}
+
+.eyebrow {
+	color: var(--primary-strong);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	margin: 0 0 8px;
+}
+
+.admin-shell {
+	max-width: 1200px;
+	margin: auto;
+	display: grid;
+	grid-template-columns: 240px minmax(0, 1fr);
+	gap: 24px;
+	align-items: start;
+}
+
+.admin-sidebar,
+.admin-content {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-medium);
+}
+
+.admin-sidebar {
+	padding: 20px 14px;
+	position: sticky;
+	top: 24px;
+}
+
+.admin-nav-label {
+	padding: 0 10px;
+	color: var(--text-muted);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	margin: 0 0 10px;
+}
+
+.admin-nav {
+	display: grid;
+	gap: 4px;
+}
+
+.admin-nav a {
+	min-height: 44px;
+	padding: 10px;
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	border-radius: var(--radius-small);
+	color: var(--text-muted);
+	font-weight: 600;
+	text-decoration: none;
+	transition:
+		background 0.15s,
+		color 0.15s;
+}
+
+.admin-nav a:hover,
+.admin-nav a.is-current {
+	background: var(--background);
+	color: var(--text);
+}
+
+.admin-nav a.is-current {
+	box-shadow: inset 3px 0 var(--primary);
+}
+
+.admin-nav a > i {
+	font-size: 17px;
+	width: 20px;
+	text-align: center;
+}
+
+.nav-badge,
+.nav-count {
+	margin-left: auto;
+	min-width: 23px;
+	height: 23px;
+	padding: 2px 6px;
+	border-radius: 999px;
+	background: var(--primary-soft);
+	color: var(--primary-strong);
+	font-size: 12px;
+	line-height: 19px;
+	text-align: center;
+}
+
+.nav-count {
+	background: var(--background);
+	color: var(--text-muted);
+}
+
+.admin-sidebar-note {
+	border-top: 1px solid var(--border);
+	padding: 16px 8px 2px;
+	margin-top: 18px;
+	display: flex;
+	gap: 9px;
+	color: var(--text-muted);
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.admin-sidebar-note i {
+	color: var(--success);
+	font-size: 16px;
+}
+
+.admin-content {
+	padding: 28px;
+	min-width: 0;
+}
+
+.section-heading {
+	display: flex;
+	justify-content: space-between;
+	align-items: end;
+	gap: 18px;
+	margin-bottom: 22px;
+}
+
+.section-heading h2 {
+	font-size: 30px;
+	line-height: 1.15;
+}
+
+.section-heading > div > p:not(.eyebrow) {
+	color: var(--text-muted);
+	margin: 7px 0 0;
+}
+
+.section-count {
+	font-size: 13px;
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+
+.section-heading.compact {
+	margin: 0 0 14px;
+}
+
+.section-heading.compact h3 {
+	font-size: 21px;
+}
+
+.section-heading.compact p {
+	font-size: 14px;
+	color: var(--text-muted);
+	margin: 5px 0 0;
+}
+
+.admin-section {
+	margin-top: 32px;
+}
+
+.admin-page :focus-visible {
+	outline: 3px solid var(--primary);
+	outline-offset: 3px;
+}
+
+.admin-page .badge {
+	display: inline-flex;
+	align-items: center;
+	min-height: 25px;
+	padding: 3px 9px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 650;
+}
+
+.admin-page .bg-success {
+	background: color-mix(in srgb, var(--success) 13%, var(--surface));
+	color: var(--success);
+}
+
+.admin-page .bg-danger {
+	background: color-mix(in srgb, var(--danger) 13%, var(--surface));
+	color: var(--danger);
+}
+
+.admin-page .bg-secondary {
+	background: var(--background);
+	color: var(--text-muted);
+}
+
+.admin-page .btn {
+	min-height: 40px;
+	padding: 8px 12px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-small);
+	background: var(--surface);
+	color: var(--text);
+	font: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.admin-page .btn-outline-success {
+	color: var(--success);
+}
+
+.admin-page .btn-outline-danger {
+	color: var(--danger);
+}
+
+.admin-page .btn:hover {
+	background: var(--background);
+	border-color: var(--primary);
+}
+
+@media (max-width: 600px) {
+	.admin-page {
+		width: min(100% - 24px, 560px);
+		margin: 20px auto 48px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.admin-page * {
+		scroll-behavior: auto !important;
+		transition: none !important;
+	}
+}
+
+@media (max-width: 600px) {
+	.admin-page {
+		width: calc(100% - 20px);
+		margin: 16px auto 40px;
+	}
+}
+
+@media (max-width: 400px) {
+	.admin-page {
+		width: calc(100% - 12px);
+		margin-top: 12px;
+	}
+}
+
+@container admin-page (max-width: 900px) {
+	.admin-shell {
+		grid-template-columns: 190px minmax(0, 1fr);
+		gap: 16px;
+	}
+	.admin-content {
+		padding: 22px;
+	}
+}
+
+@container admin-page (max-width: 600px) {
+	.admin-heading {
+		align-items: flex-start;
+	}
+	.admin-heading > .button {
+		font-size: 0;
+		padding: 0;
+		width: 44px;
+		min-width: 44px;
+		justify-content: center;
+	}
+	.admin-heading > .button i {
+		font-size: 17px;
+	}
+	.admin-shell {
+		display: flex;
+		flex-direction: column;
+	}
+	.admin-sidebar {
+		position: static;
+		width: 100%;
+		padding: 10px;
+	}
+	.admin-nav-label,
+	.admin-sidebar-note {
+		display: none;
+	}
+	.admin-nav {
+		display: flex;
+		overflow-x: auto;
+		gap: 4px;
+		scrollbar-width: thin;
+	}
+	.admin-nav a {
+		flex: none;
+		min-height: 44px;
+		padding: 9px;
+	}
+	.admin-nav a > i {
+		display: none;
+	}
+	.admin-nav a.is-current {
+		box-shadow: inset 0 -3px var(--primary);
+	}
+	.admin-content {
+		width: 100%;
+		padding: 18px 14px;
+	}
+	.admin-heading {
+		gap: 10px;
+		margin-bottom: 14px;
+	}
+	.admin-heading h1 {
+		font-size: 29px;
+	}
+	.admin-heading p:not(.eyebrow) {
+		font-size: 13px;
+		line-height: 1.4;
+	}
+	.admin-heading > .button {
+		flex: 0 0 44px;
+	}
+	.admin-shell {
+		gap: 10px;
+	}
+	.admin-sidebar {
+		padding: 8px;
+	}
+	.admin-nav {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 5px;
+		overflow: visible;
+	}
+	.admin-nav a {
+		min-width: 0;
+		min-height: 44px;
+		padding: 7px 8px;
+		gap: 6px;
+		font-size: 12px;
+		line-height: 1.15;
+	}
+	.admin-nav a > i {
+		display: inline-block;
+		width: 16px;
+		font-size: 14px;
+		flex: none;
+	}
+	.admin-nav a.is-current {
+		box-shadow: inset 0 -2px var(--primary);
+	}
+	.admin-nav .nav-badge,
+	.admin-nav .nav-count {
+		min-width: 20px;
+		height: 20px;
+		padding: 1px 4px;
+		font-size: 11px;
+		line-height: 18px;
+	}
+	.admin-content {
+		padding: 16px 12px;
+	}
+}
+
+@container admin-page (max-width: 400px) {
+	.admin-heading h1 {
+		font-size: 26px;
+	}
+	.admin-heading .eyebrow,
+	.section-heading .eyebrow {
+		font-size: 10px;
+		letter-spacing: 0.07em;
+	}
+	.admin-heading > .button {
+		width: 40px;
+		min-width: 40px;
+		flex-basis: 40px;
+		height: 40px;
+		min-height: 40px;
+	}
+	.admin-shell {
+		gap: 8px;
+	}
+	.admin-sidebar {
+		padding: 6px;
+	}
+	.admin-nav {
+		gap: 4px;
+	}
+	.admin-nav a {
+		padding: 6px;
+		gap: 4px;
+		font-size: 11px;
+	}
+	.admin-nav a > i {
+		display: none;
+	}
+	.admin-content {
+		padding: 13px 9px;
+	}
+}
+
+@container admin-content (max-width: 560px) {
+	.section-heading {
+		align-items: flex-start;
+	}
+	.section-heading h2 {
+		font-size: 27px;
+	}
+	.section-count {
+		padding-top: 28px;
+	}
+	.section-heading {
+		gap: 8px;
+		margin-bottom: 16px;
+	}
+	.section-heading h2 {
+		font-size: 25px;
+	}
+	.section-heading > div > p:not(.eyebrow) {
+		font-size: 13px;
+		line-height: 1.45;
+	}
+	.section-count {
+		padding: 0;
+		white-space: normal;
+		text-align: right;
+		font-size: 12px;
+	}
+}
+
+@container admin-content (max-width: 380px) {
+	.section-heading {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: start;
+	}
+	.section-heading h2 {
+		font-size: 23px;
+	}
+	.section-heading.compact {
+		display: block;
+	}
+	.section-count {
+		max-width: 70px;
+		padding-top: 22px;
+		font-size: 10px;
+	}
+}
+
+.admin-content {
+	container-name: admin-content;
+	container-type: inline-size;
+	padding: clamp(12px, 2.4cqi, 28px);
+}

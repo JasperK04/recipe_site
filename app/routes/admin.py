@@ -59,9 +59,21 @@ def _panel_context(*, section: str) -> Any:
     }
 
     if section == "users":
-        context["users"] = User.query.order_by(
-            db.text("is_active DESC"), User.username.asc()
-        ).all()
+        search = request.args.get("search", "").strip()
+        query = User.query
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                or_(User.username.ilike(search_pattern), User.email.ilike(search_pattern))
+            )
+        context.update(
+            {
+                "users": query.order_by(
+                    db.text("is_active DESC"), User.username.asc()
+                ).all(),
+                "search": search,
+            }
+        )
     elif section == "recipes":
         page = request.args.get("page", 1, type=int)
         status = request.args.get("status", "all")
@@ -146,13 +158,34 @@ def _panel_context(*, section: str) -> Any:
         period = request.args.get("period", "30", type=int)
         if period not in {1, 7, 30, 90}:
             period = 30
+        trend = Analytics.trend(period)
+        audience = Analytics.audience(period)
+        top_recipes = Analytics.top_recipes(period)
+        highest_recipe_views = max((views for _, views in top_recipes), default=0)
+        top_recipe_chart = [
+            {
+                "recipe": recipe,
+                "views": views,
+                "width": round(views * 100 / highest_recipe_views) if highest_recipe_views else 0,
+            }
+            for recipe, views in top_recipes
+        ]
+        audience_total = audience["members"] + audience["guests"]
+        summary = Analytics.summary(period)
         context.update(
             {
                 "period": period,
-                "analytics_summary": Analytics.summary(period),
-                "top_recipes": Analytics.top_recipes(period),
+                "analytics_summary": summary,
+                "top_recipes": top_recipes,
+                "top_recipe_chart": top_recipe_chart,
                 "slow_routes": Analytics.slow_routes(period),
                 "recent_errors": Analytics.recent_errors(period),
+                "analytics_trend": trend,
+                "analytics_chart": _analytics_chart(trend),
+                "analytics_audience": audience,
+                "analytics_audience_total": audience_total,
+                "analytics_member_percent": round(audience["members"] * 100 / audience_total) if audience_total else 0,
+                "analytics_views_per_visitor": round(summary["page_views"] / max(1, summary["unique_visitors"]), 1),
             }
         )
 
@@ -165,7 +198,7 @@ def _user_row_response(user: User):
             "status": "ok",
             "pending_creator_requests": pending_creator_request_count(),
             "html": render_template(
-                "components/user_table_row.html",
+                "admin/sections/user_table_row.html",
                 user=user,
                 current_user=current_user,
             ),
@@ -175,6 +208,43 @@ def _user_row_response(user: User):
 
 def _json_error(error: ApiError):
     return jsonify({"status": "error", "message": error.message}), error.status_code
+
+
+def _analytics_chart(trend: list[dict[str, Any]]) -> dict[str, Any]:
+    """Map daily values to a responsive, dependency-free SVG line chart."""
+    width, height = 920, 260
+    left, right, top, bottom = 44, 12, 16, 34
+    chart_width = width - left - right
+    chart_height = height - top - bottom
+    maximum = max(
+        (max(point["page_views"], point["visitors"]) for point in trend),
+        default=0,
+    )
+    maximum = max(1, maximum)
+    points: dict[str, str] = {}
+    for key in ("page_views", "visitors"):
+        values = []
+        for index, point in enumerate(trend):
+            x = left + (chart_width * index / max(1, len(trend) - 1))
+            y = top + chart_height * (1 - point[key] / maximum)
+            values.append(f"{x:.1f},{y:.1f}")
+        points[key] = " ".join(values)
+    label_indexes = sorted(set([0, len(trend) // 2, len(trend) - 1])) if trend else []
+    return {
+        "points": points,
+        "max": maximum,
+        "width": width,
+        "height": height,
+        "left": left,
+        "right": width - right,
+        "top": top,
+        "bottom": height - bottom,
+        "plot_height": chart_height,
+        "labels": [
+            {"x": left + chart_width * index / max(1, len(trend) - 1), "text": trend[index]["day"].strftime("%H:%M" if len(trend) == 24 else "%-d %b")}
+            for index in label_indexes
+        ],
+    }
 
 
 @admin_bp.route("/")

@@ -576,10 +576,9 @@ a.ingredient-name:hover {
 	}
 	.recipe-view-article--compact {
 		display: grid;
-		grid-template-columns: minmax(
-				432px,
-				min(600px, calc(100% - 136px))
-			) minmax(0, 1fr);
+		grid-template-columns:
+			minmax(432px, min(600px, calc(100% - 136px)))
+			minmax(0, 1fr);
 	}
 	.recipe-view-article--compact .recipe-view-image-wrapper {
 		width: calc(100% - 32px);

@@ -45,14 +45,22 @@ function updateRecipeAction(form, status) {
         return
     }
 
+    const recipeTitle = form.closest("tr")
+        ?.querySelector('[data-label="Recept"] .admin-record-link')
+        ?.textContent.trim() || "recept"
+
     if (status === "deactivated") {
         form.action = form.dataset.reactivateEndpoint
-        button.className = "btn btn-sm btn-outline-success"
-        button.textContent = "Reactiveer"
+        button.className = "icon-button is-success"
+        button.innerHTML = '<i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>'
+        button.setAttribute("aria-label", `Reactiveer ${recipeTitle}`)
+        button.title = "Reactiveer"
     } else {
         form.action = form.dataset.deactivateEndpoint
-        button.className = "btn btn-sm btn-outline-danger"
-        button.textContent = "Deactiveer"
+        button.className = "icon-button is-danger"
+        button.innerHTML = '<i class="bi bi-eye-slash" aria-hidden="true"></i>'
+        button.setAttribute("aria-label", `Deactiveer ${recipeTitle}`)
+        button.title = "Deactiveer"
     }
 }
 
