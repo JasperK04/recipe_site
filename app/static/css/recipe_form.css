@@ -65,7 +65,10 @@
 	background: var(--surface);
 	color: var(--text);
 	padding: 6px;
-	font: 14px/1.5 Inter, system-ui, sans-serif;
+	font:
+		14px/1.5 Inter,
+		system-ui,
+		sans-serif;
 }
 .recipe-editor-panel input[type="file"]::file-selector-button {
 	margin-right: 12px;
@@ -74,7 +77,10 @@
 	background: var(--surface-secondary);
 	color: var(--text);
 	padding: 8px 12px;
-	font: 600 13px/1.2 Inter, system-ui, sans-serif;
+	font:
+		600 13px/1.2 Inter,
+		system-ui,
+		sans-serif;
 	cursor: pointer;
 }
 .recipe-editor-panel input[type="file"]::file-selector-button:hover {
@@ -94,7 +100,11 @@
 	border-radius: var(--radius-small);
 	background: var(--background);
 	color: var(--text-muted);
-	font: 13px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
+	font:
+		13px/1.6 ui-monospace,
+		SFMono-Regular,
+		Consolas,
+		monospace;
 }
 .recipe-editor-code code {
 	font: inherit;

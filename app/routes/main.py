@@ -1,6 +1,6 @@
 from random import randint
 
-from flask import Blueprint, Response, render_template, request, url_for
+from flask import Blueprint, Response, jsonify, render_template, request, url_for
 from sqlalchemy import func
 
 from app import db
@@ -68,6 +68,25 @@ def about():
     return render_template("about.html")
 
 
+@main_bp.route("/cookieverklaring")
+def cookie_statement():
+    """Explain the cookies and browser storage used by this site."""
+    return render_template("cookie_statement.html")
+
+
+@main_bp.route("/privacyverklaring")
+def privacy_statement():
+    """Explain how personal information is handled on this site."""
+    return render_template("privacy_statement.html")
+
+
+@main_bp.route("/privacy/cookies/consent", methods=["POST"])
+def cookie_consent():
+    """Persist the visitor's required-only or analytics consent choice."""
+    choice = request.get_json(silent=True) or {}
+    return jsonify({"status": "ok", "analytics": choice.get("analytics") is True})
+
+
 @main_bp.route("/robots.txt")
 def robots():
     body = "\n".join(
@@ -92,6 +111,8 @@ def sitemap():
     static_urls = [
         (url_for("main.index", _external=True), None),
         (url_for("main.about", _external=True), None),
+        (url_for("main.privacy_statement", _external=True), None),
+        (url_for("main.cookie_statement", _external=True), None),
         (url_for("recipe_overview.list_recipes", _external=True), None),
     ]
     categories = [

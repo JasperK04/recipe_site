@@ -22,6 +22,7 @@ from app.models import (
 PAGE_VIEW_EVENTS = ("page_view", "recipe_view")
 ROLLUP_EVENTS = PAGE_VIEW_EVENTS + ("error",)
 VISITOR_COOKIE = "analytics_visitor"
+CONSENT_COOKIE = "rr_cookie_consent"
 
 
 class Analytics:
@@ -60,6 +61,10 @@ class Analytics:
         visitor_id: str | None = None,
     ) -> None:
         """Persist an event without allowing analytics failures to affect a request."""
+        # Analytics is optional. Do not create identifiers or persist request data
+        # until the visitor has explicitly opted in.
+        if request.cookies.get(CONSENT_COOKIE) != "analytics":
+            return
         try:
             occurred_at = datetime.now(UTC)
             visitor_id = visitor_id or cls.visitor_id()
@@ -170,6 +175,11 @@ class Analytics:
 
     @classmethod
     def record_request(cls, response) -> None:
+        if (
+            request.cookies.get(CONSENT_COOKIE) != "analytics"
+            or request.endpoint == "main.cookie_consent"
+        ):
+            return
         started = getattr(g, "analytics_started_at", None)
         duration_ms = (
             max(0, int((datetime.now(UTC) - started).total_seconds() * 1000))

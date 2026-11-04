@@ -48,6 +48,10 @@
 			rel="stylesheet"
 			href="{{ url_for('static', filename='css/base.css') }}"
 		/>
+		<link
+			rel="stylesheet"
+			href="{{ url_for('static', filename='css/cookie-consent.css') }}"
+		/>
 		{% block extra_css %}{% endblock %}
 	</head>
 	<body>
@@ -321,14 +325,67 @@
 					{% endif %}
 				</div>
 				<div class="footer-legal" aria-label="Juridische informatie">
-					<span data-legal-document="privacy">Privacy statement</span>
-					<span data-legal-document="cookies">Cookie statement</span>
+					<a href="{{ url_for('main.privacy_statement') }}">Privacyverklaring</a>
+					<a href="{{ url_for('main.cookie_statement') }}"
+						>Cookieverklaring</a
+					>
+					<button
+						class="cookie-settings-link"
+						type="button"
+						data-open-cookie-settings
+					>
+						Cookievoorkeuren
+					</button>
 				</div>
 				<p class="footer-note">
 					&copy; {{ current_year }} Recepten Register
 				</p>
 			</div>
 		</footer>
+
+		<section
+			class="cookie-backdrop"
+			id="cookie-consent"
+			data-has-consent="{{ 'true' if request.cookies.get('rr_cookie_consent') in ['essential', 'analytics'] else 'false' }}"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="cookie-title"
+			aria-describedby="cookie-description"
+			hidden
+		>
+			<div class="cookie-dialog">
+				<p class="cookie-eyebrow">Jouw keuze</p>
+				<h2 id="cookie-title">Cookies op Recepten Register</h2>
+				<p id="cookie-description">
+					We gebruiken noodzakelijke cookies voor de werking en
+					beveiliging van de website. Met jouw toestemming gebruiken
+					we ook een analytische cookie om bezoek en receptweergaven
+					te tellen.
+				</p>
+				<a href="{{ url_for('main.cookie_statement') }}"
+					>Lees de cookieverklaring</a
+				>
+				<div class="cookie-actions">
+					<button
+						type="button"
+						class="cookie-button cookie-deny"
+						data-cookie-choice="deny"
+					>
+						Alleen noodzakelijk
+					</button>
+					<button
+						type="button"
+						class="cookie-button cookie-accept"
+						data-cookie-choice="accept"
+					>
+						Cookies toestaan
+					</button>
+				</div>
+				<p class="cookie-error" role="alert" hidden>
+					Je keuze kon niet worden opgeslagen. Probeer het opnieuw.
+				</p>
+			</div>
+		</section>
 
 		<script
 			src="{{ url_for('static', filename='js/form_behaviors.js') }}"
@@ -340,6 +397,10 @@
 		></script>
 		<script
 			src="{{ url_for('static', filename='js/base.js') }}"
+			defer
+		></script>
+		<script
+			src="{{ url_for('static', filename='js/cookie-consent.js') }}"
 			defer
 		></script>
 		{% block extra_js %}{% endblock %}

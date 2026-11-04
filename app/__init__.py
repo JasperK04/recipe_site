@@ -23,7 +23,7 @@ from app.navigation import (
     remember_back_url_for_login,
 )
 from app.routes import admin_bp, auth_bp, main_bp, recipe_overview_bp, recipes_bp
-from app.services.analytics import VISITOR_COOKIE, Analytics
+from app.services.analytics import CONSENT_COOKIE, VISITOR_COOKIE, Analytics
 
 
 def create_app(config_name="default"):
@@ -139,6 +139,23 @@ def create_app(config_name="default"):
                 samesite="Lax",
                 secure=request.is_secure,
             )
+        if request.endpoint == "main.cookie_consent" and request.method == "POST":
+            choice = request.get_json(silent=True) or {}
+            consent = "analytics" if choice.get("analytics") is True else "essential"
+            response.set_cookie(
+                CONSENT_COOKIE,
+                consent,
+                max_age=180 * 24 * 60 * 60,
+                httponly=True,
+                samesite="Lax",
+                secure=request.is_secure,
+            )
+            if consent != "analytics":
+                response.delete_cookie(VISITOR_COOKIE, samesite="Lax", secure=request.is_secure)
+        elif request.cookies.get(CONSENT_COOKIE) != "analytics":
+            # Also clean up identifiers created by an older version of the site
+            # while the visitor is undecided or has declined.
+            response.delete_cookie(VISITOR_COOKIE, samesite="Lax", secure=request.is_secure)
         return response
 
     # expose csrf_token() in templates for manual forms
