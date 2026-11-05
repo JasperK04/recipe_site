@@ -6,6 +6,7 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFError, CSRFProtect, generate_csrf
 from werkzeug.exceptions import HTTPException
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import config
 from flask_session import Session
@@ -33,6 +34,7 @@ def create_app(config_name="default"):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     app.config.setdefault("ANALYTICS_SLOW_REQUEST_MS", 1000)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)
 
     # Initialize extensions
     db.init_app(app)
