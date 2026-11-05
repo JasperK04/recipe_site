@@ -1,0 +1,41 @@
+{% extends "components/base.html" %}
+
+{% block title %}{{ error_code }} - {{ error_title }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/error.css') }}" />
+{% endblock %}
+
+{% block content %}
+{% if error_selector %}
+<form class="error-selector" method="get" action="{{ url_for('main.error_preview') }}">
+	<label for="error-code">Bekijk foutcode</label>
+	<div class="error-selector-controls">
+		<select id="error-code" name="code">
+			{% for code, content in error_codes.items() %}
+			<option value="{{ code }}" {% if code == selected_error_code %}selected{% endif %}>
+				{{ code }} - {{ content[0] }}
+			</option>
+			{% endfor %}
+		</select>
+		<button class="button button-secondary" type="submit">Bekijken</button>
+	</div>
+</form>
+{% endif %}
+<section class="error-page" aria-labelledby="error-title">
+	<div class="error-page-mark" aria-hidden="true">{{ error_code }}</div>
+	<div class="error-page-copy">
+		<p class="eyebrow">Een onverwachte afslag</p>
+		<h1 id="error-title">{{ error_title }}</h1>
+		<p>{{ error_message }}</p>
+		<div class="error-page-actions">
+			<a class="button button-primary" href="{{ url_for('main.index') }}">
+				<i class="bi bi-house" aria-hidden="true"></i>
+				Naar de homepage
+			</a>
+			<a class="button button-secondary" href="{{ url_for('recipe_overview.list_recipes') }}">
+				Recepten ontdekken
+			</a>
+		</div>
+	</div>
+</section>
+{% endblock %}

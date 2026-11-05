@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from flask import Flask, flash, g, jsonify, redirect, request, url_for
+from flask import Flask, flash, g, jsonify, redirect, render_template, request, url_for
 from flask_login import LoginManager, current_user, logout_user
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
@@ -9,6 +9,8 @@ from werkzeug.exceptions import HTTPException
 
 from config import config
 from flask_session import Session
+
+from app.errors import error_page_context
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -41,21 +43,40 @@ def create_app(config_name="default"):
     csrf = CSRFProtect()
     csrf.init_app(app)
 
-    @app.errorhandler(CSRFError)
-    def handle_csrf_error(error):
-        """Return JSON for AJAX forms instead of Flask-WTF's HTML error page."""
-        Analytics.error(error)
-        if (
+    def wants_json_response():
+        return (
             request.path.startswith("/api/")
             or request.headers.get("X-Requested-With") == "XMLHttpRequest"
-        ):
+            or request.accept_mimetypes.best == "application/json"
+        )
+
+    def render_error(error, *, status_code, message=None):
+        if wants_json_response():
             return jsonify(
                 {
                     "status": "error",
-                    "message": "Je formulier is verlopen. Vernieuw de pagina en probeer opnieuw.",
+                    "message": message or "Er is iets misgegaan. Probeer het opnieuw.",
                 }
-            ), 400
-        return error.description, 400
+            ), status_code
+        return (
+            render_template(
+                "errors/error.html",
+                **error_page_context(
+                    status_code,
+                    message or "Er is iets misgegaan. Probeer het opnieuw.",
+                ),
+            ),
+            status_code,
+        )
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(error):
+        Analytics.error(error)
+        return render_error(
+            error,
+            status_code=400,
+            message="Je formulier is verlopen. Vernieuw de pagina en probeer opnieuw.",
+        )
 
     @app.errorhandler(HTTPException)
     def handle_http_error(error):
@@ -64,7 +85,15 @@ def create_app(config_name="default"):
         )
         if error.code != 500 and not expected_temporary_image_miss:
             Analytics.error(error)
-        return error
+        if expected_temporary_image_miss:
+            return error
+        return render_error(error, status_code=error.code or 500)
+
+    @app.errorhandler(Exception)
+    def handle_unexpected_error(error):
+        app.logger.exception("Unhandled application error")
+        Analytics.error(error)
+        return render_error(error, status_code=500)
 
     # Configure login
     login_manager.login_view = "auth.login"  # type: ignore

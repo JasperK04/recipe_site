@@ -4,6 +4,7 @@ from flask import Blueprint, Response, jsonify, render_template, request, url_fo
 from sqlalchemy import func
 
 from app import db
+from app.errors import ERROR_PAGE_CONTENT, error_page_context
 from app.models import Recipe, RecipeScore
 
 main_bp = Blueprint("main", __name__)
@@ -66,6 +67,26 @@ def index():
 def about():
     """About page."""
     return render_template("about.html")
+
+
+@main_bp.route("/errors")
+def error_preview():
+    """Preview the site's browser error pages."""
+    try:
+        selected_code = int(request.args.get("code", 404))
+    except (TypeError, ValueError):
+        selected_code = 404
+    if selected_code not in ERROR_PAGE_CONTENT:
+        selected_code = 404
+
+    return render_template(
+        "errors/error.html",
+        **error_page_context(selected_code),
+        error_selector=True,
+        error_codes=ERROR_PAGE_CONTENT,
+        selected_error_code=selected_code,
+        robots="noindex,follow",
+    )
 
 
 @main_bp.route("/cookieverklaring")
