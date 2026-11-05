@@ -91,12 +91,7 @@
             if (toggle) toggle.setAttribute('title', dark ? 'Schakel naar licht thema' : 'Schakel naar donker thema');
         }
 
-        try {
-            const stored = localStorage.getItem('theme');
-            applyTheme(stored || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-        } catch (error) {
-            applyTheme('light');
-        }
+        applyTheme(body.classList.contains('dark-mode') ? 'dark' : 'light');
 
         toggle?.addEventListener('click', event => {
             event.preventDefault();

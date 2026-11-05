@@ -33,7 +33,21 @@
 		{% block meta %}{% endblock %}
 		<meta name="color-scheme" content="light dark" />
 		{% block extra_meta %}{% endblock %}
-		<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+		<script>
+			(() => {
+				try {
+					const stored = localStorage.getItem("theme");
+					const prefersDark = window.matchMedia?.(
+						"(prefers-color-scheme: dark)"
+					).matches;
+					const dark = stored ? stored === "dark" : prefersDark;
+					document.documentElement.classList.toggle("dark-mode", dark);
+					document.documentElement.classList.toggle("light-mode", !dark);
+				} catch {
+					document.documentElement.classList.add("light-mode");
+				}
+			})();
+		</script>
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link
