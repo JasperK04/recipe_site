@@ -1,41 +1,106 @@
-<div class="modal fade" id="recipe-image-crop-modal" tabindex="-1" aria-labelledby="recipe-image-crop-modal-label" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered recipe-image-crop-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div>
-                    <h5 class="modal-title" id="recipe-image-crop-modal-label">Crop je afbeelding</h5>
-                    <p class="text-muted small mb-0">De uitsnede volgt de receptkaartverhouding.</p>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
-            </div>
-            <div class="modal-body">
-                <div class="d-flex justify-content-center recipe-image-crop-stage-wrap">
-                    <div class="recipe-image-crop-stage" id="recipe-image-crop-stage">
-                        <img id="recipe-image-crop-image" alt="Afbeelding om te croppen">
-                        <div id="recipe-image-crop-selection" class="recipe-image-crop-selection" aria-label="Crop selectie" role="presentation">
-                            <span class="crop-handle crop-handle-nw" data-crop-handle="nw"></span>
-                            <span class="crop-handle crop-handle-ne" data-crop-handle="ne"></span>
-                            <span class="crop-handle crop-handle-sw" data-crop-handle="sw"></span>
-                            <span class="crop-handle crop-handle-se" data-crop-handle="se"></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="row g-3 align-items-center mt-3 d-md-none">
-                    <div class="col-auto">
-                        <label for="recipe-image-crop-slider" class="col-form-label">Grootte</label>
-                    </div>
-                    <div class="col">
-                        <input type="range" class="form-range" id="recipe-image-crop-slider" min="0" max="100" value="50" aria-label="Cropgrootte">
-                    </div>
-                </div>
-                <p class="text-muted small mt-3 mb-0">
-                    Sleep de selectie om te verplaatsen. Op grotere schermen kun je de hoeken slepen om te schalen.
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
-                <button type="button" class="btn btn-primary" id="recipe-image-crop-confirm" disabled>Bevestigen</button>
-            </div>
-        </div>
-    </div>
+<div
+	class="form-modal"
+	id="recipe-image-crop-modal"
+	tabindex="-1"
+	role="dialog"
+	aria-modal="true"
+	aria-labelledby="recipe-image-crop-modal-label"
+	hidden
+>
+	<div class="form-modal-dialog">
+		<div class="form-modal-content">
+			<div class="form-modal-header">
+				<div>
+					<p class="form-modal-eyebrow">Afbeelding voorbereiden</p>
+					<h2 id="recipe-image-crop-modal-label">
+						Afbeelding bijsnijden
+					</h2>
+				</div>
+				<button
+					type="button"
+					class="form-modal-close"
+					data-modal-close="recipe-image-crop-modal"
+					aria-label="Sluiten"
+				>
+					&times;
+				</button>
+			</div>
+			<div class="form-modal-body">
+				<div
+					id="recipe-image-crop-stage"
+					class="recipe-image-crop-stage"
+				>
+					<img
+						id="recipe-image-crop-image"
+						alt="Voorbeeld van de uitsnede"
+					/>
+					<div
+						id="recipe-image-crop-selection"
+						class="recipe-image-crop-selection"
+					>
+						<button
+							type="button"
+							class="recipe-image-crop-handle"
+							data-crop-handle="nw"
+							aria-label="Linkerbovenhoek slepen"
+						></button>
+						<button
+							type="button"
+							class="recipe-image-crop-handle"
+							data-crop-handle="ne"
+							aria-label="Rechterbovenhoek slepen"
+						></button>
+						<button
+							type="button"
+							class="recipe-image-crop-handle"
+							data-crop-handle="sw"
+							aria-label="Linkeronderhoek slepen"
+						></button>
+						<button
+							type="button"
+							class="recipe-image-crop-handle"
+							data-crop-handle="se"
+							aria-label="Rechteronderhoek slepen"
+						></button>
+					</div>
+				</div>
+				<p class="recipe-editor-help">
+					Sleep het kader om het belangrijkste deel van de foto te
+					kiezen. Gebruik de hoeken om de uitsnede te vergroten of
+					verkleinen. Op kleine schermen gebruik je de schuifbalk.
+				</p>
+				<div class="recipe-image-crop-size-control">
+					<label for="recipe-image-crop-slider"
+						>Grootte van de uitsnede</label
+					>
+					<input
+						id="recipe-image-crop-slider"
+						class="form-range"
+						type="range"
+						min="0"
+						max="100"
+						value="100"
+						aria-label="Grootte van de uitsnede"
+					/>
+				</div>
+			</div>
+			<div class="form-modal-footer">
+				<button
+					type="button"
+					class="button button-secondary"
+					data-modal-close="recipe-image-crop-modal"
+				>
+					Annuleren
+				</button>
+				<button
+					id="recipe-image-crop-confirm"
+					type="button"
+					class="button button-primary"
+					disabled
+				>
+					Deze uitsnede gebruiken
+				</button>
+			</div>
+		</div>
+	</div>
 </div>

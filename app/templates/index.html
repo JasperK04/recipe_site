@@ -1,73 +1,150 @@
-{% extends "components/base.html" %}
-{% block extra_meta %}
+{% extends "components/base.html" %} {% block extra_meta %}
 <link rel="canonical" href="{{ url_for('main.index', _external=True) }}" />
-<meta name="description" content="Sla op, deel en ontdek heerlijke recepten in het Recepten Register." />
-{% endblock %}
+{% endblock %} {% block title %}Start - Recepten{% endblock %} {% block
+extra_css %}
+<link
+	rel="stylesheet"
+	href="{{ url_for('static', filename='css/home.css') }}"
+/>
+<link
+	rel="stylesheet"
+	href="{{ url_for('static', filename='css/cards.css') }}"
+/>
+{% endblock %} {% block content %} {% set featured_recipe = featured if featured
+else recipes[0] if recipes else none %}
+<section class="home-hero" aria-labelledby="home-title">
+	<div class="home-hero-copy">
+		<p class="eyebrow">Jouw digitale kookboek</p>
+		<h1 id="home-title">Bewaar wat je graag nog eens maakt.</h1>
+		<p class="home-hero-intro">
+			Ontdek recepten, bewaar je favorieten en deel gerechten met anderen.
+		</p>
+		<form
+			class="home-search"
+			action="{{ url_for('recipe_overview.list_recipes') }}"
+			method="get"
+			role="search"
+		>
+			<label for="home-recipe-search">Waar heb je zin in?</label>
+			<div class="home-search-controls">
+				<input
+					id="home-recipe-search"
+					type="search"
+					name="search"
+					placeholder="Zoek op gerecht of ingrediënt"
+				/>
+				<button class="button button-primary" type="submit">
+					<i class="bi bi-search" aria-hidden="true"></i
+					><span>Zoeken</span>
+				</button>
+			</div>
+		</form>
+		<div class="action-row">
+			<a
+				class="button button-secondary"
+				href="{{ url_for('recipe_overview.list_recipes') }}"
+				>Alle recepten bekijken</a
+			>
+			{% if current_user.is_authenticated and
+			current_user.can_create_recipes %}
+			<a class="text-link" href="{{ url_for('recipes.add_recipe') }}"
+				><i class="bi bi-plus-lg" aria-hidden="true"></i> Recept
+				toevoegen</a
+			>
+			{% endif %}
+		</div>
+	</div>
 
-{% block title %}Startpagina - Recepten{% endblock %}
+	<div class="home-hero-art" aria-label="Uitgelicht recept">
+		{% if featured_recipe %}
+		<a
+			class="home-featured"
+			href="{{ recipe_url(featured_recipe) }}"
+			aria-label="Bekijk uitgelicht recept: {{ featured_recipe.title }}"
+		>
+			{% if featured_recipe.has_image %}
+			<img
+				src="{{ url_for('recipes.recipe_image', recipe_id=featured_recipe.id) }}"
+				alt="{{ featured_recipe.title }}"
+				fetchpriority="high"
+			/>
+			{% else %}
+			<div
+				class="home-featured-placeholder"
+				role="img"
+				aria-label="Nog geen foto beschikbaar"
+			>
+				<i class="bi bi-journal-bookmark" aria-hidden="true"></i>
+			</div>
+			{% endif %}
+			<div class="home-featured-caption">
+				<span class="eyebrow">Nieuw op tafel</span>
+				<h2>{{ featured_recipe.title }}</h2>
+				{% if featured_recipe.category %}<span
+					>{{ featured_recipe.category }}</span
+				>{% endif %}
+			</div>
+		</a>
+		{% else %}
+		<div class="home-featured-placeholder" aria-hidden="true">
+			<i class="bi bi-journal-bookmark"></i>
+		</div>
+		{% endif %}
+	</div>
+</section>
 
-{% block extra_css %}
-    <style>
-        div.jumbotron {
-            background-color: rgba(var(--bs-primary-rgb), 0.08) !important;
-        }
-        
-        @media (max-width: 576px) {
-            div.jumbotron {
-                padding: 2rem !important;
-            }
-            h1.display-4 {
-                font-size: calc(0.9rem + 4.2vw);
-            }
-        }
-    </style>
-{% endblock extra_css %}
+<section
+	class="content-section home-categories"
+	aria-labelledby="categories-title"
+>
+	<div class="section-heading">
+		<div>
+			<p class="eyebrow">Kies een richting</p>
+			<h2 id="categories-title">Ontdek per categorie</h2>
+		</div>
+	</div>
+	<nav class="filter-chips" aria-label="Receptcategorieën">
+		{% for category in recipe_categories %}
+		<a
+			class="filter-chip"
+			href="{{ url_for('recipe_overview.list_recipes', category=category) }}"
+			>{{ category }}</a
+		>
+		{% endfor %}
+	</nav>
+</section>
 
-{% block content %}
-<div class="jumbotron p-5 rounded-3 mb-4">
-    <h1 class="display-4">Welkom bij het <span class="text-primary text-nowrap">Recepten Register</span></h1>
-    <p class="lead">Sla op, deel en ontdek heerlijke recepten.</p>
-    <hr class="my-4">
-    <div class="mt-4">
-        {% if current_user.is_authenticated %}
-            {% if current_user.can_create_recipes %}
-            <a class="btn btn-primary btn-lg" href="{{ url_for('recipes.add_recipe') }}" role="button">
-                {% if not current_user.recipes %}
-                    <i class="bi bi-plus-circle"></i> Voeg je eerste recept toe
-                {% else %}
-                    <i class="bi bi-plus-circle"></i> Voeg een nieuw recept toe
-                {% endif %}
-            </a>
-            {% else %}
-            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('recipe_overview.list_recipes') }}" role="button">Recepten bekijken</a>
-            {% endif %}
-        {% else %}
-            <a class="btn btn-primary btn-lg me-2" href="{{ url_for('auth.register') }}" role="button">Begin</a>
-            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('recipe_overview.list_recipes') }}" role="button">Recepten bekijken</a>
-        {% endif %}
-    </div>
-</div>
-
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-4">
-    <h2 class="mb-0">Recente recepten</h2>
-    {% set sort_hidden_params = {} %}
-    {% include 'components/recipe_sort_controls.html' %}
-</div>
-{% if recipes %}
-<div class="recipe-grid">
-    {% for recipe in recipes %}
-        {% include 'components/recipe_card.html' with context %}
-    {% endfor %}
-</div>
-{% else %}
-                <div class="alert alert-info">
-    <i class="bi bi-info-circle"></i> Nog geen recepten. Wees de eerste om er een toe te voegen!
-</div>
-{% endif %}
-
-{% if recipes %}
-<div class="text-center mt-4">
-    <a href="{{ url_for('recipe_overview.list_recipes') }}" class="btn btn-outline-primary">Bekijk alle recepten</a>
-</div>
-{% endif %}
+<section
+	class="content-section recent-recipes"
+	aria-labelledby="recent-recipes-title"
+>
+	<div class="section-heading">
+		<div>
+			<p class="eyebrow">Uit de receptenplank</p>
+			<h2 id="recent-recipes-title">Recepten om te proberen</h2>
+		</div>
+		<div class="section-heading-actions">
+			{% set sort_hidden_params = {} %} {% include
+			"components/recipe_sort_controls.html" %}
+		</div>
+	</div>
+	{% if recipes %} {% set home_recipe_list = recipes if recipes|length > 0
+	else [] %}
+	<div class="recipe-grid">
+		{% for recipe in home_recipe_list %} {% include
+		"components/recipe_card.html" %} {% endfor %}
+	</div>
+	{% else %}
+	<div class="empty-state" aria-live="polite">
+		<i class="bi bi-journal-x" aria-hidden="true"></i>
+		<h2>Er staan nog geen recepten klaar</h2>
+		<p>Kom later terug om nieuwe recepten te ontdekken.</p>
+		<a
+			class="button button-primary"
+			href="{{ url_for('recipe_overview.list_recipes') }}"
+			>Recepten ontdekken</a
+		>
+	</div>
+	{% endif %}
+</section>
 {% endblock %}

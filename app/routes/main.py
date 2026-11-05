@@ -1,7 +1,10 @@
-from flask import Blueprint, Response, render_template, request, url_for
+from random import randint
+
+from flask import Blueprint, Response, jsonify, render_template, request, url_for
 from sqlalchemy import func
 
 from app import db
+from app.errors import ERROR_PAGE_CONTENT, error_page_context
 from app.models import Recipe, RecipeScore
 
 main_bp = Blueprint("main", __name__)
@@ -50,11 +53,13 @@ def index():
 
     query = Recipe.query.filter_by(status=Recipe.STATUS_PUBLIC)
     recent_recipes = _apply_home_sort(query, sort).limit(12).all()
+    random_index = randint(0, len(recent_recipes) - 1) if recent_recipes else 0
     return render_template(
         "index.html",
         recipes=recent_recipes,
         sort=sort,
         sort_options=HOME_SORT_OPTIONS,
+        featured=recent_recipes[random_index] if recent_recipes else None,
     )
 
 
@@ -62,6 +67,45 @@ def index():
 def about():
     """About page."""
     return render_template("about.html")
+
+
+@main_bp.route("/errors")
+def error_preview():
+    """Preview the site's browser error pages."""
+    try:
+        selected_code = int(request.args.get("code", 404))
+    except (TypeError, ValueError):
+        selected_code = 404
+    if selected_code not in ERROR_PAGE_CONTENT:
+        selected_code = 404
+
+    return render_template(
+        "errors/error.html",
+        **error_page_context(selected_code),
+        error_selector=True,
+        error_codes=ERROR_PAGE_CONTENT,
+        selected_error_code=selected_code,
+        robots="noindex,follow",
+    )
+
+
+@main_bp.route("/cookieverklaring")
+def cookie_statement():
+    """Explain the cookies and browser storage used by this site."""
+    return render_template("cookie_statement.html")
+
+
+@main_bp.route("/privacyverklaring")
+def privacy_statement():
+    """Explain how personal information is handled on this site."""
+    return render_template("privacy_statement.html")
+
+
+@main_bp.route("/privacy/cookies/consent", methods=["POST"])
+def cookie_consent():
+    """Persist the visitor's required-only or analytics consent choice."""
+    choice = request.get_json(silent=True) or {}
+    return jsonify({"status": "ok", "analytics": choice.get("analytics") is True})
 
 
 @main_bp.route("/robots.txt")
@@ -88,6 +132,8 @@ def sitemap():
     static_urls = [
         (url_for("main.index", _external=True), None),
         (url_for("main.about", _external=True), None),
+        (url_for("main.privacy_statement", _external=True), None),
+        (url_for("main.cookie_statement", _external=True), None),
         (url_for("recipe_overview.list_recipes", _external=True), None),
     ]
     categories = [

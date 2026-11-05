@@ -1,26 +1,59 @@
-<div class="card shadow">
-    <div class="card-body">
-        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
-            <p class="text-muted mb-0">Bekijk actieve en gedeactiveerde gebruikers, behandel creator-aanvragen en beheer rollen.</p>
-            <a href="{{ back_url('admin.panel') }}" class="btn btn-outline-secondary d-none d-sm-inline-flex">Terug naar overzicht</a>
-        </div>
-        <div class="table-responsive admin-table-responsive">
-            <table class="table align-middle admin-table-stack">
-                <thead>
-                    <tr>
-                        <th>Gebruiker</th>
-                        <th>Rol</th>
-                        <th>Status</th>
-                        <th>Aanvraag</th>
-                        <th class="text-end">Acties</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in users %}
-                        {% include "/components/user_table_row.html" %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+<header class="section-heading">
+	<div>
+		<p class="eyebrow">Toegang en rollen</p>
+		<h2>Leden</h2>
+		<p>Beheer accounts en behandel maker-aanvragen.</p>
+	</div>
+	<span class="section-count">{{ users|length }} gevonden</span>
+</header>
+<form
+	class="admin-member-search"
+	method="get"
+	action="{{ url_for('admin.users') }}"
+	role="search"
+>
+	<label for="admin-member-search-input">Zoek een lid</label>
+	<div class="admin-member-search-field">
+		<i class="bi bi-search" aria-hidden="true"></i
+		><input
+			id="admin-member-search-input"
+			type="search"
+			name="search"
+			value="{{ search }}"
+			placeholder="Naam of e-mailadres"
+		/><button class="button button-primary" type="submit">Zoeken</button>
+	</div>
+</form>
+<div class="admin-table-responsive">
+	<table class="admin-table admin-table-stack admin-table-users">
+		<thead>
+			<tr>
+				<th scope="col">Lid</th>
+				<th scope="col">E-mailadres</th>
+				<th scope="col">Rol</th>
+				<th scope="col">Status</th>
+				<th scope="col" class="text-end">Acties</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for user in users %} {% include
+			'admin/sections/user_table_row.html' %} {% else %}
+			<tr>
+				<td colspan="5">
+					<div class="admin-empty">
+						<i class="bi bi-people" aria-hidden="true"></i
+						><strong
+							>{{ 'Geen leden gevonden' if search else 'Nog geen
+							leden' }}</strong
+						><span
+							>{{ 'Probeer een andere naam of een e-mailadres.' if
+							search else 'Nieuwe accounts verschijnen hier.'
+							}}</span
+						>
+					</div>
+				</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
 </div>

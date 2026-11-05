@@ -1,14 +1,17 @@
 from datetime import UTC, datetime
 
-from flask import Flask, flash, g, jsonify, redirect, request, url_for
+from flask import Flask, flash, g, jsonify, redirect, render_template, request, url_for
 from flask_login import LoginManager, current_user, logout_user
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFError, CSRFProtect, generate_csrf
 from werkzeug.exceptions import HTTPException
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import config
 from flask_session import Session
+
+from app.errors import error_page_context
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -17,12 +20,13 @@ migrate = Migrate()
 
 from app.api import api_bp
 from app.navigation import (
+    RECIPE_CATEGORIES,
     back_url,
     load_pending_back_url,
     remember_back_url_for_login,
 )
 from app.routes import admin_bp, auth_bp, main_bp, recipe_overview_bp, recipes_bp
-from app.services.analytics import VISITOR_COOKIE, Analytics
+from app.services.analytics import CONSENT_COOKIE, VISITOR_COOKIE, Analytics
 
 
 def create_app(config_name="default"):
@@ -30,6 +34,7 @@ def create_app(config_name="default"):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     app.config.setdefault("ANALYTICS_SLOW_REQUEST_MS", 1000)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)
 
     # Initialize extensions
     db.init_app(app)
@@ -40,21 +45,40 @@ def create_app(config_name="default"):
     csrf = CSRFProtect()
     csrf.init_app(app)
 
-    @app.errorhandler(CSRFError)
-    def handle_csrf_error(error):
-        """Return JSON for AJAX forms instead of Flask-WTF's HTML error page."""
-        Analytics.error(error)
-        if (
+    def wants_json_response():
+        return (
             request.path.startswith("/api/")
             or request.headers.get("X-Requested-With") == "XMLHttpRequest"
-        ):
+            or request.accept_mimetypes.best == "application/json"
+        )
+
+    def render_error(error, *, status_code, message=None):
+        if wants_json_response():
             return jsonify(
                 {
                     "status": "error",
-                    "message": "Je formulier is verlopen. Vernieuw de pagina en probeer opnieuw.",
+                    "message": message or "Er is iets misgegaan. Probeer het opnieuw.",
                 }
-            ), 400
-        return error.description, 400
+            ), status_code
+        return (
+            render_template(
+                "errors/error.html",
+                **error_page_context(
+                    status_code,
+                    message or "Er is iets misgegaan. Probeer het opnieuw.",
+                ),
+            ),
+            status_code,
+        )
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(error):
+        Analytics.error(error)
+        return render_error(
+            error,
+            status_code=400,
+            message="Je formulier is verlopen. Vernieuw de pagina en probeer opnieuw.",
+        )
 
     @app.errorhandler(HTTPException)
     def handle_http_error(error):
@@ -63,7 +87,15 @@ def create_app(config_name="default"):
         )
         if error.code != 500 and not expected_temporary_image_miss:
             Analytics.error(error)
-        return error
+        if expected_temporary_image_miss:
+            return error
+        return render_error(error, status_code=error.code or 500)
+
+    @app.errorhandler(Exception)
+    def handle_unexpected_error(error):
+        app.logger.exception("Unhandled application error")
+        Analytics.error(error)
+        return render_error(error, status_code=500)
 
     # Configure login
     login_manager.login_view = "auth.login"  # type: ignore
@@ -100,6 +132,7 @@ def create_app(config_name="default"):
 
         return {
             "recipe_url": recipe_url,
+            "recipe_categories": RECIPE_CATEGORIES,
             "back_url": back_url,
             "recipe_description": recipe_description,
         }
@@ -137,6 +170,23 @@ def create_app(config_name="default"):
                 samesite="Lax",
                 secure=request.is_secure,
             )
+        if request.endpoint == "main.cookie_consent" and request.method == "POST":
+            choice = request.get_json(silent=True) or {}
+            consent = "analytics" if choice.get("analytics") is True else "essential"
+            response.set_cookie(
+                CONSENT_COOKIE,
+                consent,
+                max_age=180 * 24 * 60 * 60,
+                httponly=True,
+                samesite="Lax",
+                secure=request.is_secure,
+            )
+            if consent != "analytics":
+                response.delete_cookie(VISITOR_COOKIE, samesite="Lax", secure=request.is_secure)
+        elif request.cookies.get(CONSENT_COOKIE) != "analytics":
+            # Also clean up identifiers created by an older version of the site
+            # while the visitor is undecided or has declined.
+            response.delete_cookie(VISITOR_COOKIE, samesite="Lax", secure=request.is_secure)
         return response
 
     # expose csrf_token() in templates for manual forms

@@ -1,0 +1,131 @@
+{% extends "components/base.html" %} {% block title %}Cookieverklaring |
+Recepten Register{% endblock %} {% block meta_description %}Lees welke cookies
+en browseropslag Recepten Register gebruikt en hoe je jouw keuze voor analytics
+kunt aanpassen.{% endblock %} {% block content %}
+<article class="page-content legal-document">
+	<header class="page-header">
+		<p class="eyebrow">Privacy</p>
+		<h1>Cookieverklaring</h1>
+		<p>
+			Deze verklaring beschrijft de cookies en vergelijkbare browseropslag
+			die Recepten Register gebruikt.
+		</p>
+	</header>
+	<section>
+		<h2>Jouw keuze</h2>
+		<p>
+			Functioneel noodzakelijke cookies zijn altijd actief. Analytics is
+			optioneel en wordt pas gebruikt nadat je daarvoor toestemming geeft.
+			Je kunt je keuze op elk moment wijzigen via
+			<button
+				class="cookie-inline-button"
+				type="button"
+				data-open-cookie-settings
+			>
+				Cookievoorkeuren</button
+			>.
+		</p>
+	</section>
+	<section>
+		<h2>Cookies die deze website gebruikt</h2>
+		<div class="cookie-table-wrap">
+			<table class="cookie-table">
+				<thead>
+					<tr>
+						<th>Naam</th>
+						<th>Doel</th>
+						<th>Termijn</th>
+						<th>Soort</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><code>session</code></td>
+						<td>
+							Houdt tijdelijke sessiegegevens bij, zoals inloggen,
+							formulierbeveiliging en het afronden van
+							handelingen.
+						</td>
+						<td>Sessieduur.</td>
+						<td>Noodzakelijk</td>
+					</tr>
+					<tr>
+						<td><code>remember_token</code></td>
+						<td>
+							Houdt je aangemeld wanneer je bij het inloggen kiest
+							voor onthouden.
+						</td>
+						<td>7 dagen.</td>
+						<td>Noodzakelijk wanneer je deze functie gebruikt</td>
+					</tr>
+					<tr>
+						<td><code>rr_cookie_consent</code></td>
+						<td>
+							Slaat je keuze op zodat de cookiemelding niet
+							telkens terugkomt. De waarde is
+							<code>essential</code> of <code>analytics</code>.
+						</td>
+						<td>180 dagen.</td>
+						<td>Noodzakelijk</td>
+					</tr>
+					<tr>
+						<td><code>analytics_visitor</code></td>
+						<td>
+							Een anonieme code die helpt bij het tellen van
+							bezoeken en het opsporen van technische fouten,
+							zonder je direct te identificeren.
+						</td>
+						<td>395 dagen.</td>
+						<td>Optioneel</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<h2>Analytics en bewaartermijnen</h2>
+		<p>
+			Als je analytics weigert, worden vanaf dat moment geen nieuwe
+			analyticsgebeurtenissen opgeslagen en wordt de analyticscookie
+			verwijderd. Analyticsgegevens die zijn verzameld toen je eerder
+			toestemming had gegeven, worden niet automatisch verwijderd wanneer
+			je je toestemming intrekt. Die gegevens blijven bewaard volgens de
+			bewaartermijnen hieronder. De server verwerkt wel de gegevens die
+			nodig zijn om je huidige verzoek uit te voeren.
+		</p>
+		<p>
+			Na toestemming worden ruwe analyticsgebeurtenissen standaard 90
+			dagen bewaard en dagtotalen maximaal 730 dagen. De site bewaart geen
+			IP-adres of user-agent in deze analyticsgegevens.
+		</p>
+	</section>
+	<section>
+		<h2>Browseropslag en externe bestanden</h2>
+		<p>
+			De gekozen kleurweergave (licht of donker) kan in
+			<code>localStorage</code> onder de naam <code>theme</code> worden
+			bewaard. Dit is browseropslag, geen cookie, en wordt alleen gebruikt
+			om je weergavevoorkeur te onthouden.
+		</p>
+		<p>
+			De pagina laadt lettertypen van Google Fonts en pictogrammen van
+			jsDelivr. Daardoor ontvangt die aanbieder een verzoek met technische
+			verbindingsgegevens, zoals je IP-adres. Deze bestanden worden niet
+			gebruikt om analytics van Recepten Register te meten.
+		</p>
+	</section>
+	<section>
+		<h2>Je keuze aanpassen</h2>
+		<p>
+			Gebruik de knop hieronder om analytics toe te staan of te weigeren.
+			Je kunt cookies ook wissen in je browserinstellingen; noodzakelijke
+			websitefuncties kunnen dan minder goed werken.
+		</p>
+		<button
+			class="cookie-button cookie-settings-action"
+			type="button"
+			data-open-cookie-settings
+		>
+			Cookievoorkeuren wijzigen
+		</button>
+	</section>
+</article>
+{% endblock %}

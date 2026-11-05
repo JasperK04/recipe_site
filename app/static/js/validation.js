@@ -207,18 +207,58 @@
         return false;
     }
 
-    function showRecipeSaveError(message) {
+    function showFlashError(message) {
+        const flashStack = document.querySelector(".flash-stack")
+            || (() => {
+                const stack = document.createElement("div");
+                stack.className = "flash-stack";
+                stack.setAttribute("aria-live", "polite");
+                document.querySelector(".page-container")?.prepend(stack);
+                return stack;
+            })();
+        if (flashStack) {
+            const alert = document.createElement("div");
+            alert.className = "alert alert-danger";
+            alert.setAttribute("role", "alert");
+            alert.innerHTML = '<i class="bi bi-exclamation-octagon" aria-hidden="true"></i>';
+            const text = document.createElement("span");
+            text.textContent = message;
+            alert.appendChild(text);
+            flashStack.appendChild(alert);
+        }
+    }
+
+    function showSubmitWarning(form, message) {
+        const warning = form.querySelector("#recipe-submit-warning");
+        if (warning) {
+            warning.textContent = message;
+            warning.hidden = false;
+        }
+    }
+
+    function focusFirstInvalid(form) {
+        const invalid = form.querySelector("[aria-invalid='true'], .is-invalid");
+        invalid?.scrollIntoView({ behavior: "smooth", block: "center" });
+        invalid?.focus({ preventScroll: true });
+    }
+
+    function showRecipeSaveError(message, ingredientIndex = null) {
+        showFlashError(message);
         const ingredientsList = document.querySelector("#ingredients-list");
         if (ingredientsList) {
             clearFieldError(ingredientsList);
-            ingredientsList.querySelectorAll("input[data-raw-ingredient-json]").forEach((field) => {
+            const fields = Array.from(ingredientsList.querySelectorAll("input, textarea"));
+            const fieldsToMark = Number.isInteger(ingredientIndex)
+                ? [fields[ingredientIndex]].filter(Boolean)
+                : fields;
+            fieldsToMark.forEach((field) => {
                 field.classList.add("is-invalid");
                 field.setAttribute("aria-invalid", "true");
             });
             const feedback = document.createElement("div");
             feedback.className = "invalid-feedback d-block client-validation-feedback";
             feedback.textContent = message;
-            ingredientsList.closest(".mb-3")?.appendChild(feedback);
+            ingredientsList.parentElement?.appendChild(feedback);
         }
     }
 
@@ -539,8 +579,11 @@
         const form = event.target.closest("form[data-client-validation]");
 
         if (form && window.RecipeForms && typeof window.RecipeForms.validateForm === "function") {
+            form.querySelector("#recipe-submit-warning")?.setAttribute("hidden", "");
             if (!window.RecipeForms.validateForm(form)) {
                 event.preventDefault();
+                showSubmitWarning(form, "Controleer de gemarkeerde velden.");
+                focusFirstInvalid(form);
                 return;
             }
         }
@@ -571,6 +614,10 @@
 
         try {
             const formData = new FormData(apiForm);
+            const statusField = apiForm.querySelector("#status-field");
+            if (statusField?.value) {
+                formData.set("status", statusField.value);
+            }
             apiForm.querySelectorAll("input[data-raw-ingredient-json]").forEach((input) => {
                 formData.set(input.name, input.dataset.rawIngredientJson);
             });
@@ -588,9 +635,21 @@
                 : {};
 
             if (!response.ok || data.status === "error") {
-                if (data.field === "ingredients") {
-                    showRecipeSaveError(data.message || "Controleer de ingrediënten.");
+                if (data.field === "ingredients" || data.errors?.ingredients) {
+                    showRecipeSaveError(
+                        data.message || "Controleer de ingrediënten.",
+                        data.ingredient_index,
+                    );
+                    showSubmitWarning(apiForm, data.message || "Controleer de ingrediënten.");
+                } else {
+                    const errors = Object.values(data.errors || {})
+                        .flat()
+                        .filter(Boolean)
+                        .join(" ");
+                    showFlashError(errors || data.message || "Controleer de invoer.");
+                    showSubmitWarning(apiForm, errors || data.message || "Controleer de invoer.");
                 }
+                focusFirstInvalid(apiForm);
                 return;
             }
 

@@ -1,0 +1,70 @@
+<tr
+	data-user-id="{{ user.id }}"
+	data-role="{{ user.role }}"
+	data-active="{{ 'true' if user.is_active else 'false' }}"
+	data-creator-request-pending="{{ 'true' if user.creator_request_pending else 'false' }}"
+	data-current-user="{{ 'true' if user.id == current_user.id else 'false' }}"
+>
+	<td data-label="Lid">
+		<div class="admin-person">
+			<span class="admin-avatar" aria-hidden="true"
+				>{{ user.username[:1]|upper }}</span
+			>
+			<div>
+				<strong>{{ user.username }}</strong>{% if
+				user.creator_request_pending %}<span class="admin-subline"
+					>Maker-aanvraag open</span
+				>{% endif %}
+			</div>
+		</div>
+	</td>
+	<td data-label="Email">
+		<span class="admin-break">{{ user.email }}</span>
+	</td>
+	<td data-label="Rol">
+		<span class="status-pill {{ 'is-admin' if user.is_admin else '' }}"
+			>{{ user.get_role_label() }}</span
+		>
+	</td>
+	<td data-label="Status">
+		<span
+			class="status-pill {{ 'is-good' if user.is_active else 'is-muted' }}"
+			>{{ 'Actief' if user.is_active else 'Inactief' }}</span
+		>
+	</td>
+	<td data-label="Acties" class="admin-actions-cell">
+		<div class="admin-action-group">
+			<button
+				type="button"
+				class="icon-button promote-btn"
+				aria-label="Promoveer {{ user.username }}"
+				title="Promoveren"
+				data-endpoint="{{ url_for('api.promote_user_endpoint', user_id=user.id) }}"
+			>
+				<i class="bi bi-arrow-up-circle" aria-hidden="true"></i>
+			</button>
+			<button
+				type="button"
+				class="icon-button demote-btn"
+				aria-label="Degradeer {{ user.username }}"
+				title="Degraderen"
+				data-endpoint="{{ url_for('api.demote_user_endpoint', user_id=user.id) }}"
+			>
+				<i class="bi bi-arrow-down-circle" aria-hidden="true"></i>
+			</button>
+			<button
+				type="button"
+				class="icon-button active-btn {{ 'is-danger' if user.is_active else 'is-success' }}"
+				aria-label="{{ 'Deactiveer' if user.is_active else 'Activeer' }} {{ user.username }}"
+				title="{{ 'Deactiveren' if user.is_active else 'Activeren' }}"
+				data-deactivate-endpoint="{{ url_for('api.deactivate_user_endpoint', user_id=user.id) }}"
+				data-reactivate-endpoint="{{ url_for('api.reactivate_user_endpoint', user_id=user.id) }}"
+			>
+				<i
+					class="bi {{ 'bi-person-dash' if user.is_active else 'bi-person-check' }}"
+					aria-hidden="true"
+				></i>
+			</button>
+		</div>
+	</td>
+</tr>

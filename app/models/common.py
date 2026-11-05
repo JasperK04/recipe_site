@@ -4,8 +4,8 @@ from typing import Any, cast
 
 from app import db
 
-users_favorites = db.Table(
-    "users_favorites",
+users_bookmarks = db.Table(
+    "users_bookmarks",
     db.Column("user_id", db.Integer, db.ForeignKey("users.id"), primary_key=True),
     db.Column("recipe_id", db.Integer, db.ForeignKey("recipes.id"), primary_key=True),
 )

@@ -1,936 +1,603 @@
-{% extends "components/base.html" %}
-{% block extra_meta %}
+{% extends "components/base.html" %} {% block extra_meta %}
 <link rel="canonical" href="{{ recipe_url(recipe, external=True) }}" />
-<script type="application/ld+json">{{ recipe_schema|tojson }}</script>
-{% endblock %}
+<script type="application/ld+json">
+	{{ recipe_schema|tojson }}
+</script>
+{% endblock %} {% block title %}{{ recipe.title }} - Recepten{% endblock %} {%
+block meta %} {# Recipe-specific OpenGraph / Twitter metadata #}
+<meta property="og:title" content="{{ recipe.title }}" />
+{% if recipe.description %}
+<meta property="og:description" content="{{ recipe.description }}" />
+<meta name="twitter:description" content="{{ recipe.description }}" />
+{% endif %}
+<meta property="og:type" content="article" />
+<meta property="og:url" content="{{ recipe_url(recipe, external=True) }}" />
+{% if recipe.has_image %}
+<meta
+	property="og:image"
+	content="{{ url_for('recipes.recipe_image', recipe_id=recipe.id, _external=True) }}"
+/>
+<meta name="twitter:card" content="summary_large_image" />
+<meta
+	name="twitter:image"
+	content="{{ url_for('recipes.recipe_image', recipe_id=recipe.id, _external=True) }}"
+/>
+{% else %}
+<meta name="twitter:card" content="summary" />
+{% endif %}
+<meta property="og:locale" content="nl_NL" />
+{% endblock %} {% block extra_css %}
+<link
+	href="{{ url_for('static', filename='css/recipe_view.css') }}"
+	rel="stylesheet"
+/>
+{% endblock %} {% block content %} {% set is_bookmarkd =
+current_user.is_authenticated and
+current_user.bookmarks.filter_by(id=recipe.id).count() > 0 %}
+<div class="recipe-view">
+	<nav class="recipe-view-breadcrumb" aria-label="Broodkruimelpad">
+		<a href="{{ url_for('recipe_overview.list_recipes') }}">Recepten</a>
+		<span aria-hidden="true">/</span>
+		{% if recipe.category %}<a
+			href="{{ url_for('recipe_overview.list_recipes', category=recipe.category) }}"
+			>{{ recipe.category }}</a
+		><span aria-hidden="true">/</span>{% endif %}
+		<span>{{ recipe.title }}</span>
+	</nav>
 
-{% block title %}{{ recipe.title }} - Recepten{% endblock %}
+	{% if recipe.moderation_status == 'flagged' %}
+	<div
+		class="recipe-view-alert"
+		data-recipe-moderation-alert="1"
+		role="alert"
+	>
+		<i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+		<div>
+			<strong>Dit recept wacht op moderatie.</strong>
+			{% if recipe.moderation_issue_messages %}<span
+				>{{ recipe.moderation_issue_messages|join(' ') }}</span
+			>{% endif %}
+		</div>
+		{% if can_moderate_recipe %}
+		<form
+			class="moderate-allow-form"
+			action="{{ url_for('api.allow_recipe_moderation_endpoint', recipe_id=recipe.id) }}"
+			method="post"
+		>
+			<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+			<button class="button button-secondary button-small" type="submit">
+				Goedkeuren
+			</button>
+		</form>
+		{% endif %}
+	</div>
+	{% endif %}
 
-{% block meta %}
-    {# Recipe-specific OpenGraph / Twitter metadata #}
-    <meta property="og:title" content="{{ recipe.title }}" />
-    {% if recipe.description %}
-    <meta property="og:description" content="{{ recipe.description }}" />
-    <meta name="twitter:description" content="{{ recipe.description }}" />
-    {% endif %}
-    <meta property="og:type" content="article" />
-    <meta property="og:url" content="{{ recipe_url(recipe, external=True) }}" />
-    {% if recipe.has_image %}
-    <meta property="og:image" content="{{ url_for('recipes.recipe_image', recipe_id=recipe.id, _external=True) }}" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="{{ url_for('recipes.recipe_image', recipe_id=recipe.id, _external=True) }}" />
-    {% else %}
-    <meta name="twitter:card" content="summary" />
-    {% endif %}
-    <meta property="og:locale" content="nl_NL" />
-{% endblock %}
+	<article class="recipe-view-article recipe-view-article--wide">
+		<div class="recipe-view-hero">
+			<div class="recipe-view-image-wrapper">
+				{% if recipe.has_image %}
+				<img
+					src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}"
+					alt="{{ recipe.title }}"
+				/>
+				{% else %}
+				<div
+					class="recipe-view-image-placeholder"
+					role="img"
+					aria-label="Nog geen foto beschikbaar"
+				>
+					Recepten Register
+				</div>
+				{% endif %} {% if recipe.category %}<span
+					class="recipe-view-category"
+					>{{ recipe.category }}</span
+				>{% endif %}
+			</div>
+		</div>
+		<div class="recipe-view-body">
+			<div class="recipe-view-heading">
+				<p class="recipe-view-eyebrow">{{ status_label }}</p>
+				{% if recipe.author %}
+				<p class="recipe-view-author">
+					Door <strong>{{ recipe.author.username }}</strong>
+				</p>
+				{% endif %}
+			</div>
+			<h1>{{ recipe.title }}</h1>
+			<div class="recipe-view-meta" aria-label="Receptinformatie">
+				{% if recipe.score_average is not none %}
+				<span
+					><i class="bi bi-star-fill" aria-hidden="true"></i
+					><span class="recipe-score-badge" id="recipe-score-badge"
+						>{{ '%.1f'|format(recipe.score_average)|replace('.',
+						',') }}/5</span
+					>
+					<span class="recipe-score-count" id="recipe-score-count"
+						>({{ recipe.score_count }})</span
+					></span
+				>
+				{% else %}
+				<span
+					><i class="bi bi-star" aria-hidden="true"></i
+					><span class="recipe-score-badge" id="recipe-score-badge"
+						>-/5</span
+					>
+					<span class="recipe-score-count" id="recipe-score-count"
+						>(0)</span
+					></span
+				>
+				{% endif %} {% if recipe.servings is not none %}<span
+					><i class="bi bi-people" aria-hidden="true"></i>{{
+					recipe.servings }}
+					<span class="recipe-serving-label">personen</span></span
+				>{% endif %} {% if recipe.prep_time is not none or
+				recipe.cook_time is not none %}<span
+					><i class="bi bi-clock" aria-hidden="true"></i>{{
+					(recipe.prep_time or 0) + (recipe.cook_time or 0) }}
+					min</span
+				>{% endif %}
+			</div>
+			{% if recipe.description %}
+			<p class="recipe-view-description">{{ recipe.description }}</p>
+			{% endif %}
+		</div>
+	</article>
 
-{% block extra_css %}
-<style>
-div > a.whatsapp {
-    border-color: #25D366;
-    color: #25D366 !important;
-    
-    &:hover {
-        background-color: rgba(37, 211, 102, 0.2) !important;
-        border-color: #25D366;
-    }
-}
+	<article class="recipe-view-article recipe-view-article--compact">
+		<div class="recipe-view-hero">
+			<div class="recipe-view-image-wrapper">
+				{% if recipe.has_image %}<img
+					src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}"
+					alt="{{ recipe.title }}"
+				/>{% else %}
+				<div
+					class="recipe-view-image-placeholder"
+					role="img"
+					aria-label="Nog geen foto beschikbaar"
+				>
+					Recepten Register
+				</div>
+				{% endif %} {% if recipe.category %}<span
+					class="recipe-view-category"
+					>{{ recipe.category }}</span
+				>{% endif %}
+			</div>
+		</div>
+		<div class="recipe-view-body recipe-view-compact-meta">
+			<div class="recipe-view-heading">
+				<p class="recipe-view-eyebrow">{{ status_label }}</p>
+				{% if recipe.author %}
+				<p class="recipe-view-author">
+					Door <strong>{{ recipe.author.username }}</strong>
+				</p>
+				{% endif %}
+			</div>
+			<div class="recipe-view-meta" aria-label="Receptinformatie">
+				{% if recipe.score_average is not none %}<span
+					><i class="bi bi-star-fill" aria-hidden="true"></i
+					><span class="recipe-score-badge"
+						>{{ '%.1f'|format(recipe.score_average)|replace('.',
+						',') }}/5</span
+					>
+					<span class="recipe-score-count"
+						>({{ recipe.score_count }})</span
+					></span
+				>{% else %}<span
+					><i class="bi bi-star" aria-hidden="true"></i
+					><span class="recipe-score-badge">-/5</span>
+					<span class="recipe-score-count">(0)</span></span
+				>{% endif %} {% if recipe.servings is not none %}<span
+					><i class="bi bi-people" aria-hidden="true"></i>{{
+					recipe.servings }}
+					<span class="recipe-serving-label">personen</span></span
+				>{% endif %} {% if recipe.prep_time is not none or
+				recipe.cook_time is not none %}<span
+					><i class="bi bi-clock" aria-hidden="true"></i>{{
+					(recipe.prep_time or 0) + (recipe.cook_time or 0) }}
+					min</span
+				>{% endif %}
+			</div>
+		</div>
+		<div class="recipe-view-compact-copy">
+			<h1>{{ recipe.title }}</h1>
+			{% if recipe.description %}
+			<p class="recipe-view-description">{{ recipe.description }}</p>
+			{% endif %}
+		</div>
+	</article>
 
-div > a.facebook {
-    border-color: #1877F2;
-    color: #1877F2 !important;
+	<div class="recipe-view-grid">
+		<section
+			class="recipe-view-panel recipe-ingredients"
+			aria-labelledby="ingredients-title"
+		>
+			<div class="recipe-view-panel-heading">
+				<div>
+					<p class="recipe-view-eyebrow">Alles bij de hand</p>
+					<h2 id="ingredients-title">Ingrediënten</h2>
+				</div>
+				{% if recipe.servings is not none %}
+				<div class="servings-control" aria-label="Aantal porties">
+					<button
+						type="button"
+						id="servings-decrease"
+						aria-label="Minder porties"
+					>
+						−</button
+					><span
+						id="current-serving-count"
+						data-base-servings="{{ recipe.servings }}"
+						>{{ recipe.servings }}</span
+					><button
+						type="button"
+						id="servings-increase"
+						aria-label="Meer porties"
+					>
+						+
+					</button>
+				</div>
+				{% endif %}
+			</div>
+			<ul class="ingredient-list">
+				{% for ingredient in recipe.ingredients %} {% set
+				ingredient_name = ingredient.get('display_name') or
+				ingredient.get('name_') or ingredient.get('name') %}
+				<li
+					class="ingredient-row{% if ingredient.get('type') == 'recipe' and ingredient.get('recipe_id') %} ingredient-row--recipe{% endif %}"
+				>
+					<button
+						class="ingredient-check"
+						type="button"
+						data-ingredient-toggle
+						aria-label="Ingrediënt afvinken"
+						aria-pressed="false"
+					>
+						<i class="bi bi-circle" aria-hidden="true"></i>
+					</button>
+					<span class="ingredient-amount"
+						>{% if ingredient.get('quantity') is not none %}<span
+							class="ingredient-quantity"
+							data-original-quantity="{{ ingredient.get('quantity') }}"
+							>{{ ingredient.get('quantity') }}</span
+						>{% endif %}{% if ingredient.get('unit') %}
+						<span class="ingredient-unit"
+							>{{ ingredient.get('unit') }}</span
+						>{% endif %}</span
+					>
+					{% if ingredient.get('type') == 'recipe' and
+					ingredient.get('recipe_id') %}<a
+						class="ingredient-name ingredient-name--recipe"
+						href="{{ url_for('recipes.view_recipe', recipe_id=ingredient.get('recipe_id')) }}"
+						><i
+							class="bi bi-journal-bookmark"
+							aria-hidden="true"
+						></i
+						><span
+							>{{ ingredient_name or
+							ingredient.get('recipe_title') or 'Recept' }}</span
+						></a
+					>
+					{% else %}<span class="ingredient-name"
+						>{{ ingredient_name or 'Ingrediënt' }}</span
+					>{% endif %}
+				</li>
+				{% endfor %}
+			</ul>
+		</section>
 
-    &:hover {
-        background-color: rgba(24, 119, 242, 0.2) !important;
-        border-color: #1877F2;
-    }
-}
+		<section
+			class="recipe-view-panel recipe-instructions"
+			aria-labelledby="instructions-title"
+		>
+			<div class="recipe-view-panel-heading">
+				<div>
+					<p class="recipe-view-eyebrow">
+						Van voorbereiding tot tafel
+					</p>
+					<h2 id="instructions-title">Bereiding</h2>
+				</div>
+				<label class="wake-lock-control" for="wake-lock-toggle"
+					><input id="wake-lock-toggle" type="checkbox" /><span
+						><i class="bi bi-moon-stars" aria-hidden="true"></i>
+						Scherm actief houden</span
+					></label
+				>
+			</div>
+			<ol class="instruction-list">
+				{% for instruction in recipe.instructions %}
+				<li class="instruction-row"><p>{{ instruction }}</p></li>
+				{% endfor %}
+			</ol>
+		</section>
 
-div > a.x {
-    border-color: #ffffff;
-    color: #ffffff !important;
+		<aside class="recipe-action-rail" aria-label="Receptacties">
+			{% if current_user.is_authenticated %}
+			<form
+				class="bkm-form"
+				action="{{ url_for('api.unbookmark_recipe_endpoint' if is_bookmarkd else 'api.bookmark_recipe_endpoint', recipe_id=recipe.id) }}"
+				method="post"
+			>
+				<input
+					type="hidden"
+					name="csrf_token"
+					value="{{ csrf_token() }}"
+				/>
+				<button
+					class="icon-button"
+					type="submit"
+					title="{{ 'Verwijderen uit opgeslagen recepten' if is_bookmarkd else 'Opslaan' }}"
+					aria-label="{{ 'Verwijder' if is_bookmarkd else 'Sla op' }} {{ recipe.title }}{% if is_bookmarkd %} uit opgeslagen recepten{% endif %}"
+				>
+					<i
+						class="bi {{ 'bi-bookmark-fill' if is_bookmarkd else 'bi-bookmark' }}"
+						aria-hidden="true"
+					></i>
+				</button>
+			</form>
+			{% endif %}
+			<button
+				class="icon-button"
+				type="button"
+				data-modal-target="shareModal"
+				aria-label="Recept delen"
+				title="Recept delen"
+			>
+				<i class="bi bi-share" aria-hidden="true"></i>
+			</button>
+			{% if can_adapt_recipe %}<span
+				class="action-divider"
+				aria-hidden="true"
+			></span
+			>{% endif %} {% if can_adapt_recipe %}
+			<form
+				action="{{ url_for('recipes.adapt_recipe', recipe_id=recipe.id) }}"
+				method="post"
+			>
+				<input
+					type="hidden"
+					name="csrf_token"
+					value="{{ csrf_token() }}"
+				/><button
+					class="icon-button"
+					type="submit"
+					aria-label="Recept aanpassen"
+					title="Recept aanpassen"
+				>
+					<i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+				</button>
+			</form>
+			{% endif %} {% if can_edit_recipe or can_delete_recipe or
+			can_moderate_recipe %}<span
+				class="action-divider"
+				aria-hidden="true"
+			></span
+			>{% endif %} {% if can_edit_recipe %}<a
+				class="icon-button"
+				href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}"
+				aria-label="Recept bewerken"
+				title="Recept bewerken"
+				><i class="bi bi-pencil" aria-hidden="true"></i></a
+			>{% endif %} {% if can_delete_recipe %}<button
+				class="icon-button"
+				type="button"
+				data-modal-target="deleteModal"
+				aria-label="Recept verwijderen"
+				title="Recept verwijderen"
+			>
+				<i class="bi bi-trash3" aria-hidden="true"></i></button
+			>{% endif %} {% if can_moderate_recipe %}
+			<form
+				class="moderate-form"
+				action="{{ url_for('api.reactivate_recipe_endpoint' if recipe.status == 'deactivated' else 'api.deactivate_recipe_endpoint', recipe_id=recipe.id) }}"
+				method="post"
+			>
+				<input
+					type="hidden"
+					name="csrf_token"
+					value="{{ csrf_token() }}"
+				/><button
+					class="icon-button"
+					type="submit"
+					aria-label="{{ 'Recept reactiveren' if recipe.status == 'deactivated' else 'Recept deactiveren' }}"
+					title="{{ 'Recept reactiveren' if recipe.status == 'deactivated' else 'Recept deactiveren' }}"
+				>
+					<i
+						class="bi {{ 'bi-eye' if recipe.status == 'deactivated' else 'bi-eye-slash' }}"
+						aria-hidden="true"
+					></i>
+				</button>
+			</form>
+			{% endif %}
+		</aside>
+	</div>
 
-    &:hover {
-        background-color: rgba(255, 255, 255, 0.2) !important;
-        border-color: #ffffff;
-    }
-}
-
-.fav-btn-overlay{
-    background:rgba(255,255,255,0.6);
-    border:1px solid rgba(0,0,0,0.08);
-    backdrop-filter:blur(4px);
-    box-shadow:0 .125rem .25rem rgba(0,0,0,0.06);
-    border-radius:.375rem;
-    width:44px;height:44px;padding:0;display:inline-flex;align-items:center;justify-content:center;}
-.fav-btn-overlay .bi{font-size:1.5em;transition:color .12s,opacity .12s}
-.fav-btn-overlay .bi-heart{color:#e25555}
-.fav-btn-overlay .bi-heart-fill{color:#e25555}
-.fav-btn-overlay.faded .bi{color:rgba(226,85,85,0.45) !important;opacity:0.85}
-/* Prevent Bootstrap .btn hover/focus from changing background */
-.fav-btn-overlay:hover,
-.fav-btn-overlay:focus,
-.fav-btn-overlay:active {
-    background: rgba(255,255,255,0.6) !important;
-    box-shadow:0 .125rem .25rem rgba(0,0,0,0.06) !important;
-}
-.share-callout{
-    background: linear-gradient(135deg, rgba(13,110,253,0.08), rgba(13,110,253,0.02));
-    border-color: rgba(13,110,253,0.16) !important;
-}
-.share-kicker{
-    display:inline-flex;
-    align-items:center;
-    padding:0.25rem 0.55rem;
-    border-radius:999px;
-    background: rgba(13,110,253,0.12);
-    color:#0d6efd;
-    font-size:0.75rem;
-    font-weight:700;
-    letter-spacing:0.08em;
-    text-transform:uppercase;
-}
-.share-icon-btn{
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: clamp(2.75rem, 5vw, 3.5rem);
-    padding: 0.35rem 0.25rem;
-}
-.share-icon-btn .bi{
-    font-size: clamp(1.15rem, 2.4vw, 1.65rem);
-    line-height: 1;
-}
-.share-platform-row > .share-icon-btn{
-    min-width: 0;
-}
-#copyShareLinkBtn.is-pressed{
-    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.18);
-}
-
-.score-star{display:inline-flex;align-items:center;justify-content:center;padding:0 .15rem}
-.score-star:last-child{padding-right:0}
-.score-star .bi{font-size:1.25rem;color:#ffc107;transition:color .12s,opacity .12s}
-.score-star.faded .bi{color:rgba(255,193,7,0.45) !important;opacity:0.85}
-.score-star .bi.bi-star{opacity:0.9}
-
-.wake-lock-switch .form-check-input {
-    cursor: pointer;
-    width: 2.8rem;
-    height: 1.5rem;
-    margin-top: 0;
-    border-radius: 999px;
-    border: 1px solid rgba(13, 110, 253, 0.35);
-    background-color: rgba(13, 110, 253, 0.16);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
-    transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
-}
-
-.wake-lock-switch .form-check-label {
-    cursor: pointer;
-}
-
-.wake-lock-switch .form-check-input:focus {
-    border-color: rgba(13, 110, 253, 0.55);
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.18);
-}
-
-.wake-lock-switch .form-check-input:not(:checked) {
-    background-color: rgba(108, 117, 125, 0.28);
-    border-color: rgba(108, 117, 125, 0.45);
-}
-
-.wake-lock-switch .form-check-input:checked {
-    background-color: var(--bs-primary);
-    border-color: var(--bs-primary);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
-}
-
-.wake-lock-switch .form-check-input::before {
-    border-radius: 999px;
-}
-
-.wake-lock-switch {
-    padding: 0.25rem 0.4rem 0.25rem 0.75rem !important;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 999px;
-    background: rgba(13, 110, 253, 0.04);
-}
-
-.wake-lock-switch .fw-semibold {
-    line-height: 1.1;
-}
-
-.servings-stepper-button {
-    width: 2.2rem;
-    height: 2.2rem;
-    flex: 0 0 2.2rem;
-    padding-left: 0;
-    padding-right: 0;
-}
-</style>
-{% endblock %}
-
-{% block content %}
-<div class="row">
-    <div class="col-lg-8 mx-auto">
-        <div class="card shadow">
-            <div class="card-body position-relative">
-                {% if recipe.moderation_status == 'flagged' %}
-                <div class="alert alert-warning" data-recipe-moderation-alert="1">
-                    <strong>Moderatie vereist.</strong>
-                    <div class="mt-2">Dit recept bevat de volgende gemelde problemen:</div>
-                    <ul class="mb-0 mt-2">
-                        {% for issue in recipe.moderation_issue_messages %}
-                        <li>{{ issue }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% endif %}
-                <div class="row align-items-start mb-3">
-                    <div class="col-12 col-md-8">
-                        <h1 class="card-title">{{ recipe.title }}</h1>
-                        <p class="text-muted mb-0">
-                            <i class="bi bi-person"></i> Door {{ recipe.author.username }}
-                            <span class="mx-2">|</span>
-                            <i class="bi bi-calendar"></i> {{ recipe.created_at.strftime('%d-%m-%Y') }}
-                            {% if recipe.category %}
-                            <span class="mx-2">|</span>
-                            <span class="badge bg-secondary d-inline-block me-1 mb-1">{{ recipe.category }}</span>
-                            {% endif %}
-                        </p>
-                    </div>
-                    <div class="col-12 col-md-4 d-flex flex-column align-items-start align-items-md-end gap-2 mt-3 mt-md-0">
-                        {% if can_edit_recipe %}
-                        <div class="w-100 d-flex flex-column flex-md-row gap-2">
-                            <a 
-                            href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" 
-                            class="btn btn-sm btn-outline-primary w-100 w-md-auto"
-                            data-bs-toggle="tooltip"
-                            data-bs-placement="top"
-                            title="Recept bewerken">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            {% if can_delete_recipe %}
-                            <button 
-                            type="button" 
-                            class="btn btn-sm btn-outline-danger w-100 w-md-auto" 
-                            data-bs-toggle="modal" 
-                            data-bs-toggle="tooltip"
-                            data-bs-placement="top"
-                            title="Recept verwijderen"
-                            data-bs-target="#deleteModal">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                            {% endif %}
-                        </div>
-                        {% endif %}
-
-                        {% if can_adapt_recipe %}
-                        <form method="POST" action="{{ url_for('recipes.adapt_recipe', recipe_id=recipe.id) }}" class="w-100">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                            <button
-                            type="submit"
-                            class="btn btn-sm btn-outline-secondary w-100 w-md-auto"
-                            aria-label="Recept aanpassen"
-                            data-bs-toggle="tooltip"
-                            data-bs-placement="top"
-                            title="Recept aanpassen">
-                                <i class="bi bi-shuffle"></i>
-                            </button>
-                        </form>
-                        {% endif %}
-
-                        {% if can_moderate_recipe %}
-                        {% if recipe.moderation_status == 'flagged' %}
-                        <form method="POST" action="{{ url_for('api.allow_recipe_moderation_endpoint', recipe_id=recipe.id) }}" class="w-100 moderate-allow-form" data-recipe-moderation="1">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                            <button
-                            type="submit"
-                            class="btn btn-sm btn-outline-success w-100 w-md-auto"
-                            data-bs-toggle="tooltip"
-                            data-bs-placement="top"
-                            title="Moderatie toestaan">
-                                <i class="bi bi-check2-circle"></i>
-                            </button>
-                        </form>
-                        {% endif %}
-                        <form method="POST" action="{{ url_for('api.reactivate_recipe_endpoint', recipe_id=recipe.id) if recipe.status == 'deactivated' else url_for('api.deactivate_recipe_endpoint', recipe_id=recipe.id) }}" class="w-100 moderate-form" data-recipe-status="{{ recipe.status }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                            <button 
-                            type="submit" 
-                            class="btn btn-sm {{ 'btn-outline-success' if recipe.status == 'deactivated' else 'btn-outline-danger' }} w-100 w-md-auto"
-                            data-bs-toggle="tooltip"
-                            data-bs-placement="top"
-                            title="{{ 'Recept reactiveren' if recipe.status == 'deactivated' else 'Recept deactiveren' }}">
-                                {% if recipe.status == 'deactivated' %}
-                                <i class="bi bi-eye"></i>
-                                {% else %}
-                                <i class="bi bi-eye-slash"></i>
-                                {% endif %}
-                            </button>
-                        </form>
-                        {% endif %}
-
-                        {% if current_user.is_authenticated and recipe.status == 'public' and not recipe.has_image %}
-                        {% set is_fav = current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
-                        <form method="POST" action="{{ url_for('api.unfavorite_recipe_endpoint', recipe_id=recipe.id) if is_fav else url_for('api.favorite_recipe_endpoint', recipe_id=recipe.id) }}" class="w-100 fav-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                            <button 
-                            type="submit" 
-                            class="btn btn-sm btn-outline-primary w-100 w-md-auto"
-                            data-bs-toggle="tooltip"
-                            data-bs-placement="top"
-                            title="{{ 'Verwijderen uit favorieten' if is_fav else 'Toevoegen aan favorieten' }}">
-                                <i class="bi {% if is_fav %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
-                            </button>
-                        </form>
-                        {% endif %}
-                    </div>
-                </div>
-                {% if recipe.has_image %}
-                <div class="mb-3 text-center position-relative recipe-image-wrapper">
-                    <img src="{{ url_for('recipes.recipe_image', recipe_id=recipe.id) }}" alt="{{ recipe.title }}" class="img-fluid rounded" />
-                    {% if current_user.is_authenticated and recipe.status == 'public' %}
-                    <form method="POST" action="{{ url_for('api.unfavorite_recipe_endpoint', recipe_id=recipe.id) if (current_user.favorites.filter_by(id=recipe.id).count() > 0) else url_for('api.favorite_recipe_endpoint', recipe_id=recipe.id) }}" class="position-absolute fav-form" style="top:8px;right:8px;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                        {% set is_fav_inline = current_user.favorites.filter_by(id=recipe.id).count() > 0 %}
-                        <button 
-                        type="submit" 
-                        class="btn btn-sm fav-btn-overlay" 
-                        aria-label="{% if is_fav_inline %}Verwijder favoriet{% else %}Voeg toe aan favorieten{% endif %}"
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="top"
-                        title="{% if is_fav_inline %}Verwijderen uit favorieten{% else %}Toevoegen aan favorieten{% endif %}">
-                            <i class="bi {% if is_fav_inline %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
-                        </button>
-                    </form>
-                    {% endif %}
-                </div>
-                {% endif %}
-                {% if recipe.description %}
-                <p class="lead">{{ recipe.description }}</p>
-                {% endif %}
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <span id="recipe-score-badge" class="badge bg-primary">Score {% if recipe.score_count %}{{ '%.1f' % recipe.score_average }}{% else %}-{% endif %}/5</span>
-                        <small id="recipe-score-count" class="text-muted ms-1">({{ recipe.score_count or 0 }})</small>
-                    </div>
-                    {% set owner_is_author = current_user.is_authenticated and (current_user.id == recipe.user_id) and recipe.status == 'public' %}
-                    {% if can_score_recipe or owner_is_author %}
-                    <form id="score-form" method="POST" action="{{ url_for('api.score_recipe_endpoint', recipe_id=recipe.id) }}" class="d-flex align-items-center gap-2 score-form" {% if owner_is_author %}data-owner-disabled="1"{% endif %}>
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                        <input type="hidden" name="score" id="score-input" value="{% if my_score %}{{ my_score.score }}{% endif %}" />
-                        <label class="small text-muted mb-0 me-1"></label>
-                        <div class="score-stars d-flex align-items-center">
-                            {% for i in range(1, 6) %}
-                            <button 
-                            type="button" 
-                            class="btn btn-link score-star" 
-                            data-score="{{ i }}" 
-                            aria-label="{{ i }} sterren" 
-                            {% if owner_is_author %}
-                                disabled aria-disabled="true" 
-                                title="U kunt uw eigen recept niet beoordelen"
-                            {% endif %}
-                            data-bs-toggle="tooltip"
-                            data-bs-placement="top"
-                            title="Geef {{ i }} sterren">
-                                <i class="bi {% if my_score and my_score.score >= i %}bi-star-fill{% else %}bi-star{% endif %}"></i>
-                            </button>
-                            {% endfor %}
-                        </div>
-                    </form>
-                    {% endif %}
-                </div>
-
-                <hr>
-
-                <div class="row mb-4 g-2 justify-content-center">
-                    {% if recipe.prep_time %}
-                    <div class="col-md-4">
-                        <div class="text-center p-3 bg-light rounded border">
-                            <i class="bi bi-clock fs-4"></i>
-                            <p class="mb-0 mt-2"><strong>Bereidingstijd</strong></p>
-                            <p class="mb-0">{{ recipe.prep_time }} minuten</p>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% if recipe.cook_time %}
-                    <div class="col-md-4">
-                        <div class="text-center p-3 bg-light rounded border">
-                            <i class="bi bi-fire fs-4"></i>
-                            <p class="mb-0 mt-2"><strong>Kooktijd</strong></p>
-                            <p class="mb-0">{{ recipe.cook_time }} minuten</p>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% if recipe.servings %}
-                    <div class="col-md-4 d-flex">
-                        <div class="text-center p-3 flex-grow-1 gap-3 bg-light rounded h-100 d-flex align-items-center justify-content-center border">
-                            <button type="button" class="btn btn-outline-secondary btn-sm servings-stepper-button" id="servings-decrease" aria-label="Minder porties"><i class="bi bi-dash"></i></button>
-                            <div class="text-center h-100 d-flex flex-column">
-                                <i class="bi bi-people fs-4"></i>
-                                <p class="mb-0 mt-2"><strong>Porties</strong></p>
-                                <p class="mb-0" id="current-serving-count" data-base-servings="{{ recipe.servings }}">{{ recipe.servings }}</p>
-                            </div>
-                            <button type="button" class="btn btn-outline-secondary btn-sm servings-stepper-button" id="servings-increase" aria-label="Meer porties"><i class="bi bi-plus"></i></button>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-4">
-                    <h3 class="mb-0"><i class="bi bi-basket"></i> Ingrediënten</h3>
-                    <div class="form-check form-switch wake-lock-switch d-flex align-items-center gap-3 p-0 mb-0 ms-md-auto">
-                        <div class="text-md-end">
-                            <div class="fw-semibold">Scherm aan</div>
-                        </div>
-                        <input class="form-check-input ms-0" type="checkbox" role="switch" id="wake-lock-toggle">
-                        <label class="form-check-label visually-hidden" for="wake-lock-toggle">Scherm actief houden</label>
-                    </div>
-                </div>
-
-                <div class="bg-light p-3 rounded mb-4">
-                    <ul class="mb-0">
-                        {% for ingredient in recipe.ingredients %}
-                            {% if ingredient.get('type') == 'recipe' %}
-                                {% set nested_name = ingredient.get('display_name') or 'Recept' %}
-                                {% set nested_quantity = ingredient.get('quantity') %}
-                                {% set nested_unit = ingredient.get('unit') %}
-                                {% set nested_recipe_id = ingredient.get('recipe_id') %}
-                                {% set nested_recipe_title = ingredient.get('recipe_title') or ingredient.get('url_title') %}
-                                <li>
-                                    <a href="{{ url_for('recipes.view_recipe', recipe_id=nested_recipe_id, title=nested_recipe_title) if nested_recipe_title else url_for('recipes.view_recipe', recipe_id=nested_recipe_id) }}" class="ingredient-name d-block">
-                                    {% if nested_quantity is number %}
-                                    <span class="ingredient-quantity" data-original-quantity="{{ nested_quantity }}">{{ nested_quantity }}</span>
-                                    {% elif nested_quantity is not none %}
-                                    <span class="ingredient-quantity">{{ nested_quantity }}</span>
-                                    {% endif %}
-                                    {% if nested_unit %}<span class="ingredient-unit">{{ nested_unit }}</span>{% endif %}
-                                    {{ nested_name }}</a>
-                                </li>
-                            {% else %}
-                                {% set ing_name = ingredient.get('display_name') or ingredient.get('name_') or ingredient.get('name') %}
-                                {% set quantity = ingredient.get('quantity') %}
-                                {% set unit = ingredient.get('unit') %}
-                                {% if ing_name %}
-                                <li>
-                                    {% if quantity is number %}
-                                    <span class="ingredient-quantity" data-original-quantity="{{ quantity }}">{{ quantity }}</span>
-                                    {% elif quantity is not none %}
-                                    <span class="ingredient-quantity">{{ quantity }}</span>
-                                    {% endif %}
-                                    {% if unit %}<span class="ingredient-unit">{{ unit }}</span>{% endif %}
-                                    <span class="ingredient-name">{{ ing_name }}</span>
-                                </li>
-                                {% endif %}
-                            {% endif %}
-                        {% endfor %}
-                    </ul>
-                </div>
-
-                <h3><i class="bi bi-list-ol"></i> Bereidingswijze</h3>
-                <div class="bg-light p-3 rounded mb-4">
-                    {% set instructions = recipe.instructions %}
-                    <ol>
-                        {% for instruction in instructions %}
-                            {% if instruction %}
-                                <li class="mb-2">{{ instruction }}</li>
-                            {% endif %}
-                        {% endfor %}
-                    </ol>
-                </div>
-
-                {% if recipe.status == 'public' %}
-                <div class="mt-4 p-3 p-md-3 border rounded-3 share-callout">
-                    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                        <div>
-                            <h5 class="mb-1">Deel dit recept met anderen.</h5>
-                            <p class="text-muted mb-0">Kopieer de link of post op je sociale media.</p>
-                        </div>
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#shareModal">
-                            <i class="bi bi-share me-1"></i> Delen
-                        </button>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="mt-3">
-            <a href="{{ back_url('recipe_overview.list_recipes') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Terug naar alle recepten
-            </a>
-        </div>
-    </div>
+	{% if can_score_recipe %}
+	<section class="recipe-score-panel" aria-labelledby="score-title">
+		<div>
+			<p class="recipe-view-eyebrow">Jouw oordeel</p>
+			<h2 id="score-title">Hoe vond je dit recept?</h2>
+		</div>
+		<form
+			class="score-form"
+			id="score-form"
+			action="{{ url_for('api.score_recipe_endpoint', recipe_id=recipe.id) }}"
+			method="post"
+			data-owner-disabled="0"
+		>
+			<input
+				type="hidden"
+				name="csrf_token"
+				value="{{ csrf_token() }}"
+			/><input
+				type="hidden"
+				name="score"
+				id="score-input"
+				value="{{ my_score.score if my_score else 0 }}"
+			/>
+			<div class="score-stars" aria-label="Geef een score van 1 tot 5">
+				{% for value in range(1, 6) %}<button
+					class="score-star"
+					type="button"
+					aria-label="{{ value }} sterren"
+				>
+					<i
+						class="bi {{ 'bi-star-fill' if my_score and my_score.score >= value else 'bi-star' }}"
+						aria-hidden="true"
+					></i></button
+				>{% endfor %}
+			</div>
+		</form>
+	</section>
+	{% endif %}
 </div>
 
-{% if recipe.status == 'public' %}
 <div
-    class="modal fade"
-    id="shareModal"
-    tabindex="-1"
-    aria-labelledby="shareModalLabel"
-    aria-hidden="true"
-    data-share-title="{{ recipe.title|e }}"
-    data-share-text="{{ (recipe.description or recipe.title)|e }}"
-    data-share-url="{{ recipe_url(recipe, external=True)|e }}"
+	class="form-modal"
+	id="shareModal"
+	hidden
+	data-share-title="{{ recipe.title }}"
+	data-share-text="{{ recipe.description or '' }}"
+	data-share-url="{{ recipe_url(recipe, external=True) }}"
+	aria-hidden="true"
+	aria-labelledby="shareModalLabel"
+	role="dialog"
 >
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="shareModalLabel">Recept delen</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
-            </div>
-            <div class="modal-body">
-                <p class="text-muted mb-3">Kopieer de link of open een platform.</p>
-                <div class="otc-link-controls mb-3">
-                    <input
-                        id="shareLinkInput"
-                        class="form-control otc-link-input"
-                        type="text"
-                        value="{{ recipe_url(recipe, external=True) }}"
-                        readonly
-                    >
-                    <button type="button" class="btn btn-outline-primary" id="copyShareLinkBtn" data-copy-value="{{ recipe_url(recipe, external=True) }}">
-                        Kopiëren
-                    </button>
-                </div>
-                <div class="d-flex gap-2 w-100 share-platform-row">
-                    <a class="btn btn-outline-success share-icon-btn flex-fill whatsapp" id="whatsappShareBtn" target="_blank" rel="noopener noreferrer" aria-label="Delen via WhatsApp" title="WhatsApp">
-                        <i class="bi bi-whatsapp"></i>
-                    </a>
-                    <a class="btn btn-outline-dark share-icon-btn flex-fill facebook" id="facebookShareBtn" target="_blank" rel="noopener noreferrer" aria-label="Delen via Facebook" title="Facebook">
-                        <i class="bi bi-facebook"></i>
-                    </a>
-                    <a class="btn btn-outline-info share-icon-btn flex-fill x" id="xShareBtn" target="_blank" rel="noopener noreferrer" aria-label="Delen via X" title="X">
-                        <i class="bi bi-twitter-x"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
+	<div class="form-modal-dialog">
+		<div class="form-modal-content">
+			<div class="form-modal-header">
+				<div>
+					<p class="form-modal-eyebrow">Recept delen</p>
+					<h2 id="shareModalLabel">{{ recipe.title }}</h2>
+				</div>
+				<button
+					class="form-modal-close"
+					type="button"
+					data-modal-close="shareModal"
+					aria-label="Venster sluiten"
+				>
+					<i class="bi bi-x-lg" aria-hidden="true"></i>
+				</button>
+			</div>
+			<div class="form-modal-body share-options">
+				<label for="shareLinkInput">Link naar dit recept</label>
+				<div class="share-link-row">
+					<input
+						id="shareLinkInput"
+						type="text"
+						readonly
+						value="{{ recipe_url(recipe, external=True) }}"
+					/><button
+						class="button button-secondary button-small"
+						id="copyShareLinkBtn"
+						type="button"
+						data-copy-value="{{ recipe_url(recipe, external=True) }}"
+					>
+						<i class="bi bi-copy" aria-hidden="true"></i
+						><span>Kopiëren</span>
+					</button>
+				</div>
+				<div class="share-buttons">
+					<a
+						class="button button-secondary button-small"
+						id="whatsappShareBtn"
+						href="#"
+						target="_blank"
+						rel="noopener"
+						><i class="bi bi-whatsapp" aria-hidden="true"></i
+						>WhatsApp</a
+					><a
+						class="button button-secondary button-small"
+						id="facebookShareBtn"
+						href="#"
+						target="_blank"
+						rel="noopener"
+						><i class="bi bi-facebook" aria-hidden="true"></i
+						>Facebook</a
+					><a
+						class="button button-secondary button-small"
+						id="xShareBtn"
+						href="#"
+						target="_blank"
+						rel="noopener"
+						><i class="bi bi-twitter-x" aria-hidden="true"></i>X</a
+					>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
-{% endif %}
-
-<!-- Delete Confirmation Modal -->
 {% if can_delete_recipe %}
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Bevestig verwijderen</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                Weet u zeker dat u dit recept wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
-                <form method="POST" action="{{ url_for('api.delete_recipe_endpoint', recipe_id=recipe.id) }}" style="display: inline;" data-api-form="1">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <button type="submit" class="btn btn-danger">Verwijderen</button>
-                </form>
-            </div>
-        </div>
-    </div>
+<div
+	class="form-modal"
+	id="deleteModal"
+	hidden
+	aria-hidden="true"
+	aria-labelledby="deleteModalLabel"
+	role="dialog"
+>
+	<div class="form-modal-dialog">
+		<div class="form-modal-content">
+			<div class="form-modal-header">
+				<div>
+					<p class="form-modal-eyebrow">Recept verwijderen</p>
+					<h2 id="deleteModalLabel">Weet je het zeker?</h2>
+				</div>
+				<button
+					class="form-modal-close"
+					type="button"
+					data-modal-close="deleteModal"
+					aria-label="Venster sluiten"
+				>
+					<i class="bi bi-x-lg" aria-hidden="true"></i>
+				</button>
+			</div>
+			<div class="form-modal-body">
+				<p>
+					Dit recept en de bijbehorende gegevens worden definitief
+					verwijderd.
+				</p>
+			</div>
+			<div class="form-modal-footer">
+				<button
+					class="button button-secondary"
+					type="button"
+					data-modal-close="deleteModal"
+				>
+					Annuleren
+				</button>
+				<form
+					action="{{ url_for('api.delete_recipe_endpoint', recipe_id=recipe.id) }}"
+					method="post"
+					data-api-form="1"
+				>
+					<input
+						type="hidden"
+						name="csrf_token"
+						value="{{ csrf_token() }}"
+					/><button class="button button-primary" type="submit">
+						Definitief verwijderen
+					</button>
+				</form>
+			</div>
+		</div>
+	</div>
 </div>
-{% endif %}
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-    const shareModal = document.getElementById('shareModal');
-    if (shareModal) {
-        const pageUrl = shareModal.dataset.shareUrl || window.location.href;
-        const shareTitle = shareModal.dataset.shareTitle || document.title;
-        const shareText = shareModal.dataset.shareText || shareTitle;
-        const encodedUrl = encodeURIComponent(pageUrl);
-        const encodedText = encodeURIComponent(`${shareTitle} - ${shareText}`);
-        const copyBtn = document.getElementById('copyShareLinkBtn');
-        const shareInput = document.getElementById('shareLinkInput');
-        const whatsappBtn = document.getElementById('whatsappShareBtn');
-        const facebookBtn = document.getElementById('facebookShareBtn');
-        const xBtn = document.getElementById('xShareBtn');
-
-        function copyText(value) {
-            if (shareInput) {
-                shareInput.focus({ preventScroll: true });
-                shareInput.select();
-                shareInput.setSelectionRange(0, shareInput.value.length);
-                const ok = document.execCommand('copy');
-                return ok;
-            }
-
-            const temp = document.createElement('textarea');
-            temp.value = value;
-            temp.setAttribute('readonly', 'readonly');
-            temp.style.position = 'fixed';
-            temp.style.top = '0';
-            temp.style.left = '-9999px';
-            temp.style.opacity = '0';
-            document.body.appendChild(temp);
-            temp.focus();
-            temp.select();
-            const ok = document.execCommand('copy');
-            document.body.removeChild(temp);
-            return ok;
-        }
-
-        function setCopyPressed(pressed) {
-            if (!copyBtn) return;
-            copyBtn.classList.toggle('btn-success', pressed);
-            copyBtn.classList.toggle('btn-outline-primary', !pressed);
-            copyBtn.classList.toggle('is-pressed', pressed);
-        }
-
-        if (whatsappBtn) whatsappBtn.href = `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
-        if (facebookBtn) facebookBtn.href = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
-        if (xBtn) xBtn.href = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
-
-        if (copyBtn) {
-            copyBtn.addEventListener('click', async function () {
-                try {
-                    const value = shareInput ? shareInput.value : pageUrl;
-                    const copied = copyText(value);
-                    if (!copied) {
-                        throw new Error('copy failed');
-                    }
-                    setCopyPressed(true);
-                    setTimeout(() => {
-                        setCopyPressed(false);
-                    }, 1500);
-                } catch (error) {
-                    console.error('[share-copy] error', error);
-                }
-            });
-        }
-    }
-
-    const favForm = document.querySelector('.fav-form');
-  if (favForm){
-     favForm.addEventListener('submit', async function(e){
-        e.preventDefault();
-        const btn = favForm.querySelector('button');
-        if (!btn) return;
-        btn.disabled = true;
-                try {
-                    const res = await fetch(favForm.action, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:new FormData(favForm)});
-                    const data = await res.json();
-                    if (!res.ok || data.status !== 'ok') {
-                        throw new Error(data.message || 'Actie mislukt.');
-                    }
-                    const icon = btn.querySelector('i.bi');
-                    // clear any hover-only state
-                    btn.classList.remove('faded');
-                    if (icon) icon.classList.remove('hover-fill');
-                    if (data.favorited){
-                        icon.classList.remove('bi-heart');
-                        icon.classList.add('bi-heart-fill');
-                        btn.setAttribute('title', 'Verwijderen uit favorieten');
-                        favForm.action = favForm.action.replace('/favorite', '/unfavorite');
-                    } else {
-                        icon.classList.remove('bi-heart-fill');
-                        icon.classList.add('bi-heart');
-                        btn.setAttribute('title', 'Toevoegen aan favorieten');
-                        favForm.action = favForm.action.replace('/unfavorite', '/favorite');
-                    }
-                } catch (err) {
-                    console.error(err);
-                } finally { btn.disabled = false; }
-     });
-
-         // hover behavior: show faded filled heart on hover
-         if (favForm){
-             const hoverBtn = favForm.querySelector('button');
-             if (hoverBtn){
-                 hoverBtn.addEventListener('mouseenter', function(){
-                     const icon = hoverBtn.querySelector('i.bi');
-                     if (!icon) return;
-                     if (!icon.classList.contains('bi-heart-fill')){
-                         icon.classList.add('hover-fill');
-                         icon.classList.remove('bi-heart');
-                         icon.classList.add('bi-heart-fill');
-                         hoverBtn.classList.add('faded');
-                     } else {
-                         hoverBtn.classList.add('faded');
-                     }
-                 });
-                 hoverBtn.addEventListener('mouseleave', function(){
-                     const icon = hoverBtn.querySelector('i.bi');
-                     if (!icon) return;
-                     hoverBtn.classList.remove('faded');
-                     if (icon.classList.contains('hover-fill')){
-                         icon.classList.remove('bi-heart-fill','hover-fill');
-                         icon.classList.add('bi-heart');
-                     }
-                 });
-             }
-         }
-  }
-
-  document.querySelectorAll('.moderate-form').forEach(form => {
-      form.addEventListener('submit', async function(e){
-          e.preventDefault();
-          const btn = form.querySelector('button');
-          if (!btn) return;
-          btn.disabled = true;
-          try {
-              const res = await fetch(form.action, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:new FormData(form)});
-              const data = await res.json();
-              if (!res.ok || data.status !== 'ok') {
-                  throw new Error(data.message || 'Actie mislukt.');
-              }
-              if (data.new_status === 'deactivated'){
-                btn.classList.remove('btn-outline-danger');
-                btn.classList.add('btn-outline-success');
-                btn.innerHTML = '<i class="bi bi-eye"></i>';
-                btn.setAttribute('title', 'Recept reactiveren');
-                form.action = form.action.replace('/deactivate', '/reactivate');
-              } else {
-                btn.classList.remove('btn-outline-success');
-                btn.classList.add('btn-outline-danger');
-                btn.innerHTML = '<i class="bi bi-eye-slash"></i>';
-                btn.setAttribute('title', 'Recept deactiveren');
-                form.action = form.action.replace('/reactivate', '/deactivate');
-              }
-              if (typeof data.pending_recipe_moderation === 'number') {
-                  document.querySelectorAll("[data-recipe-moderation-badge]")
-                      .forEach(badge => badge.classList.toggle("d-none", data.pending_recipe_moderation <= 0))
-              }
-          } catch(err){
-              console.error(err);
-          } finally { btn.disabled = false; }
-      });
-  });
-
-  document.querySelectorAll('.moderate-allow-form').forEach(form => {
-      form.addEventListener('submit', async function(e){
-          e.preventDefault();
-          const btn = form.querySelector('button');
-          if (!btn) return;
-          btn.disabled = true;
-          try {
-              const res = await fetch(form.action, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:new FormData(form)});
-              const data = await res.json();
-              if (!res.ok || data.status !== 'ok') {
-                  throw new Error(data.message || 'Actie mislukt.');
-              }
-              const warning = document.querySelector('[data-recipe-moderation-alert="1"]');
-              if (warning) {
-                  warning.remove();
-              }
-              if (typeof data.pending_recipe_moderation === 'number') {
-                  document.querySelectorAll("[data-recipe-moderation-badge]")
-                      .forEach(badge => badge.classList.toggle("d-none", data.pending_recipe_moderation <= 0))
-              }
-              form.remove();
-          } catch(err){
-              console.error(err);
-          } finally { btn.disabled = false; }
-      });
-  });
-    // Score stars: hover faded effect and AJAX submit
-    const scoreForm = document.getElementById('score-form');
-    if (scoreForm){
-        const stars = Array.from(scoreForm.querySelectorAll('.score-star'));
-        const scoreInput = scoreForm.querySelector('#score-input');
-        const badge = document.getElementById('recipe-score-badge');
-        const countEl = document.getElementById('recipe-score-count');
-        const ownerDisabled = scoreForm.dataset.ownerDisabled === '1';
-
-        function setStars(fillCount){
-            stars.forEach((btn, idx)=>{
-                const icon = btn.querySelector('i.bi');
-                if (!icon) return;
-                if (idx < fillCount) {
-                    icon.classList.remove('bi-star'); icon.classList.add('bi-star-fill');
-                    btn.classList.remove('faded');
-                } else {
-                    icon.classList.remove('bi-star-fill'); icon.classList.add('bi-star');
-                    btn.classList.remove('faded');
-                }
-            });
-        }
-
-        function renderSelected(){
-            const val = parseInt(scoreInput.value) || 0;
-            setStars(val);
-            stars.forEach(b=>b.classList.remove('faded'));
-        }
-
-        if (!ownerDisabled) {
-        stars.forEach((btn, idx)=>{
-            const n = idx+1;
-            btn.addEventListener('mouseenter', ()=>{
-                // temporarily clear selected stars to make hover target obvious
-                setStars(0);
-                // faded fill up to hovered index
-                stars.forEach((b,i)=>{
-                    const icon = b.querySelector('i.bi');
-                    if (!icon) return;
-                    if (i <= idx){
-                        icon.classList.remove('bi-star'); icon.classList.add('bi-star-fill');
-                        b.classList.add('faded');
-                    } else {
-                        icon.classList.remove('bi-star-fill'); icon.classList.add('bi-star');
-                        b.classList.remove('faded');
-                    }
-                });
-            });
-            btn.addEventListener('mouseleave', ()=>{
-                // restore actual selected stars
-                renderSelected();
-            });
-            btn.addEventListener('click', async ()=>{
-                scoreInput.value = n;
-                // submit via AJAX
-                stars.forEach(b=>b.disabled = true);
-                try{
-                    const res = await fetch(scoreForm.action, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:new FormData(scoreForm)});
-                    const data = await res.json();
-                    if (!res.ok || !data || data.status !== 'ok') {
-                        throw new Error(data.message || 'Actie mislukt.');
-                    }
-                    // update stars to selected
-                    setStars(data.score);
-                    // update badge and count
-                    if (badge) badge.textContent = 'Score ' + (Number(data.score_average).toFixed(1)) + '/5';
-                    if (countEl) countEl.textContent = `(${data.score_count})`;
-                }catch(err){console.error(err);}finally{stars.forEach(b=>b.disabled=false)}
-            });
-        });
-        } else {
-            // owner: just render current selection and skip bindings
-            renderSelected();
-        }
-    }    
-
-    const decreaseServingsButton = document.getElementById('servings-decrease');
-    const increaseServingsButton = document.getElementById('servings-increase');
-    const servingCountDisplay = document.getElementById('current-serving-count');
-    const ingredientQuantities = Array.from(document.querySelectorAll('[data-original-quantity]'));
-
-    function formatQuantity(value) {
-        const rounded = Math.round(value * 100) / 100;
-        if (Number.isInteger(rounded)) {
-            return String(rounded);
-        }
-        return String(rounded).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1').replace('.', ',');
-    }
-
-    function updateScaledIngredients() {
-        if (!servingCountDisplay || ingredientQuantities.length === 0) {
-            return;
-        }
-
-        const baseServings = Number(servingCountDisplay.dataset.baseServings || 1);
-        const targetServings = Math.max(1, Number(servingCountDisplay.textContent || baseServings));
-        const factor = baseServings > 0 ? targetServings / baseServings : 1;
-
-        ingredientQuantities.forEach((quantityElement) => {
-            const original = Number(quantityElement.dataset.originalQuantity);
-            if (Number.isFinite(original)) {
-                quantityElement.textContent = formatQuantity(original * factor);
-            }
-        });
-
-        if (servingCountDisplay) {
-            servingCountDisplay.textContent = String(targetServings);
-        }
-    }
-
-    function setServings(nextValue) {
-        if (!servingCountDisplay) {
-            return;
-        }
-        const normalized = Math.max(1, Number(nextValue || 1));
-        servingCountDisplay.textContent = String(normalized);
-        updateScaledIngredients();
-    }
-
-    if (decreaseServingsButton && servingCountDisplay) {
-        decreaseServingsButton.addEventListener('click', () => {
-            const current = Number(servingCountDisplay.textContent || servingCountDisplay.dataset.baseServings || 1);
-            setServings(current - 1);
-        });
-    }
-
-    if (increaseServingsButton && servingCountDisplay) {
-        increaseServingsButton.addEventListener('click', () => {
-            const current = Number(servingCountDisplay.textContent || servingCountDisplay.dataset.baseServings || 1);
-            setServings(current + 1);
-        });
-    }
-
-    updateScaledIngredients();
-});
-</script>
-<script>
-const wakeLockToggle = document.getElementById("wake-lock-toggle");
-
-let wakeLock = null;
-
-async function requestWakeLock() {
-    if (!("wakeLock" in navigator)) {
-        console.error("Screen Wake Lock API is not supported.");
-        return;
-    }
-
-    if (wakeLock !== null) {
-        return;
-    }
-
-    try {
-        wakeLock = await navigator.wakeLock.request("screen");
-
-        console.log("Wake lock acquired.");
-
-        wakeLock.addEventListener("release", () => {
-            console.log("Wake lock released.");
-            wakeLock = null;
-        });
-    } catch (error) {
-        console.error("Failed to acquire wake lock:", error);
-        wakeLock = null;
-    }
-}
-
-async function releaseWakeLock() {
-    if (wakeLock === null) {
-        return;
-    }
-
-    try {
-        await wakeLock.release();
-        console.log("Wake lock released.");
-    } catch (error) {
-        console.error("Failed to release wake lock:", error);
-    }
-
-    wakeLock = null;
-}
-
-wakeLockToggle.addEventListener("change", async () => {
-    if (wakeLockToggle.checked) {
-        await requestWakeLock();
-    } else {
-        await releaseWakeLock();
-    }
-});
-
-document.addEventListener("visibilitychange", async () => {
-    if (
-        document.visibilityState === "visible" &&
-        wakeLockToggle.checked
-    ) {
-        await requestWakeLock();
-    }
-});
-</script>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/validation.js') }}" defer></script>
+{% endif %} {% endblock %} {% block extra_js %}
+<script
+	src="{{ url_for('static', filename='js/wake-lock.js') }}"
+	defer
+></script>
+<script
+	src="{{ url_for('static', filename='js/validation.js') }}"
+	defer
+></script>
+<script
+	src="{{ url_for('static', filename='js/recipe_modal.js') }}"
+	defer
+></script>
+<script
+	src="{{ url_for('static', filename='js/recipe-view.js') }}"
+	defer
+></script>
 {% endblock %}

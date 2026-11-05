@@ -208,6 +208,8 @@ marimo/_lsp/
 __marimo__/
 
 .github/*copilot*
+.github/docs
+.github/instructions
 *.db
 data/backup.zip
 data/recipe/

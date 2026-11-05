@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from typing import cast
 
+import requests
 from flask import (
     Blueprint,
     abort,
@@ -23,7 +24,7 @@ from app.api import (
     ApiError,
     create_recipe,
     record_recipe_score,
-    toggle_recipe_favorite,
+    toggle_recipe_bookmark,
 )
 from app.api import (
     delete_recipe as api_delete_recipe,
@@ -58,12 +59,12 @@ recipe_overview_bp = Blueprint("recipe_overview", __name__)
 
 OVERVIEW_FILTER_ALL = "alle"
 OVERVIEW_FILTER_MINE = "mijn"
-OVERVIEW_FILTER_FAVORITES = "favorieten"
+OVERVIEW_FILTER_BOOKMARKS = "opgeslagen"
 OVERVIEW_FILTER_RATED = "beoordeeld"
 OVERVIEW_FILTERS = {
     OVERVIEW_FILTER_ALL: "Alle recepten",
     OVERVIEW_FILTER_MINE: "Mijn recepten",
-    OVERVIEW_FILTER_FAVORITES: "Mijn favorieten",
+    OVERVIEW_FILTER_BOOKMARKS: "Mijn opgeslagen recepten",
     OVERVIEW_FILTER_RATED: "Mijn beoordelingen",
 }
 
@@ -108,7 +109,10 @@ def _ingredient_field_value(ingredient: str | dict) -> str:
 @recipes_bp.route("/genest/zoeken")
 def nested_recipe_search():
     search = (request.args.get("q") or "").strip()
+    current_recipe_id = request.args.get("current_recipe_id", type=int)
     matches = resolve_recipe_search_term(search)
+    if current_recipe_id is not None:
+        matches = [recipe for recipe in matches if recipe.id != current_recipe_id]
     results = [{"id": recipe.id, "title": recipe.title} for recipe in matches[:6]]
     payload = {"results": results, "has_more": len(matches) > 6}
     return jsonify(payload)
@@ -200,7 +204,7 @@ def list_recipes():
             ]
         filter_options.update(
             {
-                OVERVIEW_FILTER_FAVORITES: OVERVIEW_FILTERS[OVERVIEW_FILTER_FAVORITES],
+                OVERVIEW_FILTER_BOOKMARKS: OVERVIEW_FILTERS[OVERVIEW_FILTER_BOOKMARKS],
                 OVERVIEW_FILTER_RATED: OVERVIEW_FILTERS[OVERVIEW_FILTER_RATED],
             }
         )
@@ -213,8 +217,8 @@ def list_recipes():
 
     if filter_name == OVERVIEW_FILTER_MINE:
         query = Recipe.query.filter_by(user_id=current_user.id)
-    elif filter_name == OVERVIEW_FILTER_FAVORITES:
-        query = current_user.favorites.filter(Recipe.status == Recipe.STATUS_PUBLIC)
+    elif filter_name == OVERVIEW_FILTER_BOOKMARKS:
+        query = current_user.bookmarks.filter(Recipe.status == Recipe.STATUS_PUBLIC)
     elif filter_name == OVERVIEW_FILTER_RATED:
         query = Recipe.query.join(
             RecipeScore,
@@ -225,7 +229,7 @@ def list_recipes():
         query = Recipe.query.filter_by(status=Recipe.STATUS_PUBLIC)
 
     if category:
-        query = query.filter_by(category=category)
+        query = query.filter(Recipe.category == category)
     if search:
         search_pattern = f"%{search}%"
         query = query.filter(
@@ -343,6 +347,7 @@ def view_recipe(recipe_id, title=None):
         current_user.is_authenticated
         and current_user.can_score_recipes
         and recipe.status == Recipe.STATUS_PUBLIC
+        and recipe.user_id != current_user.id
     )
     can_adapt_recipe = (
         current_user.is_authenticated
@@ -422,14 +427,14 @@ def recipe_image(recipe_id):
     return (image_data, 200, {"Content-Type": "image/webp"})
 
 
-@recipes_bp.route("/<int:recipe_id>/favoriet", methods=["POST"])
+@recipes_bp.route("/<int:recipe_id>/bookmark", methods=["POST"])
 @login_required
-def favorite_recipe(recipe_id):
+def bookmark_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     user = cast(User, current_user)
     created = False
     try:
-        created = toggle_recipe_favorite(user=user, recipe=recipe, favorite=True)
+        created = toggle_recipe_bookmark(user=user, recipe=recipe, bookmark=True)
     except ApiError as error:
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return jsonify(
@@ -438,21 +443,21 @@ def favorite_recipe(recipe_id):
         abort(error.status_code)
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify({"status": "ok", "favorited": created})
+        return jsonify({"status": "ok", "bookmarkd": created})
 
     return redirect(
         url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title)
     )
 
 
-@recipes_bp.route("/<int:recipe_id>/favoriet-verwijderen", methods=["POST"])
+@recipes_bp.route("/<int:recipe_id>/bookmark-verwijderen", methods=["POST"])
 @login_required
-def unfavorite_recipe(recipe_id):
+def unbookmark_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     user = cast(User, current_user)
     removed = False
     try:
-        removed = toggle_recipe_favorite(user=user, recipe=recipe, favorite=False)
+        removed = toggle_recipe_bookmark(user=user, recipe=recipe, bookmark=False)
     except ApiError as error:
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return jsonify(
@@ -461,7 +466,7 @@ def unfavorite_recipe(recipe_id):
         abort(error.status_code)
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify({"status": "ok", "favorited": not removed})
+        return jsonify({"status": "ok", "bookmarkd": not removed})
 
     return redirect(
         url_for("recipes.view_recipe", recipe_id=recipe.id, title=recipe.url_title)
@@ -608,7 +613,14 @@ def upload_recipe():
             case "url":
                 if not form.url.data:
                     return flash_("URL is vereist voor deze uploadmethode.", "danger")
-                data = read_uploaded_page(form.url.data, include_image=True)
+                try:
+                    data = read_uploaded_page(form.url.data, include_image=True)
+                except requests.RequestException:
+                    return flash_(
+                        "De webpagina kon niet worden gelezen. Controleer de URL "
+                        "of gebruik een andere uploadmethode.",
+                        "danger",
+                    )
                 image_url = data.pop("image_url", None)
                 image_token = (
                     download_recipe_image(

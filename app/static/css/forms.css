@@ -1,0 +1,306 @@
+.form-label,
+.form-shell legend {
+	display: block;
+	margin-bottom: 7px;
+	font-size: 13px;
+	font-weight: 700;
+}
+.form-control,
+.form-select,
+.form-shell textarea {
+	width: 100%;
+	height: 36px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-small);
+	background: var(--surface);
+	color: var(--text);
+	padding: 6px 6px 6px 12px;
+	font-family: Inter, system-ui, sans-serif;
+	font-size: 16px;
+	line-height: 1.5;
+}
+.form-textarea,
+.form-shell textarea {
+	height: auto;
+	min-height: 72px;
+	resize: vertical;
+}
+.form-control:focus,
+.form-select:focus,
+.form-shell textarea:focus {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px var(--primary-soft);
+	outline: none;
+}
+.form-control::placeholder,
+.form-shell textarea::placeholder {
+	color: var(--text-muted);
+}
+.form-select-wrap {
+	position: relative;
+}
+.form-select-wrap.has-custom-select {
+	z-index: 3;
+}
+.form-select-wrap.has-custom-select .form-select-native {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+.form-select-trigger {
+	position: relative;
+	width: 100%;
+	height: 36px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-small);
+	background: var(--surface);
+	color: var(--text);
+	padding: 6px 38px 6px 12px;
+	font:
+		16px/1.5 Inter,
+		system-ui,
+		sans-serif;
+	text-align: left;
+	cursor: pointer;
+}
+.form-select-trigger:hover,
+.form-select-wrap.is-open .form-select-trigger {
+	border-color: var(--primary);
+}
+.form-select-trigger:focus-visible {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px var(--primary-soft);
+	outline: none;
+}
+.form-select-trigger::after {
+	position: absolute;
+	top: 50%;
+	right: 14px;
+	width: 7px;
+	height: 7px;
+	border-right: 2px solid var(--text-muted);
+	border-bottom: 2px solid var(--text-muted);
+	content: "";
+	pointer-events: none;
+	transform: translateY(-65%) rotate(45deg);
+}
+.form-select-menu {
+	position: absolute;
+	top: calc(100% + 6px);
+	right: 0;
+	left: 0;
+	display: none;
+	overflow-y: auto;
+	padding: 8px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-small);
+	background: var(--surface);
+	box-shadow: var(--shadow-soft);
+}
+.form-select-wrap.is-open .form-select-menu {
+	display: grid;
+	gap: 4px;
+}
+.form-select-option {
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--text);
+	padding: 8px 10px;
+	font:
+		16px/1 Inter,
+		system-ui,
+		sans-serif;
+	text-align: left;
+	cursor: pointer;
+}
+.form-select-option:hover,
+.form-select-option:focus-visible,
+.form-select-option.is-selected {
+	background: var(--primary-soft);
+	color: var(--primary-strong);
+	outline: none;
+}
+.form-select {
+	appearance: none;
+	padding-right: 38px;
+	cursor: pointer;
+}
+.form-select:hover {
+	border-color: var(--primary);
+}
+.form-select option {
+	background: var(--surface);
+	color: var(--text);
+	font:
+		16px/1.5 Inter,
+		system-ui,
+		sans-serif;
+}
+.form-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 18px 20px;
+}
+.form-field-full {
+	grid-column: 1 / -1;
+}
+.form-help {
+	margin: 6px 0 0;
+	color: var(--text-muted);
+	font-size: 13px;
+}
+.form-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 1050;
+	display: grid;
+	place-items: center;
+	padding: 20px;
+	background: rgb(48 40 35 / 62%);
+	opacity: 0;
+	transition: opacity 160ms ease;
+}
+.form-modal[hidden] {
+	display: none;
+}
+.form-modal.is-visible {
+	opacity: 1;
+}
+.form-modal-dialog {
+	width: min(680px, 100%);
+	max-height: calc(100vh - 40px);
+	overflow: auto;
+	transform: translateY(8px);
+	transition: transform 160ms ease;
+}
+.form-modal.is-visible .form-modal-dialog {
+	transform: translateY(0);
+}
+.form-modal-content {
+	min-width: 0;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 16px;
+	box-shadow: 0 24px 70px rgb(48 40 35 / 30%);
+}
+.form-modal-header,
+.form-modal-footer {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 22px 26px;
+	border-bottom: 1px solid var(--border);
+}
+.form-modal-header h2 {
+	margin: 0;
+	font-family: Fraunces, Georgia, serif;
+	font-size: 28px;
+	line-height: normal;
+}
+.form-modal-eyebrow {
+	margin: 0 0 8px;
+	color: var(--primary-strong);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+}
+.form-modal-close {
+	border: 0;
+	background: transparent;
+	color: var(--text-muted);
+	font-size: 26px;
+	line-height: 1;
+}
+.form-modal-body {
+	padding: 22px;
+}
+.form-modal-body input:not([type="range"]),
+.form-modal-body textarea,
+.form-modal-body select {
+	width: 100%;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-small);
+	background: var(--surface);
+	color: var(--text);
+	padding: 10px 12px;
+}
+.form-modal-body input:focus,
+.form-modal-body textarea:focus,
+.form-modal-body select:focus {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px var(--primary-soft);
+	outline: none;
+}
+.form-modal-body label {
+	display: block;
+	margin: 0 0 7px;
+	font-size: 13px;
+	font-weight: 700;
+}
+.form-modal-footer {
+	align-items: center;
+	justify-content: flex-end;
+	border-top: 1px solid var(--border);
+	border-bottom: 0;
+}
+.form-modal-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+}
+.form-modal-full {
+	grid-column: 1 / -1;
+}
+.form-range {
+	width: 100%;
+	accent-color: var(--primary);
+}
+body.modal-open {
+	overflow: hidden;
+}
+
+@media (max-width: 600px) {
+	.form-grid,
+	.form-modal-grid {
+		grid-template-columns: 1fr;
+	}
+	.form-field-full,
+	.form-modal-full {
+		grid-column: auto;
+	}
+	.form-modal-header,
+	.form-modal-body,
+	.form-modal-footer {
+		padding-right: 18px;
+		padding-left: 18px;
+	}
+	.form-modal-footer {
+		align-items: stretch;
+		flex-direction: column-reverse;
+	}
+	.form-modal-footer .button {
+		width: 100%;
+	}
+	.form-control,
+	.form-select,
+	.form-shell textarea,
+	.form-select-trigger {
+		font-size: 14px;
+	}
+	.form-select-option {
+		font:
+			14px / 0.9 Inter,
+			system-ui,
+			sans-serif;
+		padding: 10px 8px;
+	}
+	.form-select-menu {
+		gap: 2px;
+	}
+}

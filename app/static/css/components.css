@@ -1,0 +1,96 @@
+.navbar-toggler,
+.icon-button {
+	display: grid;
+	width: 42px;
+	height: 42px;
+	place-items: center;
+	padding: 0;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-small);
+	background: transparent;
+	cursor: pointer;
+}
+.navbar-toggler {
+	font-size: 23px;
+}
+.navbar-toggler:hover,
+.icon-button:hover {
+	border-color: var(--primary);
+	color: var(--primary);
+}
+.button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 42px;
+	padding: 8px 14px;
+	border: 1px solid transparent;
+	border-radius: var(--radius-medium);
+	font-size: 14px;
+	font-weight: 700;
+	cursor: pointer;
+}
+.button-primary {
+	background: var(--primary);
+	color: #fff9f2;
+}
+.button-primary:hover {
+	background: var(--primary-strong);
+	color: #fff9f2;
+}
+.button-secondary {
+	border-color: var(--border);
+	background: transparent;
+	color: var(--text);
+}
+.button-secondary:hover {
+	border-color: var(--primary);
+	color: var(--primary);
+}
+.button-small {
+	min-height: 38px;
+	padding: 6px 12px;
+}
+.account-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 42px;
+	padding: 4px 7px;
+	border: 1px solid transparent;
+	background: transparent;
+	cursor: pointer;
+	font-weight: 600;
+}
+.account-button:hover {
+	color: var(--primary);
+}
+.avatar {
+	display: grid;
+	width: 32px;
+	height: 32px;
+	place-items: center;
+	border-radius: 50%;
+	background: var(--primary-soft);
+	color: var(--primary-strong);
+	font-weight: 700;
+}
+.notification-dot,
+.creator-request-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--primary);
+}
+.nav-badge {
+	min-width: 20px;
+	margin-left: auto;
+	padding: 1px 5px;
+	border-radius: 999px;
+	background: var(--primary);
+	color: #fff9f2;
+	font-size: 11px;
+	line-height: 1.4;
+	text-align: center;
+}

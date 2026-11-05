@@ -1,6 +1,6 @@
 (function () {
     const ASPECT_RATIO = 4 / 3;
-    const SMALL_SCREEN_QUERY = window.matchMedia("(max-width: 767.98px)");
+    const SMALL_SCREEN_QUERY = window.matchMedia("(max-width: 600px)");
 
     function clamp(value, min, max) {
         return Math.min(max, Math.max(min, value));
@@ -37,6 +37,7 @@
         const placeholder = document.getElementById("image-placeholder");
         const actions = document.getElementById("image-actions");
         const clearBtn = document.getElementById("image-clear-btn");
+        const changeBtn = document.getElementById("image-change-btn");
         const removeFlag = document.getElementById("remove_image");
         const fileInput = form.querySelector('input[type="file"][name="image"]');
         const importedImageUrl = form.dataset.importedImageUrl || "";
@@ -45,7 +46,7 @@
 
         function showControls() {
             if (actions) {
-                actions.style.display = "flex";
+                actions.style.display = "grid";
             }
         }
 
@@ -77,6 +78,7 @@
             }
 
             preview.setAttribute("src", url);
+            preview.hidden = false;
             preview.style.display = "block";
             if (imageFrame) {
                 imageFrame.style.display = "block";
@@ -100,12 +102,13 @@
             }
 
             if (preview) {
+                preview.hidden = true;
                 preview.removeAttribute("src");
                 preview.style.display = "none";
             }
 
             if (imageFrame) {
-                imageFrame.style.display = "none";
+                imageFrame.style.display = "block";
             }
 
             showPlaceholder();
@@ -134,9 +137,13 @@
         const cropSelection = document.getElementById("recipe-image-crop-selection");
         const cropSlider = document.getElementById("recipe-image-crop-slider");
         const confirmBtn = document.getElementById("recipe-image-crop-confirm");
-        const cropModal = modalEl && window.bootstrap ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+        const cropModal = modalEl && window.RecipeModals
+            ? window.RecipeModals.getOrCreateInstance(modalEl)
+            : null;
 
         let pendingFile = null;
+        let originalImageFile = null;
+        let sessionOriginalImageFile = null;
         let pendingFileUrl = "";
         let crop = null;
         let cropInitialized = false;
@@ -159,12 +166,19 @@
             };
         }
 
-        function getScale() {
-            if (!cropImage || !cropImage.naturalWidth) {
-                return 0;
+        function getImageMetrics() {
+            if (!cropImage || !cropStage || !cropImage.naturalWidth || !cropImage.naturalHeight) {
+                return null;
             }
 
-            return cropImage.getBoundingClientRect().width / cropImage.naturalWidth;
+            const imageRect = cropImage.getBoundingClientRect();
+            const stageRect = cropStage.getBoundingClientRect();
+            return {
+                left: imageRect.left - stageRect.left,
+                top: imageRect.top - stageRect.top,
+                scaleX: imageRect.width / cropImage.naturalWidth,
+                scaleY: imageRect.height / cropImage.naturalHeight,
+            };
         }
 
         function getMaxCropWidth() {
@@ -223,16 +237,16 @@
                 return;
             }
 
-            const scale = getScale();
-            if (!scale) {
+            const metrics = getImageMetrics();
+            if (!metrics || !metrics.scaleX || !metrics.scaleY) {
                 return;
             }
 
             cropSelection.style.display = "block";
-            cropSelection.style.left = `${crop.x * scale}px`;
-            cropSelection.style.top = `${crop.y * scale}px`;
-            cropSelection.style.width = `${crop.width * scale}px`;
-            cropSelection.style.height = `${crop.height * scale}px`;
+            cropSelection.style.left = `${metrics.left + (crop.x * metrics.scaleX)}px`;
+            cropSelection.style.top = `${metrics.top + (crop.y * metrics.scaleY)}px`;
+            cropSelection.style.width = `${crop.width * metrics.scaleX}px`;
+            cropSelection.style.height = `${crop.height * metrics.scaleY}px`;
 
             if (cropSlider && currentSmallMode) {
                 const minWidth = getMinCropWidth();
@@ -257,11 +271,20 @@
             }
 
             currentSmallMode = SMALL_SCREEN_QUERY.matches;
-            const initialWidth = Math.max(getMinCropWidth(), Math.round(getMaxCropWidth() * 0.9));
+            const initialWidth = getMaxCropWidth();
             crop = centerCrop(initialWidth);
             cropInitialized = true;
             renderCrop();
             setConfirmReady(true);
+        }
+
+        function fitCropToImage() {
+            if (!crop || !cropImage || !cropImage.naturalWidth || !cropImage.naturalHeight) {
+                return;
+            }
+
+            crop = centerCrop(getMaxCropWidth());
+            renderCrop();
         }
 
         function resetCropperState() {
@@ -292,6 +315,8 @@
             pendingFileUrl = "";
             pendingFile = null;
             resetCropperState();
+            originalImageFile = pendingStartWasEmpty ? null : sessionOriginalImageFile;
+            sessionOriginalImageFile = null;
             if (fileInput) {
                 fileInput.value = "";
             }
@@ -305,13 +330,17 @@
             }
         }
 
-        function setPendingFile(file) {
+        function setPendingFile(file, preserveOriginal = false) {
             pendingStartWasEmpty = !preview
                 || !preview.getAttribute("src")
                 || (removeFlag ? removeFlag.value === "1" : false)
                 || (preview ? preview.style.display === "none" : false);
             hidePlaceholder();
             pendingFile = file;
+            sessionOriginalImageFile = originalImageFile;
+            if (!preserveOriginal || !originalImageFile) {
+                originalImageFile = file;
+            }
             cropSessionActive = true;
             if (pendingFileUrl) {
                 revokeObjectUrl(pendingFileUrl);
@@ -324,6 +353,37 @@
             }
             if (cropModal) {
                 cropModal.show();
+            }
+        }
+
+        async function editCurrentPreview() {
+            if (originalImageFile) {
+                setPendingFile(originalImageFile, true);
+                return;
+            }
+
+            const previewSrc = preview ? preview.getAttribute("src") : "";
+            if (!previewSrc) {
+                return;
+            }
+
+            try {
+                const response = await fetch(previewSrc);
+                if (!response.ok) {
+                    throw new Error(`Unable to load the current image (${response.status})`);
+                }
+
+                const blob = await response.blob();
+                const fileType = blob.type || "image/jpeg";
+                const extension = fileType === "image/png"
+                    ? "png"
+                    : fileType === "image/webp" ? "webp" : "jpg";
+                setPendingFile(new File([blob], `recipe-image.${extension}`, {
+                    type: fileType,
+                }), true);
+            } catch (error) {
+                console.error("Unable to reopen the current image in the cropper.", error);
+                window.alert("De huidige afbeelding kan niet opnieuw worden geopend om te bewerken.");
             }
         }
 
@@ -475,9 +535,19 @@
             });
         }
 
+        if (window.ResizeObserver && cropStage) {
+            const cropStageObserver = new ResizeObserver(() => {
+                if (cropInitialized) {
+                    fitCropToImage();
+                }
+            });
+            cropStageObserver.observe(cropStage);
+        }
+
         if (modalEl) {
             modalEl.addEventListener("shown.bs.modal", () => {
                 initializeCropper();
+                fitCropToImage();
             });
 
             modalEl.addEventListener("hidden.bs.modal", () => {
@@ -497,6 +567,7 @@
                     }
                     pendingFileUrl = "";
                     pendingFile = null;
+                    sessionOriginalImageFile = null;
                     resetCropperState();
                 }
             });
@@ -533,13 +604,13 @@
                     return;
                 }
 
-                const scale = getScale();
-                if (!scale) {
+                const metrics = getImageMetrics();
+                if (!metrics || !metrics.scaleX || !metrics.scaleY) {
                     return;
                 }
 
-                const dx = (event.clientX - pointerState.startX) / scale;
-                const dy = (event.clientY - pointerState.startY) / scale;
+                const dx = (event.clientX - pointerState.startX) / metrics.scaleX;
+                const dy = (event.clientY - pointerState.startY) / metrics.scaleY;
 
                 crop = pointerState.mode === "resize"
                     ? resizeCrop(pointerState.handle, pointerState.startCrop, dx, dy)
@@ -630,6 +701,24 @@
                     setPendingFile(file);
                 }
                 target.value = "";
+            });
+        }
+
+        if (changeBtn) {
+            changeBtn.addEventListener("click", (event) => {
+                event.stopPropagation();
+                editCurrentPreview();
+            });
+        }
+
+        if (placeholder && fileInput) {
+            const chooseImage = () => fileInput.click();
+            placeholder.addEventListener("click", chooseImage);
+            placeholder.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    chooseImage();
+                }
             });
         }
 

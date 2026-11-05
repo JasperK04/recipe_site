@@ -1,120 +1,215 @@
-{% extends "components/base.html" %}
+{% extends "components/base.html" %} {% block title %}{{ title }} - Recepten{%
+endblock %} {% block extra_css %}
+<link
+	rel="stylesheet"
+	href="{{ url_for('static', filename='css/recipe_form.css') }}"
+/>
+{% endblock %} {% block content %}
+<div class="recipe-editor">
+	<div class="recipe-editor-intro">
+		<p class="recipe-editor-eyebrow">Recept editor</p>
+		<h1>{{ title }}</h1>
+		<p>
+			Importeer een recept vanaf een website, uit tekst of vanuit een
+			bestand. Je kunt de gevonden gegevens hierna controleren en
+			aanpassen.
+		</p>
+	</div>
 
-{% block title %}{{ title }} - Recepten{% endblock %}
+	<form
+		class="recipe-editor-grid"
+		action="{{ url_for('recipes.upload_recipe') }}"
+		method="post"
+		enctype="multipart/form-data"
+		data-client-validation="upload"
+	>
+		{{ form.hidden_tag() }}
+		<div>
+			<section
+				class="recipe-editor-panel"
+				aria-labelledby="import-heading"
+			>
+				<div class="recipe-editor-panel-header">
+					<div>
+						<h2 id="import-heading">Receptbron</h2>
+						<p class="recipe-editor-note">
+							Kies waar je recept nu staat.
+						</p>
+					</div>
+				</div>
+				<div class="recipe-editor-panel-body">
+					<div class="form-grid">
+						<div class="form-field-full">
+							{{ form.upload_type.label(class="form-label") }}
+							<div class="form-select-wrap" data-custom-select>
+								{{ form.upload_type(class="form-select
+								form-select-native",
+								data_custom_select_native="") }}
+								<button
+									class="form-select-trigger"
+									type="button"
+									aria-haspopup="listbox"
+									aria-expanded="false"
+								></button>
+								<div
+									class="form-select-menu"
+									role="listbox"
+									tabindex="-1"
+								>
+									{% for value, label in
+									form.upload_type.choices %}
+									<button
+										class="form-select-option"
+										type="button"
+										role="option"
+										data-value="{{ value }}"
+									>
+										{{ label }}
+									</button>
+									{% endfor %}
+								</div>
+							</div>
+							<p class="form-help">Website, tekst of bestand.</p>
+							{% for error in form.upload_type.errors %}
+							<div class="invalid-feedback d-block">
+								{{ error }}
+							</div>
+							{% endfor %}
+						</div>
 
-{% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card shadow">
-            <div class="card-body">
-                <h2 class="card-title mb-4">{{ title }}</h2>
-                <form method="POST" enctype="multipart/form-data" data-client-validation="upload" novalidate>
-                    {{ form.hidden_tag() }}
-                    <div class="row justify-content-center">
-                        <div class="col-md-3 mb-3 flex-grow-1">
-                            {{ form.upload_type.label(class="form-label") }}
-                            {{ form.upload_type(class="form-control" + (" is-invalid" if form.upload_type.errors else "")) }}
-                            {% if form.upload_type.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.upload_type.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
+						<div
+							id="blank-field"
+							style="display: none"
+							aria-hidden="true"
+						></div>
+						<div id="url-field" class="form-field-full">
+							{{ form.url.label(class="form-label") }} {{
+							form.url(class="form-control",
+							placeholder="https://voorbeeld.nl/recept",
+							inputmode="url", autocomplete="url") }}
+							<p class="form-help">
+								Plak de link naar de pagina met het recept.
+							</p>
+							{% for error in form.url.errors %}
+							<div class="invalid-feedback d-block">
+								{{ error }}
+							</div>
+							{% endfor %}
+						</div>
+						<div
+							id="textarea-field"
+							class="form-field-full"
+							style="display: none"
+						>
+							{{ form.textarea.label(class="form-label") }} {{
+							form.textarea(class="form-control form-textarea",
+							rows="9", maxlength="5000",
+							aria_describedby="recipe-text-help") }}
+							<p class="form-help" id="recipe-text-help">
+								Plak ingrediënten en bereidingswijze. Maximaal
+								5.000 tekens.
+							</p>
+							{% for error in form.textarea.errors %}
+							<div class="invalid-feedback d-block">
+								{{ error }}
+							</div>
+							{% endfor %}
+						</div>
+						<div
+							id="json-field"
+							class="form-field-full"
+							style="display: none"
+						>
+							{{ form.json_file.label(class="form-label") }} {{
+							form.json_file(class="form-control",
+							accept=".json,.jsonl") }}
+							<p class="form-help">
+								Geschikt voor een JSON-export van een recept.
+							</p>
+							{% for error in form.json_file.errors %}
+							<div class="invalid-feedback d-block">
+								{{ error }}
+							</div>
+							{% endfor %}
+							<div id="example-json">
+								<p class="recipe-editor-note">
+									Voorbeeld van een receptbestand
+								</p>
+								<pre class="recipe-editor-code"><code>{
+  "title": "Geroosterde tomatensoep",
+  "ingredients": ["500 g tomaten", "1 ui"],
+  "instructions": ["Rooster de tomaten.", "Pureer met de ui."]
+}</code></pre>
+							</div>
+						</div>
+						<div
+							id="text-field"
+							class="form-field-full"
+							style="display: none"
+						>
+							{{ form.text_file.label(class="form-label") }} {{
+							form.text_file(class="form-control",
+							accept=".txt,.docs,.docx,.pdf") }}
+							<p class="form-help">
+								Kies een tekstbestand, Word-document of PDF.
+							</p>
+							{% for error in form.text_file.errors %}
+							<div class="invalid-feedback d-block">
+								{{ error }}
+							</div>
+							{% endfor %}
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
 
-                        <div id="blank-field" class="col-md-9 mb-3">
-                            <label class="form-label" for="blank" style="color: rgba(0, 0, 0, 1) !important;">niets hier</label>
-                            <input type="text" name="blank" class="form-control" value="" readonly focusable="false">
-                        </div>
-
-                        <div id="url-field" class="col-md-9 mb-3" style="display: none;">
-                            {{ form.url.label(class="form-label") }}
-                            {{ form.url(class="form-control" + (" is-invalid" if form.url.errors else "")) }}
-                            {% if form.url.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.url.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-
-                        <div id="json-field" class="col-md-9 mb-3" style="display: none;">
-                            {{ form.json_file.label(class="form-label") }}
-                            {{ form.json_file(class="form-control" + (" is-invalid" if form.json_file.errors else ""), accept=".json,.jsonl") }}
-                            {% if form.json_file.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.json_file.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-
-                        <div id="text-field" class="col-md-9 mb-3" style="display: none;">
-                            {{ form.text_file.label(class="form-label") }}
-                            {{ form.text_file(class="form-control" + (" is-invalid" if form.text_file.errors else ""), accept=".txt,.docs,.docx,.pdf") }}
-                            {% if form.text_file.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.text_file.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-12 mb-3" style="display: none;" id="example-json">
-                            <small class="form-text text-muted">Voorbeeld van de verwachte JSON structuur:</small>
-<pre class="mt-3 p-3 bg-light border rounded" style="max-height: 250px; overflow-y: auto;">
-<code>{
-    "name": string,
-    "description": string | null,
-    "servings": integer | null,
-    "prep_time": integer | null,
-    "cook_time": integer | null,
-    "total_time": integer | null,
-    "ingredients": [string, ...],
-    "instructions": [string, ...]
-}</code>
-</pre>
-                        </div>
-                    </div>
-                    <div id="textarea-field" class="col-md-12 mb-3" style="display: none;">
-                        {{ form.textarea.label(class="form-label") }}
-                        {{ form.textarea(class="form-control" + (" is-invalid" if form.textarea.errors else "")) }}
-                        {% if form.textarea.errors %}
-                            <div class="invalid-feedback">
-                                {% for error in form.textarea.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ back_url('recipe_overview.list_recipes') }}" class="btn btn-secondary">Annuleren</a>
-                        <div>
-                            {{ form.submit(class="btn btn-primary") }}
-                        </div>
-                    </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+		<aside
+			class="recipe-editor-panel recipe-editor-sidebar"
+			aria-label="Importstatus en acties"
+		>
+			<div class="recipe-editor-status">
+				<div
+					id="recipe-editor-status-line"
+					class="recipe-editor-status-line"
+					aria-live="polite"
+				>
+					<span class="recipe-editor-status-dot"></span>
+					<span id="recipe-editor-status-text"
+						>Kies een bron om te beginnen</span
+					>
+				</div>
+				<p class="recipe-editor-note">
+					Controleer de bron voordat je het recept importeert.
+				</p>
+			</div>
+			<div class="recipe-editor-summary">
+				<h3>Na het importeren</h3>
+				<div class="recipe-editor-summary-row">
+					<span>Volgende stap</span
+					><strong>Recept controleren</strong>
+				</div>
+				<div class="recipe-editor-summary-row">
+					<span>Daarna</span><strong>Opslaan in je collectie</strong>
+				</div>
+			</div>
+			<div class="recipe-editor-actions">
+				<!-- prettier-ignore -->
+				{{ form.submit(class="button button-primary",
+				value="Recept importeren") }}
+				<a
+					class="button button-secondary"
+					href="{{ url_for('recipes.add_recipe') }}"
+					>Zelf een recept invullen</a
+				>
+			</div>
+		</aside>
+	</form>
 </div>
-
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/validation.js') }}" defer></script>
-<script>
-function showRelevantField() {
-    const uploadType = document.getElementById('upload_type').value;
-    document.getElementById('url-field').style.display = uploadType === 'url' ? 'block' : 'none';
-    document.getElementById('textarea-field').style.display = uploadType === 'textarea' ? 'block' : 'none';
-    document.getElementById('json-field').style.display = uploadType === 'json' ? 'block' : 'none';
-    document.getElementById('example-json').style.display = uploadType === 'json' ? 'block' : 'none';
-    document.getElementById('text-field').style.display = uploadType === 'text' ? 'block' : 'none';
-    document.getElementById('blank-field').style.display = uploadType === 'blank' ? 'block' : 'none';
-}
-
-window.addEventListener('pageshow', showRelevantField);
-
-document.addEventListener('DOMContentLoaded', function(){
-    showRelevantField();
-});
-
-document.getElementById('upload_type').addEventListener('change', showRelevantField);
-</script>
-{% endblock %}
-
+{% endblock %} {% block extra_js %}
+<script
+	src="{{ url_for('static', filename='js/validation.js') }}"
+	defer
+></script>
+<script src="{{ url_for('static', filename='js/upload.js') }}" defer></script>
 {% endblock %}

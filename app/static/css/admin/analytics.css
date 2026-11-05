@@ -1,0 +1,688 @@
+.analytics-stats {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.analytics-lower {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 20px;
+}
+
+.analytics-url {
+	overflow-wrap: anywhere;
+	color: var(--text-muted);
+	font-size: 12px;
+}
+
+.analytics-errors {
+	border-top: 1px solid var(--border);
+}
+
+.error-entry {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 5px 10px;
+	padding: 11px 0;
+	border-bottom: 1px solid var(--border);
+	font-size: 12px;
+}
+
+.error-entry time {
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+
+.error-entry code {
+	overflow-wrap: anywhere;
+	color: var(--danger);
+}
+
+.table-empty {
+	padding: 18px !important;
+	color: var(--text-muted);
+	font-size: 13px;
+}
+
+.analytics-heading {
+	align-items: end;
+}
+
+.analytics-overview-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1.65fr) minmax(260px, 1fr);
+	gap: 16px;
+}
+
+.analytics-panel {
+	margin-top: 18px;
+	padding: 20px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-medium);
+	min-width: 0;
+}
+
+.analytics-overview-grid .analytics-panel {
+	margin-top: 20px;
+}
+
+.analytics-chart-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 18px;
+	margin: 8px 0 5px 44px;
+	color: var(--text-muted);
+	font-size: 12px;
+}
+
+.analytics-chart-legend > span {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.legend-key {
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background: var(--primary);
+	flex: none;
+}
+
+.legend-key.visitors {
+	background: var(--info);
+}
+
+.legend-key.members {
+	background: var(--primary);
+}
+
+.legend-key.guests {
+	background: var(--surface-secondary);
+}
+
+.analytics-line-chart {
+	height: 240px;
+	position: relative;
+	padding: 8px 0 26px 40px;
+}
+
+.analytics-line-chart svg {
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+
+.chart-grid-line {
+	stroke: var(--border);
+	stroke-width: 1;
+	stroke-dasharray: 3 5;
+}
+
+.chart-line {
+	fill: none;
+	stroke-width: 3;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	vector-effect: non-scaling-stroke;
+}
+
+.chart-line-views {
+	stroke: var(--primary);
+}
+
+.chart-line-visitors {
+	stroke: var(--info);
+	stroke-dasharray: 7 5;
+	stroke-width: 2.5;
+}
+
+.chart-y-labels {
+	position: absolute;
+	left: 0;
+	top: 5px;
+	bottom: 31px;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	color: var(--text-muted);
+	font-size: 10px;
+	font-variant-numeric: tabular-nums;
+}
+
+.chart-x-labels {
+	position: absolute;
+	left: 40px;
+	right: 0;
+	bottom: 0;
+	height: 18px;
+	color: var(--text-muted);
+	font-size: 10px;
+}
+
+.chart-x-labels span {
+	position: absolute;
+	transform: translateX(-50%);
+	white-space: nowrap;
+}
+
+.chart-note {
+	margin: 10px 0 0;
+	color: var(--text-muted);
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.audience-chart-layout {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 22px;
+	min-height: 195px;
+}
+
+.audience-donut {
+	width: 152px;
+	height: 152px;
+	border-radius: 50%;
+	background: conic-gradient(
+		var(--primary) 0 var(--member-share),
+		var(--surface-secondary) var(--member-share) 100%
+	);
+	display: grid;
+	place-items: center;
+	position: relative;
+	flex: none;
+}
+
+.audience-donut:before {
+	content: "";
+	position: absolute;
+	inset: 17px;
+	background: var(--surface);
+	border-radius: 50%;
+}
+
+.audience-donut > div {
+	position: relative;
+	display: grid;
+	justify-items: center;
+	gap: 2px;
+}
+
+.audience-donut strong {
+	font-size: 25px;
+	font-variant-numeric: tabular-nums;
+}
+
+.audience-donut span {
+	font-size: 11px;
+	color: var(--text-muted);
+}
+
+.audience-legend {
+	display: grid;
+	gap: 15px;
+	min-width: 120px;
+}
+
+.audience-legend > div {
+	display: grid;
+	grid-template-columns: 10px 1fr auto;
+	align-items: center;
+	gap: 8px;
+}
+
+.audience-legend span {
+	display: grid;
+	gap: 2px;
+}
+
+.audience-legend strong {
+	font-size: 15px;
+}
+
+.audience-legend small {
+	font-size: 11px;
+	color: var(--text-muted);
+}
+
+.audience-legend b {
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+.analytics-audience-panel > .chart-note {
+	padding-top: 12px;
+	border-top: 1px solid var(--border);
+}
+
+.analytics-recipes-panel {
+	margin-top: 18px;
+}
+
+.popular-recipe-chart {
+	display: grid;
+	gap: 15px;
+}
+
+.popular-recipe-row {
+	display: grid;
+	grid-template-columns: minmax(130px, 1.2fr) minmax(100px, 2fr) 42px;
+	align-items: center;
+	gap: 14px;
+}
+
+.popular-recipe-title {
+	min-width: 0;
+	display: grid;
+	gap: 3px;
+}
+
+.popular-recipe-title a {
+	overflow-wrap: anywhere;
+}
+
+.popular-recipe-title span {
+	font-size: 11px;
+	color: var(--text-muted);
+}
+
+.popular-bar-track,
+.route-time-track {
+	height: 9px;
+	background: var(--background);
+	border-radius: 999px;
+	overflow: hidden;
+}
+
+.popular-bar-track span,
+.route-time-track span {
+	display: block;
+	height: 100%;
+	min-width: 2px;
+	border-radius: 999px;
+	background: var(--primary);
+}
+
+.popular-recipe-row > strong {
+	text-align: right;
+	font-size: 13px;
+	font-variant-numeric: tabular-nums;
+}
+
+.analytics-lower {
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+}
+
+.analytics-lower .admin-section {
+	margin-top: 18px;
+}
+
+.route-performance-list {
+	display: grid;
+}
+
+.route-performance {
+	padding: 12px 0;
+	border-top: 1px solid var(--border);
+}
+
+.route-performance-heading {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+}
+
+.route-performance-heading strong {
+	font-size: 13px;
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+.route-time-track {
+	height: 6px;
+	margin: 8px 0;
+}
+
+.route-time-track span {
+	background: var(--warning);
+}
+
+.route-performance-meta {
+	display: flex;
+	justify-content: space-between;
+	color: var(--text-muted);
+	font-size: 11px;
+}
+
+.analytics-errors {
+	border-top: 1px solid var(--border);
+}
+
+.error-entry {
+	display: grid;
+	grid-template-columns: 40px minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 10px;
+	padding: 11px 0;
+	border-bottom: 1px solid var(--border);
+	font-size: 12px;
+}
+
+.error-code {
+	padding: 4px 5px;
+	text-align: center;
+	border-radius: var(--radius-small);
+	background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+	color: var(--danger);
+	font-weight: 700;
+}
+
+.error-entry-body {
+	display: grid;
+	gap: 4px;
+	min-width: 0;
+}
+
+.error-entry code {
+	overflow-wrap: anywhere;
+	color: var(--text);
+}
+
+.error-entry-body > span,
+.error-entry time {
+	color: var(--text-muted);
+	font-size: 11px;
+}
+
+.error-entry time {
+	white-space: nowrap;
+}
+
+.analytics-url {
+	overflow-wrap: anywhere;
+	color: var(--text-muted);
+	font-size: 12px;
+}
+
+.analytics-audience-panel {
+	container-name: audience-panel;
+	container-type: inline-size;
+}
+
+.analytics-audience-panel .audience-chart-layout {
+	justify-content: center;
+	gap: clamp(8px, 4cqi, 18px);
+}
+
+.analytics-audience-panel .audience-donut {
+	width: clamp(96px, 40cqi, 152px);
+	height: auto;
+	aspect-ratio: 1;
+}
+
+.analytics-audience-panel .audience-donut:before {
+	inset: clamp(10px, 4.5cqi, 17px);
+}
+
+.analytics-audience-panel .audience-legend {
+	min-width: 0;
+	flex: 1;
+}
+
+@container audience-panel (max-width: 260px) {
+	.analytics-audience-panel .audience-chart-layout {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		justify-items: center;
+	}
+	.analytics-audience-panel .audience-donut {
+		width: clamp(96px, 42cqi, 120px);
+	}
+	.analytics-audience-panel .audience-legend {
+		width: 100%;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 8px;
+	}
+	.analytics-audience-panel .audience-legend > div {
+		grid-template-columns: 8px minmax(0, 1fr);
+		gap: 5px;
+	}
+	.analytics-audience-panel .audience-legend b {
+		grid-column: 2;
+	}
+}
+
+@container admin-content (max-width: 760px) {
+	.analytics-overview-grid {
+		grid-template-columns: 1fr;
+	}
+	.audience-chart-layout {
+		justify-content: flex-start;
+		padding-left: 8px;
+	}
+}
+
+@container admin-content (max-width: 560px) {
+	.analytics-lower {
+		grid-template-columns: 1fr;
+	}
+	.analytics-stats .admin-stat {
+		grid-template-columns: 34px 1fr;
+		gap: 8px;
+	}
+	.analytics-stats .stat-icon {
+		width: 34px;
+		height: 34px;
+		font-size: 16px;
+	}
+	.analytics-stats .admin-stat strong {
+		grid-column: 1/-1;
+		grid-row: auto;
+		font-size: 23px;
+	}
+	.analytics-stats .stat-foot {
+		grid-column: 1/-1;
+	}
+	.analytics-heading {
+		display: grid;
+		grid-template-columns: 1fr auto;
+	}
+	.analytics-heading form {
+		grid-column: 2;
+		grid-row: 1;
+	}
+	.analytics-panel {
+		padding: 15px;
+	}
+	.audience-chart-layout {
+		gap: 12px;
+		padding: 0;
+		justify-content: space-around;
+	}
+	.audience-donut {
+		width: 126px;
+		height: 126px;
+	}
+	.audience-donut:before {
+		inset: 14px;
+	}
+	.audience-legend {
+		min-width: 105px;
+	}
+	.analytics-line-chart {
+		height: 205px;
+		padding-left: 34px;
+	}
+	.chart-x-labels {
+		left: 34px;
+	}
+	.popular-recipe-row {
+		grid-template-columns: minmax(0, 1fr) 38px;
+		gap: 7px 10px;
+	}
+	.popular-recipe-title {
+		grid-column: 1/-1;
+		grid-row: 1;
+	}
+	.popular-bar-track {
+		grid-column: 1;
+		grid-row: 2;
+	}
+	.popular-recipe-row > strong {
+		grid-column: 2;
+		grid-row: 2;
+	}
+	.error-entry {
+		grid-template-columns: 38px minmax(0, 1fr);
+	}
+	.error-entry time {
+		grid-column: 2;
+	}
+	.route-performance-heading {
+		align-items: flex-start;
+	}
+	.analytics-stats {
+		grid-template-columns: 1fr 1fr;
+	}
+	.analytics-stats .admin-stat {
+		grid-template-columns: 32px minmax(0, 1fr);
+		gap: 7px;
+		padding: 11px;
+	}
+	.analytics-stats .stat-icon {
+		width: 32px;
+		height: 32px;
+		font-size: 15px;
+	}
+	.analytics-stats .admin-stat strong {
+		grid-column: 1/-1;
+		grid-row: auto;
+		font-size: 22px;
+	}
+	.analytics-stats .stat-foot {
+		grid-column: 1/-1;
+	}
+	.analytics-overview-grid,
+	.analytics-lower {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0;
+	}
+	.analytics-panel {
+		padding: 13px;
+	}
+	.analytics-line-chart {
+		height: 190px;
+		padding-left: 32px;
+	}
+	.chart-x-labels {
+		left: 32px;
+	}
+	.audience-chart-layout {
+		justify-content: center;
+		gap: 12px;
+	}
+	.audience-donut {
+		width: 112px;
+		height: 112px;
+	}
+	.audience-donut:before {
+		inset: 12px;
+	}
+	.audience-legend {
+		min-width: 96px;
+	}
+	.analytics-lower .admin-section {
+		margin-top: 12px;
+	}
+}
+
+@container admin-content (max-width: 380px) {
+	.analytics-heading {
+		display: block;
+	}
+	.analytics-heading form {
+		margin-top: 12px;
+	}
+	.analytics-heading .admin-filter-col select {
+		min-height: 44px;
+	}
+	.analytics-stats {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.analytics-stats .admin-stat {
+		grid-template-columns: 34px minmax(0, 1fr) auto;
+	}
+	.analytics-stats .admin-stat strong {
+		grid-column: 3;
+		grid-row: 1/3;
+		font-size: 21px;
+	}
+	.analytics-stats .stat-foot {
+		grid-column: 1/-1;
+	}
+	.analytics-panel {
+		padding: 10px;
+	}
+	.analytics-chart-legend {
+		margin-left: 32px;
+		gap: 10px;
+		font-size: 10px;
+	}
+	.analytics-line-chart {
+		height: 170px;
+		padding-left: 28px;
+	}
+	.chart-x-labels {
+		left: 28px;
+		font-size: 9px;
+	}
+	.audience-chart-layout {
+		gap: 8px;
+		justify-content: space-between;
+	}
+	.audience-donut {
+		width: 94px;
+		height: 94px;
+	}
+	.audience-donut:before {
+		inset: 10px;
+	}
+	.audience-donut strong {
+		font-size: 20px;
+	}
+	.audience-donut span,
+	.audience-legend small {
+		font-size: 10px;
+	}
+	.audience-legend {
+		min-width: 88px;
+		gap: 10px;
+	}
+	.audience-legend > div {
+		grid-template-columns: 8px 1fr auto;
+		gap: 5px;
+	}
+	.popular-recipe-row {
+		grid-template-columns: minmax(0, 1fr) 32px;
+		gap: 7px;
+	}
+	.popular-recipe-title a {
+		font-size: 13px;
+	}
+	.route-performance-meta {
+		gap: 6px;
+		font-size: 10px;
+	}
+	.error-entry {
+		grid-template-columns: 34px minmax(0, 1fr);
+		gap: 7px;
+	}
+	.error-entry time {
+		white-space: normal;
+	}
+}

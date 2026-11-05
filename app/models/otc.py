@@ -5,6 +5,7 @@ from typing import Any
 
 from app import db
 
+
 class Credential(db.Model):
     __tablename__ = "credentials"
     __table_args__ = (

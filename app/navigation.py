@@ -4,6 +4,17 @@ from urllib.parse import unquote, urlsplit, urlunsplit
 
 from flask import g, request, session, url_for
 
+RECIPE_CATEGORIES = (
+    "Ontbijt",
+    "Lunch",
+    "Voorgerecht",
+    "Hoofdgerecht",
+    "Nagerecht",
+    "Snack",
+    "Drank",
+    "Overig",
+)
+
 
 def _safe_internal_target(target: str | None) -> str | None:
     """Return a relative in-app redirect target, or ``None`` if it is unsafe."""

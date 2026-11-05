@@ -1,0 +1,254 @@
+.admin-heading h1,
+.section-heading h2,
+.section-heading h3,
+.panel-heading h3,
+.callout-copy h3 {
+	font-family: Fraunces, Georgia, serif;
+	color: var(--text);
+	margin: 0;
+}
+
+.otc-dashboard {
+	display: grid;
+	grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.2fr);
+	gap: 16px;
+}
+
+.otc-panel {
+	padding: 20px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-medium);
+	min-width: 0;
+}
+
+.panel-heading {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 18px;
+}
+
+.panel-icon,
+.callout-icon {
+	width: 42px;
+	height: 42px;
+	display: grid;
+	place-items: center;
+	flex: none;
+	background: var(--primary-soft);
+	color: var(--primary-strong);
+	border-radius: var(--radius-small);
+	font-size: 19px;
+}
+
+.panel-icon.is-muted {
+	background: var(--background);
+	color: var(--text-muted);
+}
+
+.panel-heading h3 {
+	font-size: 20px;
+}
+
+.panel-heading p {
+	font-size: 13px;
+	color: var(--text-muted);
+	margin: 4px 0 0;
+}
+
+.inline-count {
+	font-family: Inter, sans-serif;
+	font-size: 12px;
+	background: var(--background);
+	padding: 3px 8px;
+	border-radius: 999px;
+	vertical-align: middle;
+}
+
+.admin-form {
+	display: grid;
+	gap: 15px;
+}
+
+.field-wrap {
+	display: grid;
+	gap: 6px;
+}
+
+.field-wrap label {
+	font-size: 13px;
+	font-weight: 650;
+}
+
+.field-wrap small {
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+.admin-form .form-control {
+	min-height: 44px;
+	width: 100%;
+	padding: 9px 11px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-small);
+	background: var(--surface);
+	color: var(--text);
+	font: inherit;
+}
+
+.field-error {
+	font-size: 12px;
+	color: var(--danger);
+}
+
+.admin-form .button {
+	justify-self: start;
+	min-height: 44px;
+}
+
+.otc-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.otc-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 13px 0;
+	border-top: 1px solid var(--border);
+}
+
+.otc-item-body {
+	display: grid;
+	gap: 5px;
+	min-width: 0;
+}
+
+.otc-code {
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	color: var(--primary-strong);
+	overflow-wrap: anywhere;
+}
+
+.otc-label,
+.otc-date {
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+.admin-callout {
+	display: flex;
+	gap: 16px;
+	padding: 18px;
+	margin: 0 0 20px;
+	border: 1px solid color-mix(in srgb, var(--success) 45%, var(--border));
+	border-radius: var(--radius-medium);
+	background: color-mix(in srgb, var(--success) 7%, var(--surface));
+}
+
+.admin-callout .callout-icon {
+	background: color-mix(in srgb, var(--success) 15%, var(--surface));
+	color: var(--success);
+}
+
+.callout-copy {
+	min-width: 0;
+	flex: 1;
+}
+
+.callout-copy h3 {
+	font-size: 21px;
+}
+
+.callout-copy > p:not(.eyebrow) {
+	font-size: 13px;
+	color: var(--text-muted);
+	margin: 5px 0 11px;
+}
+
+.otc-link-row {
+	display: flex;
+	gap: 8px;
+	margin-top: 12px;
+}
+
+.otc-link-row input {
+	flex: 1;
+	min-width: 0;
+	padding: 9px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-small);
+	background: var(--surface);
+	color: var(--text);
+}
+
+@container admin-content (max-width: 760px) {
+	.otc-dashboard {
+		grid-template-columns: 1fr;
+	}
+}
+
+@container admin-content (max-width: 560px) {
+	.otc-panel {
+		padding: 15px;
+	}
+	.admin-callout {
+		padding: 14px;
+	}
+	.otc-link-row {
+		flex-direction: column;
+	}
+	.otc-dashboard {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.otc-panel {
+		padding: 14px;
+	}
+	.otc-link-row {
+		flex-direction: column;
+	}
+	.otc-link-row .button {
+		width: 100%;
+	}
+	.admin-callout {
+		padding: 12px;
+		gap: 10px;
+	}
+	.admin-callout .callout-icon {
+		width: 34px;
+		height: 34px;
+		font-size: 16px;
+	}
+}
+
+@container admin-content (max-width: 380px) {
+	.otc-panel {
+		padding: 11px;
+	}
+	.panel-heading {
+		align-items: flex-start;
+		gap: 8px;
+	}
+	.panel-heading h3 {
+		font-size: 17px;
+	}
+	.panel-icon {
+		width: 34px;
+		height: 34px;
+		font-size: 16px;
+	}
+	.admin-form .button {
+		width: 100%;
+		justify-content: center;
+	}
+	.otc-item {
+		align-items: flex-start;
+	}
+	.otc-item-actions .icon-button {
+		width: 38px;
+		height: 38px;
+	}
+}

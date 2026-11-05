@@ -1,0 +1,94 @@
+<tr data-recipe-id="{{ recipe.id }}" data-admin-recipe-row="1">
+	<td data-label="Recept">
+		<div class="admin-recipe-person">
+			<a class="admin-record-link" href="{{ recipe_url(recipe) }}"
+				>{{ recipe.title }}</a
+			>
+			{% if recipe.description %}<span class="admin-subline"
+				>{{ recipe.description }}</span
+			>{% endif %}
+		</div>
+	</td>
+	<td data-label="Maker">
+		<span class="admin-recipe-author">{{ recipe.author.username }}</span>
+	</td>
+	<td data-label="Status">
+		<span
+			class="badge status-pill {{ 'bg-success' if recipe.status == 'public' else 'bg-secondary' if recipe.status == 'private' else 'bg-danger' }}"
+		>
+			{{ 'Openbaar' if recipe.status == 'public' else 'Privé' if
+			recipe.status == 'private' else 'Gedeactiveerd' }}
+		</span>
+	</td>
+	<td data-label="Moderatie">
+		<span
+			class="badge status-pill {{ 'bg-danger' if recipe.moderation_status == 'flagged' else 'bg-success' }}"
+		>
+			{{ 'Gevlagd' if recipe.moderation_status == 'flagged' else
+			'Toegestaan' }}
+		</span>
+	</td>
+	<td data-label="Datum">
+		<time datetime="{{ recipe.created_at.isoformat() }}"
+			>{{ recipe.created_at.strftime('%-d %b %Y') }}</time
+		>
+	</td>
+	<td data-label="Acties" class="admin-actions-cell">
+		<div class="admin-action-group">
+			<a
+				class="icon-button"
+				href="{{ recipe_url(recipe) }}"
+				aria-label="Bekijk {{ recipe.title }}"
+				title="Bekijk recept"
+			>
+				<i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+			</a>
+			{% if recipe.moderation_status == 'flagged' %}
+			<form
+				method="post"
+				action="{{ url_for('api.allow_recipe_moderation_endpoint', recipe_id=recipe.id) }}"
+				data-admin-recipe-moderation="1"
+				data-allow-endpoint="{{ url_for('api.allow_recipe_moderation_endpoint', recipe_id=recipe.id) }}"
+			>
+				<input
+					type="hidden"
+					name="csrf_token"
+					value="{{ csrf_token() }}"
+				/>
+				<button
+					class="icon-button is-success"
+					type="submit"
+					aria-label="Sta {{ recipe.title }} toe"
+					title="Sta toe"
+				>
+					<i class="bi bi-check-lg" aria-hidden="true"></i>
+				</button>
+			</form>
+			{% endif %}
+			<form
+				method="post"
+				action="{{ url_for('admin.reactivate_recipe_route', recipe_id=recipe.id) if recipe.status == 'deactivated' else url_for('admin.deactivate_recipe_route', recipe_id=recipe.id) }}"
+				data-admin-recipe-toggle="1"
+				data-deactivate-endpoint="{{ url_for('admin.deactivate_recipe_route', recipe_id=recipe.id) }}"
+				data-reactivate-endpoint="{{ url_for('admin.reactivate_recipe_route', recipe_id=recipe.id) }}"
+			>
+				<input
+					type="hidden"
+					name="csrf_token"
+					value="{{ csrf_token() }}"
+				/>
+				<button
+					class="icon-button {{ 'is-success' if recipe.status == 'deactivated' else 'is-danger' }}"
+					type="submit"
+					aria-label="{{ 'Reactiveer' if recipe.status == 'deactivated' else 'Deactiveer' }} {{ recipe.title }}"
+					title="{{ 'Reactiveer' if recipe.status == 'deactivated' else 'Deactiveer' }}"
+				>
+					<i
+						class="bi {{ 'bi-arrow-counterclockwise' if recipe.status == 'deactivated' else 'bi-eye-slash' }}"
+						aria-hidden="true"
+					></i>
+				</button>
+			</form>
+		</div>
+	</td>
+</tr>

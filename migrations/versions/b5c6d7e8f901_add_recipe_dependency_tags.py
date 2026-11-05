@@ -43,9 +43,7 @@ def upgrade():
     )
 
     connection = op.get_bind()
-    rows = connection.execute(
-        sa.select(recipes.c.id, recipes.c.ingredients)
-    ).fetchall()
+    rows = connection.execute(sa.select(recipes.c.id, recipes.c.ingredients)).fetchall()
 
     for recipe_id, raw_ingredients in rows:
         if isinstance(raw_ingredients, str):

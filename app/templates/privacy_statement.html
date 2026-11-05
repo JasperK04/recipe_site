@@ -1,0 +1,55 @@
+{% extends "components/base.html" %}
+
+{% block title %}Privacyverklaring | Recepten Register{% endblock %}
+{% block content %}
+<article class="page-content legal-document">
+	<header class="page-header">
+		<p class="eyebrow">Privacy</p>
+		<h1>Privacyverklaring</h1>
+		<p>Hier lees je welke persoonsgegevens Recepten Register gebruikt, waarom dat gebeurt en welke keuzes en rechten je hebt.</p>
+	</header>
+	<section>
+		<h2>Wie is verantwoordelijk?</h2>
+		<p>De verwerkingsverantwoordelijke is <strong>[vul naam van de eigenaar of organisatie in]</strong>. Vragen over privacy of verzoeken over je gegevens kun je sturen naar <strong>[vul contact-e-mailadres in]</strong>.</p>
+		<p><strong>Vul de naam en het contactadres hierboven in voordat je deze verklaring publiceert.</strong></p>
+	</section>
+	<section>
+		<h2>Welke gegevens gebruiken we?</h2>
+		<ul>
+			<li><strong>Accountgegevens:</strong> gebruikersnaam, e-mailadres, wachtwoordhash, accountrol en accountstatus. We slaan je wachtwoord zelf niet op.</li>
+			<li><strong>Recepten en bijdragen:</strong> recepten die je invoert of importeert, eventuele afbeeldingen, beoordelingen, opgeslagen recepten en gegevens die nodig zijn om wijzigingen en moderatie te verwerken. Openbare recepten en je gebruikersnaam kunnen voor andere bezoekers zichtbaar zijn.</li>
+			<li><strong>Account- en beveiligingsgegevens:</strong> sessiegegevens, tokens voor registratie of wachtwoordherstel en gegevens die nodig zijn om verzoeken te verwerken en de site te beveiligen.</li>
+			<li><strong>Technische verbindingsgegevens:</strong> de hostingdienst verwerkt gegevens die nodig zijn om pagina's aan je browser te leveren, zoals je IP-adres. De precieze loggegevens en bewaartermijnen hangen af van de hostinginstellingen.</li>
+			<li><strong>Analytics, alleen na toestemming:</strong> pagina- en receptweergaven, verzoekpad, tijdstip, responstijd, foutinformatie en verwijzende pagina. De analyticsregistratie slaat geen IP-adres of user-agent op. Zie de <a href="{{ url_for('main.cookie_statement') }}">cookieverklaring</a> voor de gebruikte cookies en bewaartermijnen.</li>
+		</ul>
+	</section>
+	<section>
+		<h2>Waarvoor gebruiken we die gegevens?</h2>
+		<p>We verwerken gegevens om accounts te beheren, je in te laten loggen, recepten te bewaren en te tonen, functies zoals beoordelingen en bladwijzers aan te bieden, wachtwoorden te herstellen, bijdragen te modereren en de website veilig te houden. Als je toestemming geeft voor analytics, gebruiken we die gegevens ook om bezoek en technische werking te begrijpen.</p>
+		<p>Account- en receptgegevens zijn nodig om de functies te leveren die je gebruikt. Analytics is optioneel: zonder toestemming wordt geen analytics bijgehouden. Als we gegevens verwerken om de dienst te beveiligen of misbruik te voorkomen, doen we dat voor zover van toepassing op basis van ons gerechtvaardigd belang. Je kunt je analyticskeuze aanpassen via de cookievoorkeuren.</p>
+	</section>
+	<section>
+		<h2>Delen met dienstverleners</h2>
+		<p>We delen gegevens alleen met partijen die nodig zijn om de site te laten werken. Afhankelijk van de ingestelde functies en hosting gaat het om de hosting- en e-maildienstverlener. Wanneer je een recept importeert of een receptbestand laat uitlezen, kan de tekst naar de OpenAI API worden gestuurd om receptvelden te herkennen. De website laadt ook lettertypen via Google Fonts en pictogrammen via jsDelivr; je browser maakt daarvoor rechtstreeks verbinding met die aanbieders.</p>
+		<p>Deze aanbieders kunnen technische gegevens verwerken die nodig zijn om hun dienst te leveren. De beheerder moet de gebruikte hosting-, e-mail- en AI-diensten en eventuele doorgifte buiten de Europese Economische Ruimte controleren en hier zo nodig aanvullen.</p>
+	</section>
+	<section>
+		<h2>Hoe lang bewaren we gegevens?</h2>
+		<ul>
+			<li>Accountgegevens bewaren we zolang je account bestaat en zolang dat nodig is voor de hiervoor genoemde doelen. Recepten en bijdragen bewaren we totdat ze worden verwijderd of niet langer nodig zijn.</li>
+			<li>Analyticsgegevens worden alleen na toestemming opgeslagen. Ruwe analyticsgebeurtenissen worden standaard 90 dagen bewaard; dagelijkse samenvattingen maximaal 730 dagen. Als je toestemming intrekt, stoppen nieuwe analyticsgebeurtenissen, maar al verzamelde gegevens worden niet automatisch verwijderd.</li>
+			<li>Tokens voor wachtwoordherstel en registratie zijn tijdelijk en kunnen maar beperkt worden gebruikt.</li>
+		</ul>
+		<p>Back-ups en gegevens die nog nodig zijn voor beveiliging of wettelijke verplichtingen kunnen langer blijven bestaan zolang dat noodzakelijk is.</p>
+	</section>
+	<section>
+		<h2>Jouw privacyrechten</h2>
+		<p>Je kunt contact opnemen om te vragen welke gegevens we over je hebben, om onjuiste gegevens te laten verbeteren, gegevens te laten verwijderen of verwerking te beperken. Je kunt ook bezwaar maken tegen verwerking op basis van gerechtvaardigd belang en gegevensoverdraagbaarheid vragen waar dat van toepassing is. Toestemming kun je altijd intrekken; intrekking verandert niets aan verwerking die daarvoor rechtmatig heeft plaatsgevonden.</p>
+		<p>Stuur je verzoek naar het contactadres bovenaan. Je kunt ook een klacht indienen bij de <a href="https://autoriteitpersoonsgegevens.nl/" rel="noopener noreferrer" target="_blank">Autoriteit Persoonsgegevens</a>.</p>
+	</section>
+	<section>
+		<h2>Wijzigingen</h2>
+		<p>We passen deze verklaring aan wanneer de website of gegevensverwerking verandert. De actuele versie staat altijd op deze pagina.</p>
+	</section>
+</article>
+{% endblock %}

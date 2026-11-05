@@ -1,0 +1,87 @@
+<div
+	class="form-modal"
+	id="nestedRecipeModal"
+	tabindex="-1"
+	role="dialog"
+	aria-modal="true"
+	aria-labelledby="nestedRecipeModalLabel"
+	hidden
+>
+	<div class="form-modal-dialog">
+		<div class="form-modal-content">
+			<div class="form-modal-header">
+				<div>
+					<p class="form-modal-eyebrow">Als ingrediënt toevoegen</p>
+					<h2 id="nestedRecipeModalLabel">Ander recept koppelen</h2>
+				</div>
+				<button
+					type="button"
+					class="form-modal-close"
+					data-modal-close="nestedRecipeModal"
+					aria-label="Sluiten"
+				>
+					&times;
+				</button>
+			</div>
+			<div class="form-modal-body">
+				<div class="nested-recipe-search">
+					<label for="nestedRecipeSearch">Recepten zoeken</label>
+					<input
+						id="nestedRecipeSearch"
+						type="search"
+						placeholder="Bijv. tomatensaus of bouillon"
+						autocomplete="off"
+					/>
+					<div
+						id="nestedRecipeResults"
+						role="listbox"
+						aria-label="Zoekresultaten"
+					></div>
+				</div>
+				<div class="form-modal-grid">
+					<div>
+						<label for="nestedRecipeQuantity">Hoeveelheid</label>
+						<input
+							id="nestedRecipeQuantity"
+							type="number"
+							min="0"
+							step="any"
+							value="1"
+						/>
+					</div>
+					<div>
+						<label for="nestedRecipeUnit">Eenheid</label>
+						<input
+							id="nestedRecipeUnit"
+							type="text"
+							placeholder="pot, portie, batch"
+						/>
+					</div>
+					<div class="form-modal-full">
+						<label for="nestedRecipeDisplayName"
+							>Weergavenaam</label
+						>
+						<input id="nestedRecipeDisplayName" type="text" />
+					</div>
+				</div>
+			</div>
+			<div class="form-modal-footer">
+				<button
+					type="button"
+					class="button button-secondary"
+					data-modal-close="nestedRecipeModal"
+				>
+					Annuleren
+				</button>
+				<button
+					id="nestedRecipeConfirmBtn"
+					type="button"
+					class="button button-primary"
+					disabled
+				>
+					Recept toevoegen
+				</button>
+			</div>
+		</div>
+	</div>
+</div>

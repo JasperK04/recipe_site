@@ -1,0 +1,74 @@
+{% if recipes.pages > 1 %}
+<nav class="pagination" aria-label="Paginering">
+	{% set pagination_url = url_for('recipe_overview.list_recipes') %}
+	<div class="pagination-summary">
+		Pagina {{ recipes.page }} van {{ recipes.pages }}
+	</div>
+	<div class="pagination-controls">
+		{% if recipes.has_prev %}
+		<a
+			class="button button-secondary button-small pagination-button"
+			href="{{ url_for('recipe_overview.list_recipes', filter=filter_name, category=category, search=search, sort=sort, page=recipes.prev_num) }}"
+			aria-label="Vorige pagina"
+			>&lt;</a
+		>
+		{% else %}
+		<span
+			class="button button-secondary button-small pagination-button is-disabled"
+			aria-disabled="true"
+			>&lt;</span
+		>
+		{% endif %} {% for page_number in range(1, recipes.pages + 1) %} {% if
+		page_number >= recipes.page - 2 and page_number <= recipes.page + 2 %}
+		{% if page_number == recipes.page %}
+		<form
+			class="pagination-form pagination-button"
+			action="{{ pagination_url }}"
+			method="get"
+		>
+			<input type="hidden" name="filter" value="{{ filter_name }}" />
+			<input type="hidden" name="category" value="{{ category }}" />
+			<input type="hidden" name="search" value="{{ search }}" />
+			<input type="hidden" name="sort" value="{{ sort }}" />
+			<label class="visually-hidden" for="pagination-page"
+				>Ga naar pagina</label
+			>
+			<input
+				class="pagination-page-input"
+				id="pagination-page"
+				name="page"
+				type="number"
+				min="1"
+				max="{{ recipes.pages }}"
+				value="{{ recipes.page }}"
+				placeholder=""
+				required
+				inputmode="numeric"
+				autocomplete="off"
+				aria-label="Ga naar pagina, van 1 tot {{ recipes.pages }}"
+			/>
+		</form>
+		{% else %}
+		<a
+			class="button button-secondary button-small pagination-button"
+			href="{{ url_for('recipe_overview.list_recipes', filter=filter_name, category=category, search=search, sort=sort, page=page_number) }}"
+			aria-label="Ga naar pagina {{ page_number }}"
+			>{{ page_number }}</a
+		>
+		{% endif %} {% endif %} {% endfor %} {% if recipes.has_next %}
+		<a
+			class="button button-secondary button-small pagination-button"
+			href="{{ url_for('recipe_overview.list_recipes', filter=filter_name, category=category, search=search, sort=sort, page=recipes.next_num) }}"
+			aria-label="Volgende pagina"
+			>&gt;</a
+		>
+		{% else %}
+		<span
+			class="button button-secondary button-small pagination-button is-disabled"
+			aria-disabled="true"
+			>&gt;</span
+		>
+		{% endif %}
+	</div>
+</nav>
+{% endif %}

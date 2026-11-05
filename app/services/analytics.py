@@ -22,6 +22,7 @@ from app.models import (
 PAGE_VIEW_EVENTS = ("page_view", "recipe_view")
 ROLLUP_EVENTS = PAGE_VIEW_EVENTS + ("error",)
 VISITOR_COOKIE = "analytics_visitor"
+CONSENT_COOKIE = "rr_cookie_consent"
 
 
 class Analytics:
@@ -60,6 +61,10 @@ class Analytics:
         visitor_id: str | None = None,
     ) -> None:
         """Persist an event without allowing analytics failures to affect a request."""
+        # Analytics is optional. Do not create identifiers or persist request data
+        # until the visitor has explicitly opted in.
+        if request.cookies.get(CONSENT_COOKIE) != "analytics":
+            return
         try:
             occurred_at = datetime.now(UTC)
             visitor_id = visitor_id or cls.visitor_id()
@@ -170,6 +175,11 @@ class Analytics:
 
     @classmethod
     def record_request(cls, response) -> None:
+        if (
+            request.cookies.get(CONSENT_COOKIE) != "analytics"
+            or request.endpoint == "main.cookie_consent"
+        ):
+            return
         started = getattr(g, "analytics_started_at", None)
         duration_ms = (
             max(0, int((datetime.now(UTC) - started).total_seconds() * 1000))
@@ -255,6 +265,104 @@ class Analytics:
                 AnalyticsEvent.occurred_at >= since,
             ).count(),
         }
+
+    @classmethod
+    def trend(cls, days: int) -> list[dict[str, Any]]:
+        """Return daily traffic and visitor counts from the compact rollups."""
+        if days == 1:
+            now = datetime.now(UTC)
+            start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=23)
+            buckets = [
+                {
+                    "day": start + timedelta(hours=offset),
+                    "page_views": 0,
+                    "recipe_views": 0,
+                    "errors": 0,
+                    "visitors": 0,
+                    "_visitor_ids": set(),
+                }
+                for offset in range(24)
+            ]
+            events = AnalyticsEvent.query.with_entities(
+                AnalyticsEvent.event_type,
+                AnalyticsEvent.occurred_at,
+                AnalyticsEvent.visitor_id,
+            ).filter(
+                AnalyticsEvent.occurred_at >= start,
+                AnalyticsEvent.event_type.in_((*PAGE_VIEW_EVENTS, "error")),
+            ).all()
+            for event_type, occurred_at, visitor_id in events:
+                occurred_at = occurred_at.replace(tzinfo=UTC) if occurred_at.tzinfo is None else occurred_at
+                index = int((occurred_at - start).total_seconds() // 3600)
+                if not 0 <= index < 24:
+                    continue
+                bucket = buckets[index]
+                if event_type in PAGE_VIEW_EVENTS:
+                    bucket["page_views"] += 1
+                if event_type == "recipe_view":
+                    bucket["recipe_views"] += 1
+                if event_type == "error":
+                    bucket["errors"] += 1
+                if visitor_id and event_type in PAGE_VIEW_EVENTS:
+                    bucket["_visitor_ids"].add(visitor_id)
+            for bucket in buckets:
+                bucket["visitors"] = len(bucket.pop("_visitor_ids"))
+            return buckets
+
+        today = datetime.now(UTC).date()
+        first_day = today - timedelta(days=days - 1)
+        rows = AnalyticsDaily.query.filter(
+            AnalyticsDaily.day >= first_day,
+            AnalyticsDaily.day <= today,
+            AnalyticsDaily.event_type.in_((*PAGE_VIEW_EVENTS, "error")),
+        ).all()
+        visitor_rows = (
+            db.session.query(
+                AnalyticsDailyVisitor.day,
+                func.count(AnalyticsDailyVisitor.id).label("visitors"),
+            )
+            .filter(
+                AnalyticsDailyVisitor.day >= first_day,
+                AnalyticsDailyVisitor.day <= today,
+            )
+            .group_by(AnalyticsDailyVisitor.day)
+            .all()
+        )
+        by_day: dict[date, dict[str, int]] = {
+            first_day + timedelta(days=offset): {
+                "page_views": 0,
+                "recipe_views": 0,
+                "errors": 0,
+                "visitors": 0,
+            }
+            for offset in range(days)
+        }
+        for row in rows:
+            if row.event_type in PAGE_VIEW_EVENTS:
+                by_day.setdefault(row.day, {})["page_views"] = by_day[row.day].get("page_views", 0) + row.event_count
+                if row.event_type == "recipe_view":
+                    by_day[row.day]["recipe_views"] = row.event_count
+            elif row.event_type == "error":
+                by_day.setdefault(row.day, {})["errors"] = row.event_count
+        for row in visitor_rows:
+            by_day.setdefault(row.day, {})["visitors"] = row.visitors
+        return [{"day": day, **values} for day, values in sorted(by_day.items())]
+
+    @classmethod
+    def audience(cls, days: int) -> dict[str, int]:
+        """Estimate signed-in and guest audiences by distinct visitor cookie."""
+        since = datetime.now(UTC) - timedelta(days=days)
+        filters = (
+            AnalyticsEvent.event_type.in_(PAGE_VIEW_EVENTS),
+            AnalyticsEvent.occurred_at >= since,
+        )
+        signed_in = db.session.query(
+            func.count(func.distinct(AnalyticsEvent.visitor_id))
+        ).filter(*filters, AnalyticsEvent.user_id.isnot(None)).scalar() or 0
+        total = db.session.query(
+            func.count(func.distinct(AnalyticsEvent.visitor_id))
+        ).filter(*filters).scalar() or 0
+        return {"members": signed_in, "guests": max(0, total - signed_in)}
 
     @classmethod
     def top_recipes(cls, days: int, limit: int = 10):

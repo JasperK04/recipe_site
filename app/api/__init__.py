@@ -15,7 +15,7 @@ from app.api.recipes import (
     reactivate_recipe,
     record_recipe_score,
     retest_all_recipe_moderation,
-    toggle_recipe_favorite,
+    toggle_recipe_bookmark,
     update_recipe,
 )
 from app.api.users import (
@@ -56,7 +56,7 @@ __all__ = [
     "request_password_reset",
     "retest_all_recipe_moderation",
     "submit_creator_request",
-    "toggle_recipe_favorite",
+    "toggle_recipe_bookmark",
     "update_profile",
     "update_recipe",
 ]

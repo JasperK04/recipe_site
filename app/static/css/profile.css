@@ -1,0 +1,283 @@
+.profile-page {
+	max-width: var(--content-width);
+	margin: 0 auto;
+}
+.profile-heading {
+	max-width: 620px;
+	margin-bottom: 28px;
+}
+.profile-heading h1,
+.profile-summary h2,
+.profile-role-card h2 {
+	margin: 0;
+	font-family: Fraunces, Georgia, serif;
+}
+.profile-heading h1 {
+	font-size: clamp(32px, 5vw, 44px);
+}
+.profile-heading > p:last-child,
+.profile-card-heading p,
+.profile-role-card p {
+	color: var(--text-muted);
+}
+.profile-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1.5fr) minmax(250px, 0.8fr);
+	align-items: start;
+	gap: 20px;
+}
+.profile-page .card {
+	padding: 24px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-medium);
+	background: var(--surface);
+	box-shadow: var(--shadow-soft);
+}
+.profile-card-heading {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding-bottom: 20px;
+	border-bottom: 1px solid var(--border);
+}
+.profile-card-heading h2 {
+	font-size: 25px;
+}
+.profile-card-heading p {
+	margin: 4px 0 0;
+}
+.profile-avatar,
+.profile-card-icon {
+	display: grid;
+	flex: 0 0 auto;
+	width: 52px;
+	height: 52px;
+	place-items: center;
+	border-radius: 50%;
+	background: var(--primary-soft);
+	color: var(--primary-strong);
+	font-size: 22px;
+	font-weight: 700;
+}
+.profile-card-heading .badge {
+	margin-left: auto;
+}
+.badge {
+	display: inline-flex;
+	align-items: center;
+	width: fit-content;
+	padding: 5px 9px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 700;
+}
+.text-bg-success {
+	background: color-mix(in srgb, var(--success) 14%, var(--surface));
+	color: var(--success);
+}
+.text-bg-secondary {
+	background: var(--surface-secondary);
+	color: var(--text);
+}
+.text-bg-warning {
+	background: color-mix(in srgb, var(--warning) 14%, var(--surface));
+	color: var(--warning);
+}
+.profile-details {
+	margin: 0;
+}
+.profile-details > div {
+	display: grid;
+	grid-template-columns: 90px minmax(0, 1fr);
+	gap: 12px;
+	padding: 15px 0;
+	border-bottom: 1px solid var(--border);
+}
+.profile-details dt {
+	color: var(--text-muted);
+	font-size: 13px;
+	font-weight: 600;
+}
+.profile-details dd {
+	margin: 0;
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+.profile-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 20px;
+}
+.profile-role-card {
+	display: grid;
+	justify-items: start;
+	gap: 12px;
+}
+.profile-card-icon {
+	width: 44px;
+	height: 44px;
+	font-size: 20px;
+}
+.profile-role-card p {
+	margin: 0;
+	line-height: 1.6;
+}
+.profile-recipes {
+	margin-top: 40px;
+}
+.profile-recipes-heading {
+	display: flex;
+	align-items: end;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 20px;
+}
+.profile-recipes-heading .auth-eyebrow {
+	margin-bottom: 5px;
+}
+.profile-recipes-heading h2 {
+	margin: 0;
+	font-family: Fraunces, Georgia, serif;
+	font-size: clamp(27px, 4vw, 34px);
+}
+.danger-zone {
+	margin-top: 48px;
+	padding: 24px;
+	border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--border));
+	border-radius: var(--radius-medium);
+	background: color-mix(in srgb, var(--danger) 5%, var(--background));
+}
+.danger-zone-heading .auth-eyebrow {
+	color: var(--danger);
+	margin: 0;
+	font-weight: 700;
+	letter-spacing: 2px;
+}
+.danger-zone-heading h2,
+.danger-zone-action h3 {
+	margin: 0;
+	font-family: Fraunces, Georgia, serif;
+}
+.danger-zone-heading h2 {
+	font-size: 28px;
+}
+.danger-zone-heading > p:last-child,
+.danger-zone-action p,
+.danger-zone-note {
+	color: var(--text-muted);
+}
+.danger-zone-heading > p:last-child {
+	margin: 8px 0 0;
+}
+.danger-zone-action {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+	padding: 20px 0;
+	border-bottom: 1px solid var(--border);
+}
+.danger-zone-action h3 {
+	font-size: 19px;
+}
+.danger-zone-action p {
+	margin: 6px 0 0;
+}
+.button-danger {
+	flex: 0 0 auto;
+	min-height: 44px;
+	border: 1px solid var(--danger);
+	background: transparent;
+	color: var(--danger);
+}
+.button-danger:hover,
+.button-danger:focus-visible {
+	background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+	color: var(--danger);
+}
+.button-danger:focus-visible {
+	outline: 2px solid var(--danger);
+	outline-offset: 2px;
+}
+.button-danger:disabled {
+	cursor: not-allowed;
+	opacity: 0.55;
+}
+.danger-zone-note {
+	margin: 16px 0 0;
+	font-size: 14px;
+}
+.danger-zone-confirm-label {
+	display: block;
+	margin: 20px 0 8px;
+	font-size: 14px;
+	font-weight: 600;
+}
+.danger-zone-choices {
+	display: grid;
+	gap: 12px;
+	margin: 20px 0;
+	padding: 0;
+	border: 0;
+}
+.danger-zone-choices legend {
+	margin-bottom: 10px;
+	font-weight: 700;
+}
+.danger-zone-choices label {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	line-height: 1.5;
+}
+.form-modal-body .danger-zone-choices input[type="radio"] {
+	width: 18px;
+	height: 18px;
+	flex: 0 0 auto;
+	margin: 2px 0 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	accent-color: var(--primary);
+}
+@media (max-width: 700px) {
+	.profile-layout {
+		grid-template-columns: 1fr;
+	}
+}
+@media (max-width: 480px) {
+	.profile-page .card {
+		padding: 18px;
+	}
+	.profile-card-heading {
+		flex-wrap: wrap;
+	}
+	.profile-card-heading .badge {
+		margin-left: 66px;
+	}
+	.profile-details > div {
+		grid-template-columns: 1fr;
+		gap: 4px;
+	}
+	.profile-actions {
+		flex-direction: column;
+	}
+	.profile-actions .button {
+		width: 100%;
+	}
+	.profile-recipes-heading {
+		align-items: stretch;
+		flex-direction: column;
+	}
+	.profile-recipes-heading .button {
+		width: 100%;
+	}
+	.danger-zone-action {
+		align-items: stretch;
+		flex-direction: column;
+	}
+	.danger-zone-action .button {
+		width: 100%;
+	}
+}

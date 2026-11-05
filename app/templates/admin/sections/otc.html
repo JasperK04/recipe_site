@@ -1,118 +1,149 @@
+<header class="section-heading">
+	<div>
+		<p class="eyebrow">Nieuwe makers uitnodigen</p>
+		<h2>Uitnodigingen</h2>
+		<p>
+			Maak een eenmalige registratiecode en volg de codes die nog geldig
+			zijn.
+		</p>
+	</div>
+</header>
+{% if created_otc %}
+<section class="otc-created admin-callout" aria-labelledby="created-otc-title">
+	<div class="callout-icon">
+		<i class="bi bi-check2-circle" aria-hidden="true"></i>
+	</div>
+	<div class="callout-copy">
+		<p class="eyebrow">Code aangemaakt</p>
+		<h3 id="created-otc-title">De uitnodiging is klaar om te delen</h3>
+		<p>
+			Geldig tot {{ created_otc.expires_at.strftime('%-d %b %Y, %H:%M')
+			}}{% if created_otc.purpose %} · {{ created_otc.purpose }}{% endif
+			%}
+		</p>
+		<code class="otc-code">{{ created_otc.code }}</code>{% if
+		registration_link %}
+		<div class="otc-link-row">
+			<input
+				id="otc-link"
+				type="text"
+				readonly
+				value="{{ registration_link }}"
+				aria-label="Registratielink"
+			/><button
+				class="button button-secondary"
+				type="button"
+				data-copy-link
+				data-copy-value="{{ registration_link }}"
+			>
+				Link kopiëren
+			</button>
+		</div>
+		{% endif %}
+	</div>
+</section>
+{% endif %}
 <div class="otc-dashboard">
-    {% if created_otc and registration_link %}
-    <div class="alert alert-success otc-created shadow-sm">
-        <div class="d-flex flex-column flex-md-row justify-content-between gap-3 align-items-md-center">
-            <div>
-                <div class="fw-semibold mb-1">Nieuwe OTC aangemaakt</div>
-                <div class="text-body-secondary">
-                    Code <code>{{ created_otc.code }}</code><br/> vervalt op <strong>{{ created_otc.expires_at.strftime('%Y-%m-%d %H:%M') }}</strong>
-                </div>
-                {% if created_otc.purpose %}
-                <div class="text-body-secondary mt-1">
-                    Voor: <strong>{{ created_otc.purpose }}</strong>
-                </div>
-                {% endif %}
-            </div>
-            <div class="d-flex flex-column flex-sm-row gap-2">
-                <button type="button" class="btn btn-success" data-copy-link data-copy-value="{{ registration_link }}">Link kopiëren</button>
-            </div>
-        </div>
-        <div class="mt-3">
-            <label class="form-label mb-1" for="otc-link">Deelbare link</label>
-            <input id="otc-link" class="form-control" type="text" value="{{ registration_link }}" readonly>
-        </div>
-    </div>
-    {% endif %}
-
-    <div class="row g-4 mb-4">
-        <div class="col-lg-5">
-            <div class="card shadow-sm otc-panel h-100">
-                <div class="card-body p-4">
-                    <form method="POST" action="{{ url_for('admin.manage_otc') }}" novalidate>
-                        {{ form.hidden_tag() }}
-                        <div class="mb-3">
-                            {{ form.purpose.label(class="form-label") }}
-                            {{ form.purpose(class="form-control" + (" is-invalid" if form.purpose.errors else "")) }}
-                            {% if form.purpose.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.purpose.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="mb-3">
-                            {{ form.expires_in_hours.label(class="form-label") }}
-                            {{ form.expires_in_hours(class="form-control" + (" is-invalid" if form.expires_in_hours.errors else "")) }}
-                            <div class="form-text">Standaard blijft een code 24 uur geldig.</div>
-                            {% if form.expires_in_hours.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.expires_in_hours.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="d-grid">{{ form.submit(class="btn btn-primary btn-lg") }}</div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-7">
-            <div class="card shadow-sm otc-panel h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                            <h2 class="h4 mb-1">Actieve OTC's</h2>
-                        </div>
-                        <span class="badge bg-primary-subtle text-primary-emphasis">{{ active_otcs|length }} actief</span>
-                    </div>
-
-                    {% if active_otcs %}
-                    <div class="d-grid gap-3">
-                        {% for otc in active_otcs %}
-                        <div class="card otc-item shadow-sm">
-                            <div class="card-body p-4 otc-item-body">
-                                <div class="d-flex flex-column flex-xl-row justify-content-between gap-4">
-                                    <div class="otc-item-summary">
-                                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                                            <code class="otc-code">Uitnodiging #{{ otc.id }}</code>
-                                            <span class="badge bg-secondary-subtle text-secondary-emphasis">Leerling Kok</span>
-                                        </div>
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <div class="otc-label">Voor</div>
-                                                {% if otc.metadata_json and otc.metadata_json.get('label') %}
-                                                <div class="fw-semibold">{{ otc.metadata_json.get('label') }}</div>
-                                                {% else %}
-                                                <div class="text-muted">Geen doel ingevuld</div>
-                                                {% endif %}
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="otc-label">Verloopt</div>
-                                                <div class="fw-semibold">{{ otc.expires_at.strftime('%Y-%m-%d %H:%M') }}</div>
-                                                <div class="text-muted small">Aangemaakt {{ otc.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="otc-item-actions">
-                                        <form method="POST" action="{{ url_for('admin.delete_otc', credential_id=otc.id) }}" onsubmit="return confirm('Weet je zeker dat je deze registratie-uitnodiging wilt verwijderen?');">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></button>
-                                        </form>
-                                    </div>
-                                </div>
-                                <div class="text-muted small mt-4">De uitnodigingslink wordt alleen getoond direct na het aanmaken.</div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="otc-empty text-center py-5">
-                        <div class="otc-empty-icon mb-3"><i class="bi bi-ticket-perforated"></i></div>
-                        <h3 class="h5 mb-2">Nog geen actieve OTC's</h3>
-                        <p class="text-muted mb-0">Maak hierboven een code aan om een directe registratie-link te genereren.</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
+	<section class="otc-panel">
+		<div class="panel-heading">
+			<span class="panel-icon"
+				><i class="bi bi-ticket-perforated" aria-hidden="true"></i
+			></span>
+			<div>
+				<h3>Code aanmaken</h3>
+				<p>De code kan één keer worden gebruikt.</p>
+			</div>
+		</div>
+		<form
+			method="post"
+			action="{{ url_for('admin.manage_otc') }}"
+			class="admin-form"
+		>
+			{{ form.hidden_tag() }}
+			<div class="field-wrap">
+				<label for="{{ form.purpose.id }}"
+					>{{ form.purpose.label.text }}</label
+				>{{ form.purpose(class_='form-control', autocomplete='off') }}{%
+				for error in form.purpose.errors %}<span class="field-error"
+					>{{ error }}</span
+				>{% endfor %}<small
+					>Optioneel, bijvoorbeeld de naam van de ontvanger.</small
+				>
+			</div>
+			<div class="field-wrap">
+				<label for="{{ form.expires_in_hours.id }}"
+					>{{ form.expires_in_hours.label.text }}</label
+				>{{ form.expires_in_hours(class_='form-control', min='1') }}{%
+				for error in form.expires_in_hours.errors %}<span
+					class="field-error"
+					>{{ error }}</span
+				>{% endfor %}
+			</div>
+			<button class="button button-primary" type="submit">
+				<i class="bi bi-plus-lg" aria-hidden="true"></i> Uitnodiging
+				aanmaken
+			</button>
+		</form>
+	</section>
+	<section class="otc-panel">
+		<div class="panel-heading">
+			<span class="panel-icon is-muted"
+				><i class="bi bi-hourglass-split" aria-hidden="true"></i
+			></span>
+			<div>
+				<h3>
+					Actieve codes
+					<span class="inline-count">{{ active_otcs|length }}</span>
+				</h3>
+				<p>Ongebruikte registratie-uitnodigingen.</p>
+			</div>
+		</div>
+		{% if active_otcs %}
+		<ul class="otc-list">
+			{% for otc in active_otcs %}{% set otc_meta = otc.metadata_json or
+			{} %}
+			<li class="otc-item">
+				<div class="otc-item-body">
+					<code class="otc-code">{{ otc.code }}</code
+					><span class="otc-label"
+						>{{ otc_meta.get('purpose') or 'Registratie-uitnodiging'
+						}}</span
+					><span class="otc-date"
+						>Verloopt {{ otc.expires_at.strftime('%-d %b %Y, %H:%M')
+						}}</span
+					>
+				</div>
+				<form
+					class="otc-item-actions"
+					method="post"
+					action="{{ url_for('admin.delete_otc', credential_id=otc.id) }}"
+					data-confirm-message="Deze uitnodiging verwijderen?"
+				>
+					<input
+						type="hidden"
+						name="csrf_token"
+						value="{{ csrf_token() }}"
+					/><button
+						class="icon-button is-danger"
+						type="submit"
+						aria-label="Verwijder uitnodiging"
+						title="Verwijderen"
+					>
+						<i class="bi bi-trash3" aria-hidden="true"></i>
+					</button>
+				</form>
+			</li>
+			{% endfor %}
+		</ul>
+		{% else %}
+		<div class="otc-empty admin-empty">
+			<i class="bi bi-ticket" aria-hidden="true"></i
+			><strong>Geen actieve codes</strong
+			><span
+				>Maak hierboven een uitnodiging aan om iemand te laten
+				registreren.</span
+			>
+		</div>
+		{% endif %}
+	</section>
 </div>

@@ -1,0 +1,76 @@
+.error-selector {
+	max-width: 760px;
+	margin: 0 auto;
+	padding: 24px 0 0;
+}
+.error-selector label {
+	display: block;
+	margin-bottom: 8px;
+	font-size: 14px;
+	font-weight: 700;
+}
+.error-selector-controls {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+.error-selector select {
+	min-height: 42px;
+	min-width: min(100%, 280px);
+	padding: 8px 36px 8px 12px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-medium);
+	background: var(--surface);
+	color: var(--text);
+}
+.error-page {
+	display: grid;
+	align-items: center;
+	gap: 28px;
+	max-width: 760px;
+	min-height: 420px;
+	margin: 0 auto;
+	padding: 48px 0;
+}
+.error-page-mark {
+	color: var(--primary);
+	font-family: Fraunces, Georgia, serif;
+	font-size: clamp(5rem, 18vw, 9rem);
+	font-weight: 600;
+	line-height: 0.9;
+	letter-spacing: -0.06em;
+}
+.error-page-copy {
+	max-width: 520px;
+}
+.error-page .eyebrow {
+	margin: 0 0 8px;
+	color: var(--primary-strong);
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+.error-page h1 {
+	margin: 0;
+	font-family: Fraunces, Georgia, serif;
+	font-size: clamp(2rem, 5vw, 3.25rem);
+	line-height: 1.1;
+}
+.error-page p:not(.eyebrow) {
+	margin: 16px 0 0;
+	color: var(--text-muted);
+}
+.error-page-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin-top: 28px;
+}
+
+@media (width >= 700px) {
+	.error-page {
+		grid-template-columns: minmax(180px, 0.7fr) 1fr;
+		gap: 56px;
+	}
+}
