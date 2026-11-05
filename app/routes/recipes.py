@@ -109,7 +109,10 @@ def _ingredient_field_value(ingredient: str | dict) -> str:
 @recipes_bp.route("/genest/zoeken")
 def nested_recipe_search():
     search = (request.args.get("q") or "").strip()
+    current_recipe_id = request.args.get("current_recipe_id", type=int)
     matches = resolve_recipe_search_term(search)
+    if current_recipe_id is not None:
+        matches = [recipe for recipe in matches if recipe.id != current_recipe_id]
     results = [{"id": recipe.id, "title": recipe.title} for recipe in matches[:6]]
     payload = {"results": results, "has_more": len(matches) > 6}
     return jsonify(payload)

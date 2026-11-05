@@ -1,7 +1,7 @@
 (function () {
     const dialog = document.getElementById('cookie-consent');
     if (!dialog) return;
-    const hasChoice = dialog.dataset.hasConsent === 'true';
+    const hasChoice = () => dialog.dataset.hasConsent === 'true';
     let previousFocus = null;
 
     function openDialog() {

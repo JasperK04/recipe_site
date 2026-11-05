@@ -59,11 +59,35 @@ def _moderate_recipe(
 
 def _sanitize_recipe_ingredients_for_save(
     ingredients: list[str] | list[dict] | None,
+    *,
+    recipe_id: int | None = None,
 ) -> list[str] | list[dict]:
     try:
-        return sanitize_recipe_ingredients(cast(list[str | dict] | None, ingredients))
+        ingredient_index = None
+        if recipe_id is not None:
+            for index, ingredient in enumerate(ingredients or []):
+                if (
+                    isinstance(ingredient, dict)
+                    and ingredient.get("type") == "recipe"
+                    and str(ingredient.get("recipe_id")) == str(recipe_id)
+                ):
+                    ingredient_index = index
+                    break
+        normalized = sanitize_recipe_ingredients(cast(list[str | dict] | None, ingredients))
+        if recipe_id is not None:
+            for ingredient in normalized:
+                if (
+                    isinstance(ingredient, dict)
+                    and ingredient.get("type") == "recipe"
+                    and ingredient.get("recipe_id") == recipe_id
+                ):
+                    raise ValueError("Een recept kan niet naar zichzelf verwijzen.")
+        return normalized
     except ValueError as exc:
-        raise ApiError(str(exc), 400, payload={"field": "ingredients"}) from exc
+        payload: dict[str, object] = {"field": "ingredients"}
+        if ingredient_index is not None:
+            payload["ingredient_index"] = ingredient_index
+        raise ApiError(str(exc), 400, payload=payload) from exc
 
 
 def _apply_recipe_moderation(
@@ -339,7 +363,10 @@ def update_recipe(
     )
     recipe.title = title
     recipe.description = description
-    recipe.ingredients = _sanitize_recipe_ingredients_for_save(ingredients)
+    recipe.ingredients = _sanitize_recipe_ingredients_for_save(
+        ingredients,
+        recipe_id=recipe.id,
+    )
     recipe.instructions = sanitize_recipe_instructions(instructions)
     recipe.prep_time = prep_time
     recipe.cook_time = cook_time

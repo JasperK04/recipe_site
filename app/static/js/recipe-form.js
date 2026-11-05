@@ -1,5 +1,44 @@
 (function () {
     let summaryTimer = null;
+    const placeholderOptions = {
+        ingredient: [
+            '2 eetlepels olijfolie',
+            '1 rode ui',
+            '250 gram champignons',
+            'Snufje zwarte peper',
+            '500 ml melk',
+            '1 theelepel zout',
+            '3 teentjes knoflook',
+            '1 blik tomatenblokjes',
+            '100 gram geraspte kaas'
+        ],
+        instruction: [
+            'Verwarm de oven',
+            'Snijd de groenten',
+            'Meng de ingrediënten',
+            'Braad het vlees',
+            'Kook de pasta',
+            'Snij het vlees',
+            'Laat het deeg rijzen',
+            'Serveer met saus'
+        ],
+    };
+
+    function setRandomPlaceholder(field) {
+        const options = placeholderOptions[field?.dataset.placeholderGroup];
+        if (!options?.length) return;
+        field.placeholder = options[Math.floor(Math.random() * options.length)];
+    }
+
+    function resizeInstructionField(field) {
+        if (!field?.classList.contains('instruction-input')) return;
+        if (!field.value.includes('\n')) {
+            field.style.height = '';
+            return;
+        }
+        field.style.height = 'auto';
+        field.style.height = `${field.scrollHeight}px`;
+    }
 
     function reindexList(container) {
         const items = Array.from(container.children).filter(item => item.classList?.contains('ingredient-item') || item.classList?.contains('instruction-item'));
@@ -131,10 +170,13 @@
             if (last && target.closest(itemSelector) === last && target.value.trim()) {
                 const clone = last.cloneNode(true);
                 clone.querySelectorAll('input, textarea, select').forEach(input => { input.value = ''; });
+                clone.querySelectorAll('.instruction-input').forEach(input => { input.style.height = ''; });
+                setRandomPlaceholder(clone.querySelector('[data-placeholder-group]'));
                 resetIngredientItem(clone);
                 list.appendChild(clone);
                 ensureOneEmptyAtEnd(list);
             }
+            resizeInstructionField(target);
             if (isIngredient && target.matches('input, textarea, select') && !target.value.trim()) resetIngredientItem(target.closest('.ingredient-item'));
             scheduleRecipeSummary();
         });
@@ -254,6 +296,8 @@
             field.addEventListener('input', scheduleRecipeSummary);
             field.addEventListener('change', scheduleRecipeSummary);
         });
+        document.querySelectorAll('.instruction-input').forEach(resizeInstructionField);
+        document.querySelectorAll('[data-placeholder-group]').forEach(setRandomPlaceholder);
 
         document.getElementById('recipe-form')?.addEventListener('submit', event => {
             const status = event.submitter?.dataset.statusValue;
@@ -261,6 +305,10 @@
             if (status && statusField) statusField.value = status;
         }, true);
         document.querySelectorAll('.status-submit').forEach(button => button.addEventListener('click', () => {
+            const statusField = document.getElementById('status-field');
+            if (statusField && button.dataset.statusValue) {
+                statusField.value = button.dataset.statusValue;
+            }
             document.querySelectorAll('.status-submit').forEach(item => item.classList.toggle('is-selected', item === button));
         }));
 
@@ -312,8 +360,7 @@
                     selectedRecipe = item;
                     displayName.value = item.title;
                     confirmButton.disabled = false;
-                    results.querySelectorAll('.nested-recipe-result').forEach(element => element.classList.remove('active'));
-                    row.classList.add('active');
+                    results.replaceChildren();
                 });
                 results.appendChild(row);
             });
@@ -328,7 +375,10 @@
         search.addEventListener('input', async () => {
             const query = search.value.trim();
             if (!query) { results.replaceChildren(); confirmButton.disabled = true; selectedRecipe = null; return; }
-            const response = await fetch(`/recept/genest/zoeken?q=${encodeURIComponent(query)}`);
+            const currentRecipeId = modal.closest('body')?.querySelector('#recipe-form')?.dataset.recipeId;
+            const params = new URLSearchParams({ q: query });
+            if (currentRecipeId) params.set('current_recipe_id', currentRecipeId);
+            const response = await fetch(`/recept/genest/zoeken?${params}`);
             const data = await response.json();
             renderResults(data.results || [], !!data.has_more);
         });

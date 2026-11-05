@@ -181,6 +181,7 @@
 	transform: translateY(0);
 }
 .form-modal-content {
+	min-width: 0;
 	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: 16px;
@@ -199,6 +200,7 @@
 	margin: 0;
 	font-family: Fraunces, Georgia, serif;
 	font-size: 28px;
+	line-height: normal;
 }
 .form-modal-eyebrow {
 	margin: 0 0 8px;
@@ -216,7 +218,7 @@
 	line-height: 1;
 }
 .form-modal-body {
-	padding: 22px 26px;
+	padding: 22px;
 }
 .form-modal-body input:not([type="range"]),
 .form-modal-body textarea,

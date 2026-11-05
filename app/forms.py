@@ -273,9 +273,8 @@ class RecipeForm(FlaskForm):
         label="Ingrediënten *",
     )
 
-    # Instructions: a dynamic list of single-line steps
     instructions = FieldList(
-        StringField("Stap", validators=[Optional()]),
+        TextAreaField("Stap", validators=[Optional()]),
         min_entries=1,
         label="Instructies *",
     )

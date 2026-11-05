@@ -30,6 +30,7 @@ endblock %} {% block extra_css %}
 		data-client-validation="recipe"
 		data-client-validation-on-load="{{ '1' if validate_on_load else '0' }}"
 		data-recipe-status="{{ recipe.status if recipe else 'public' }}"
+		{% if recipe %}data-recipe-id="{{ recipe.id }}"{% endif %}
 		data-image-crop-enabled="1"
 		{%
 		if
@@ -249,6 +250,7 @@ endblock %} {% block extra_css %}
 							<button
 								class="recipe-drag-handle drag-handle"
 								type="button"
+								tabindex="-1"
 								aria-label="Ingrediënt verplaatsen"
 							>
 								<i
@@ -258,7 +260,7 @@ endblock %} {% block extra_css %}
 							</button>
 							<!-- prettier-ignore -->
 							{{ ingredient(class="form-control",
-							data_raw_ingredient_json="",
+							data_placeholder_group="ingredient",
 							placeholder="2 eetlepels olijfolie") 
 							}}
 							<span
@@ -267,7 +269,7 @@ endblock %} {% block extra_css %}
 									class="bi bi-link-45deg"
 									aria-hidden="true"
 								></i>
-								Gekoppeld recept</span
+								 Recept</span
 							>
 						</div>
 						{% endfor %}
@@ -302,6 +304,7 @@ endblock %} {% block extra_css %}
 							<button
 								class="recipe-drag-handle drag-handle"
 								type="button"
+								tabindex="-1"
 								aria-label="Instructie verplaatsen"
 							>
 								<i
@@ -309,8 +312,12 @@ endblock %} {% block extra_css %}
 									aria-hidden="true"
 								></i>
 							</button>
-							{{ instruction(class="form-control",
-							placeholder="Beschrijf deze bereidingstap") }}
+							{{ instruction(
+								class="form-control instruction-input",
+								rows="1",
+								data_placeholder_group="instruction",
+								placeholder="Verwarm de oven"
+							) }}
 						</div>
 						{% endfor %}
 					</div>
@@ -372,6 +379,13 @@ endblock %} {% block extra_css %}
 				</div>
 			</div>
 			<div class="recipe-editor-actions">
+				<div
+					id="recipe-submit-warning"
+					class="recipe-submit-warning"
+					role="alert"
+					aria-live="assertive"
+					hidden
+				></div>
 				{% set selected_status = form.status.data or 'public' %} {% if
 				form.status %}{{ form.status(class="visually-hidden",
 				id="status-field") }}{% endif %}
