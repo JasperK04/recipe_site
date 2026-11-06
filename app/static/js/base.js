@@ -87,7 +87,6 @@
             const dark = theme === 'dark';
             body.classList.toggle('dark-mode', dark);
             body.classList.toggle('light-mode', !dark);
-            body.style.colorScheme = theme;
             if (icon) icon.className = dark ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
             if (toggle) toggle.setAttribute('title', dark ? 'Schakel naar licht thema' : 'Schakel naar donker thema');
         }
@@ -101,11 +100,6 @@
                 localStorage.setItem('theme', newTheme);
             } catch (error) {
                 // Theme preference is optional.
-            }
-            try {
-                document.cookie = `theme=${newTheme}; Path=/; Max-Age=31536000; SameSite=Lax`;
-            } catch (error) {
-                // The cookie only improves the next server-rendered response.
             }
             applyTheme(newTheme);
         });
