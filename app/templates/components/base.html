@@ -35,16 +35,26 @@
 		{% block extra_meta %}{% endblock %}
 		<script>
 			(() => {
+				const root = document.documentElement;
 				try {
 					const stored = localStorage.getItem("theme");
 					const prefersDark = window.matchMedia?.(
 						"(prefers-color-scheme: dark)"
 					).matches;
 					const dark = stored ? stored === "dark" : prefersDark;
-					document.documentElement.classList.toggle("dark-mode", dark);
-					document.documentElement.classList.toggle("light-mode", !dark);
+					root.classList.toggle("dark-mode", dark);
+					root.classList.toggle("light-mode", !dark);
+					root.style.colorScheme = dark ? "dark" : "light";
+
+					// The main palette is loaded from external CSS. Set the browser canvas
+					// immediately so it cannot paint its default light background first.
+					const canvasColor = dark ? "#211e1b" : "#f2e9df";
+					const initialThemeStyle = document.createElement("style");
+					initialThemeStyle.textContent = `html, body { background-color: ${canvasColor}; }`;
+					document.head.append(initialThemeStyle);
 				} catch {
-					document.documentElement.classList.add("light-mode");
+					root.classList.add("light-mode");
+					root.style.colorScheme = "light";
 				}
 			})();
 		</script>

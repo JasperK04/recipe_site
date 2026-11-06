@@ -87,6 +87,7 @@
             const dark = theme === 'dark';
             body.classList.toggle('dark-mode', dark);
             body.classList.toggle('light-mode', !dark);
+            body.style.colorScheme = theme;
             if (icon) icon.className = dark ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
             if (toggle) toggle.setAttribute('title', dark ? 'Schakel naar licht thema' : 'Schakel naar donker thema');
         }
