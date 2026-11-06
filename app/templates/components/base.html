@@ -35,15 +35,21 @@
 		{% block extra_meta %}{% endblock %}
 		<script>
 			(() => {
+				let stored = null;
 				try {
-					const stored = localStorage.getItem("theme");
-					const prefersDark = window.matchMedia?.(
-						"(prefers-color-scheme: dark)"
-					).matches;
-					if (stored === "dark" || (!stored && prefersDark)) {
-						document.documentElement.classList.add("dark-mode");
-					}
+					stored = localStorage.getItem("theme");
 				} catch {}
+
+				let prefersDark = false;
+				try {
+					prefersDark = window.matchMedia?.(
+						"(prefers-color-scheme: dark)"
+					).matches ?? false;
+				} catch {}
+
+				const dark = stored === "dark" || (stored !== "light" && prefersDark);
+				document.documentElement.classList.toggle("dark-mode", dark);
+				document.documentElement.classList.toggle("light-mode", !dark);
 			})();
 		</script>
 		<link rel="preconnect" href="https://fonts.googleapis.com" />

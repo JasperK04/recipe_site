@@ -17,7 +17,6 @@
 	--radius-medium: 10px;
 	--content-width: 1200px;
 
-	color-scheme: light;
 }
 
 :root.dark-mode {
@@ -39,5 +38,4 @@
 	--radius-medium: 10px;
 	--content-width: 1200px;
 
-	color-scheme: dark;
 }

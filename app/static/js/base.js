@@ -78,20 +78,18 @@
         });
     }
 
-    function initializeTheme() {
+    function initializeThemeControls() {
         const body = document.documentElement;
         const toggle = document.getElementById('theme-toggle');
         const icon = document.getElementById('theme-icon');
 
-        function applyTheme(theme) {
+        function updateThemeControls(theme) {
             const dark = theme === 'dark';
-            body.classList.toggle('dark-mode', dark);
-            body.classList.toggle('light-mode', !dark);
             if (icon) icon.className = dark ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
             if (toggle) toggle.setAttribute('title', dark ? 'Schakel naar licht thema' : 'Schakel naar donker thema');
         }
 
-        applyTheme(body.classList.contains('dark-mode') ? 'dark' : 'light');
+        updateThemeControls(body.classList.contains('dark-mode') ? 'dark' : 'light');
 
         toggle?.addEventListener('click', event => {
             event.preventDefault();
@@ -101,7 +99,9 @@
             } catch (error) {
                 // Theme preference is optional.
             }
-            applyTheme(newTheme);
+            body.classList.toggle('dark-mode', newTheme === 'dark');
+            body.classList.toggle('light-mode', newTheme !== 'dark');
+            updateThemeControls(newTheme);
         });
     }
 
@@ -151,7 +151,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.navbar-search').forEach(initializeSearch);
-        initializeTheme();
+        initializeThemeControls();
         initializeRecipeBookmarks();
         initializePagination();
     });
