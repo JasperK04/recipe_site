@@ -1,5 +1,9 @@
 <!doctype html>
-<html lang="nl">
+<html
+	lang="nl"
+	class="{% if request.cookies.get('theme') == 'dark' %}dark-mode{% else %}light-mode{% endif %}"
+	style="color-scheme: {% if request.cookies.get('theme') == 'dark' %}dark{% else %}light{% endif %}"
+>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -33,6 +37,17 @@
 		{% block meta %}{% endblock %}
 		<meta name="color-scheme" content="light dark" />
 		{% block extra_meta %}{% endblock %}
+		<style>
+			html.dark-mode,
+			html.dark-mode body {
+				background-color: #211e1b;
+			}
+
+			html.light-mode,
+			html.light-mode body {
+				background-color: #f2e9df;
+			}
+		</style>
 		<script>
 			(() => {
 				const root = document.documentElement;
@@ -46,12 +61,9 @@
 					root.classList.toggle("light-mode", !dark);
 					root.style.colorScheme = dark ? "dark" : "light";
 
-					// The main palette is loaded from external CSS. Set the browser canvas
-					// immediately so it cannot paint its default light background first.
-					const canvasColor = dark ? "#211e1b" : "#f2e9df";
-					const initialThemeStyle = document.createElement("style");
-					initialThemeStyle.textContent = `html, body { background-color: ${canvasColor}; }`;
-					document.head.append(initialThemeStyle);
+					if (stored === "dark" || stored === "light") {
+						document.cookie = `theme=${stored}; Path=/; Max-Age=31536000; SameSite=Lax`;
+					}
 				} catch {
 					root.classList.add("light-mode");
 					root.style.colorScheme = "light";
