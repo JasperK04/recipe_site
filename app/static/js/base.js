@@ -99,9 +99,13 @@
             const newTheme = body.classList.contains('dark-mode') ? 'light' : 'dark';
             try {
                 localStorage.setItem('theme', newTheme);
-                document.cookie = `theme=${newTheme}; Path=/; Max-Age=31536000; SameSite=Lax`;
             } catch (error) {
                 // Theme preference is optional.
+            }
+            try {
+                document.cookie = `theme=${newTheme}; Path=/; Max-Age=31536000; SameSite=Lax`;
+            } catch (error) {
+                // The cookie only improves the next server-rendered response.
             }
             applyTheme(newTheme);
         });

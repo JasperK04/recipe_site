@@ -38,6 +38,10 @@
 		<meta name="color-scheme" content="light dark" />
 		{% block extra_meta %}{% endblock %}
 		<style>
+			html:not([data-theme-ready]) {
+				visibility: hidden;
+			}
+
 			html.dark-mode,
 			html.dark-mode body {
 				background-color: #211e1b;
@@ -62,14 +66,21 @@
 					root.style.colorScheme = dark ? "dark" : "light";
 
 					if (stored === "dark" || stored === "light") {
-						document.cookie = `theme=${stored}; Path=/; Max-Age=31536000; SameSite=Lax`;
+						try {
+							document.cookie = `theme=${stored}; Path=/; Max-Age=31536000; SameSite=Lax`;
+						} catch {
+							// The cookie only improves the next server-rendered response.
+						}
 					}
+					root.dataset.themeReady = "true";
 				} catch {
 					root.classList.add("light-mode");
 					root.style.colorScheme = "light";
+					root.dataset.themeReady = "true";
 				}
 			})();
 		</script>
+		<noscript><style>html { visibility: visible; }</style></noscript>
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link
